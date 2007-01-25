@@ -65,16 +65,7 @@
 
 #include "xgi_debug.h"
 
-#define XGI_USE_FB          /* not until overlays */
-#ifdef XGI_USE_FB
 #include "fb.h"
-#else
-#include "cfb.h"            /* CFB support */
-#include "cfb16.h"
-#include "cfb24.h"
-#include "cfb32.h"
-#endif
-
 
 /* Driver data structures */
 #include "xgi.h"
@@ -189,15 +180,6 @@ static const char *i2cSymbols[] = {
 static const char *fbSymbols[] = {
     "fbPictureInit",
     "fbScreenInit",
-    NULL
-};
-
-static const char *cfbSymbols[] = {
-    "cfbScreenInit",
-    "cfb16ScreenInit",
-    "cfb24ScreenInit",
-    "cfb32ScreenInit",
-    "cfb24_32ScreenInit",
     NULL
 };
 
@@ -327,11 +309,7 @@ static void XGILoaderRefSymLists(void)
     xf86LoaderRefSymLists(vgahwSymbols,
                           ddcSymbols,
                           i2cSymbols,
-#ifdef XGI_USE_FB
                           fbSymbols,
-#else
-                          cfbSymbols,
-#endif
                           xaaSymbols,
                           ramdacSymbols,
                           vbeSymbols,
@@ -1432,9 +1410,6 @@ static Bool XGIPreInitModes(ScrnInfoPtr pScrn)
 
     int             modesFound;
     char            *mod = NULL;
-#ifndef XGI_USE_FB
-    const char      *Sym = NULL;
-#endif
     MessageType     from = X_PROBED;
 
 #if DBG_FLOW
@@ -1575,37 +1550,9 @@ static Bool XGIPreInitModes(ScrnInfoPtr pScrn)
     xf86SetDpi(pScrn, 0, 0);
 
     /* Get ScreenInit function */
-#ifdef XGI_USE_FB
     mod = "fb";
-#else
-    switch (pScrn->bitsPerPixel)
-    {
-    case  8: mod = "cfb";   Sym = "cfbScreenInit";      break;
-    case 16: mod = "cfb16"; Sym = "cfb16ScreenInit";    break;
-    case 24:
-        if (pXGI->pix24bpp == 24)
-        {
-            mod = "cfb24";
-            Sym = "cfb24ScreenInit";
-        }
-        else
-        {
-            mod = "xf24_32bpp";
-            Sym = "cfb24_32ScreenInit";
-        }
-        break;
-    case 32:
-        mod = "cfb32";
-        Sym = "cfb32ScreenInit";
-        break;
-    }
-#endif
     if (mod && !xf86LoadSubModule(pScrn, mod)) return FALSE;
-#ifdef XGI_USE_FB
     xf86LoaderReqSymLists(fbSymbols, NULL);
-#else
-    xf86LoaderReqSymbols(Sym, NULL);
-#endif
 
     pXGI->currentLayout.displayWidth = pScrn->displayWidth;
     pXGI->currentLayout.mode = pScrn->currentMode;
@@ -2573,53 +2520,10 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
      * and fill in other pScreen fields.
      */
 
-#ifdef XGI_USE_FB
     retValue = fbScreenInit(pScreen, pFBStart,
                             pScrn->virtualX, pScrn->virtualY,
                             pScrn->xDpi, pScrn->yDpi, pScrn->displayWidth,
                             pScrn->bitsPerPixel);
-#else
-    switch (pScrn->bitsPerPixel)
-    {
-    case 8:
-        retValue = cfbScreenInit(pScreen, pFBStart,
-                                 pScrn->virtualX, pScrn->virtualY,
-                                 pScrn->xDpi, pScrn->yDpi,
-                                 pScrn->displayWidth);
-        break;
-    case 16:
-        retValue = cfb16ScreenInit(pScreen, pFBStart,
-                                   pScrn->virtualX, pScrn->virtualY,
-                                   pScrn->xDpi, pScrn->yDpi,
-                                   pScrn->displayWidth);
-        break;
-    case 24:
-        if (pXGI->pix24bpp == 24)
-        {
-            retValue = cfb24ScreenInit(pScreen, pFBStart,
-                                       pScrn->virtualX, pScrn->virtualY,
-                                       pScrn->xDpi, pScrn->yDpi,
-                                       pScrn->displayWidth);
-        }
-        else
-        {
-           retValue = cfb24_32ScreenInit(pScreen, pFBStart,
-                                         pScrn->virtualX, pScrn->virtualY,
-                                         pScrn->xDpi, pScrn->yDpi,
-                                         pScrn->displayWidth);
-        }
-        break;
-    case 32:
-        retValue = cfb32ScreenInit(pScreen, pFBStart,
-                                   pScrn->virtualX, pScrn->virtualY,
-                                   pScrn->xDpi, pScrn->yDpi,
-                                   pScrn->displayWidth);
-        break;
-    default:
-        xf86DrvMsg(scrnIndex, X_ERROR,
-                   "Invalid bpp (%d)\n", pScrn->bitsPerPixel);
-    }
-#endif
 
     if (!retValue)  goto fail;
     /*
@@ -2646,10 +2550,8 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
         }
     }
 
-#ifdef XGI_USE_FB
     /* must be after RGB order fixed */
     fbPictureInit(pScreen, 0, 0);
-#endif
 
     if (!XGIFBManagerInit(pScreen))
     {
