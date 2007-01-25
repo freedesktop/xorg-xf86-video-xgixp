@@ -308,7 +308,7 @@ static int PixelClockLimit32bpp[] = {
  */
 
 _X_EXPORT DriverRec XGI = {
-    XGI_VERSION_NAME,
+    XGI_VERSION_CURRENT,
     XGI_DRIVER_NAME,
     XGIIdentify,
     XGIProbe,

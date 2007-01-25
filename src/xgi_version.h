@@ -51,8 +51,8 @@
 #endif
 
 #define XGI_VERSION_CURRENT \
-    ((XGI_VERSION_MAJOR << 20) | \
-     (XGI_VERSION_MINOR << 10) | \
+    ((XGI_VERSION_MAJOR << 24) | \
+     (XGI_VERSION_MINOR << 16) | \
      (XGI_VERSION_PATCH))
 
 #define XGI_VERSION_EVALUATE(__x) #__x
