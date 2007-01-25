@@ -162,12 +162,11 @@
         XvTopToBottom \
     }
 
-//--------------------------------------------------------------------------------------------------------------------------------------------
-// Define OvlAttr
-// Including CAPS and Status for overlay
+/* Define OvlAttr
+   Including CAPS and Status for overlay */
 typedef unsigned long OVLATTR;
 
-// CAPS
+/* CAPS */
 #define OVLCAPS_FMT_NONE                0
 #define OVLCAPS_FMT_RGB8                0x00000001
 #define OVLCAPS_FMT_RGB15               0x00000002
@@ -183,95 +182,91 @@ typedef unsigned long OVLATTR;
 #define OVLCAPS_FMT_TDMC                0x00000800
 
 #define OVLCAPS_INTERLEAVED             0x00001000
-#define OVLCAPS_HW_OVERLAY              0x00002000       // Video Overlay (superset of GRACAPS_DDRAW).
-#define OVLCAPS_MOVIE_CORRECTION        0x00004000       // Enable/Disable 3:2 detection & correction
-#define OVLCAPS_OVERDRIVE               0x00008000       // Enable/Disable W1 overdrive
+#define OVLCAPS_HW_OVERLAY              0x00002000       /* Video Overlay (superset of GRACAPS_DDRAW). */
+#define OVLCAPS_MOVIE_CORRECTION        0x00004000       /* Enable/Disable 3:2 detection & correction */
+#define OVLCAPS_OVERDRIVE               0x00008000       /* Enable/Disable W1 overdrive */
 
-// Status
-#define OVLST_VIDEO_ON                  0x00010000       // overlay running
+/* Status */
+#define OVLST_VIDEO_ON                  0x00010000       /* overlay running */
 #define OVLST_VIDEO_ON_W2               0x00020000
-#define OVLST_NODEVSWITCH_ON_VIDEO      0x00040000       // No Device Switch when Video on
+#define OVLST_NODEVSWITCH_ON_VIDEO      0x00040000       /* No Device Switch when Video on */
 #define OVLST_LARGE_SRC_MODE_ON         0x00080000
-#define OVLST_UPDATE                    0x00100000       // Updated by DdUpdateOverlay
-#define OVLST_FLIP                      0x00200000       // Flipped by DdFlip
-#define OVLST_SET_POS                   0x00400000       // Set position by DdSetOverlayPosition
+#define OVLST_UPDATE                    0x00100000       /* Updated by DdUpdateOverlay */
+#define OVLST_FLIP                      0x00200000       /* Flipped by DdFlip */
+#define OVLST_SET_POS                   0x00400000       /* Set position by DdSetOverlayPosition */
 #define OVLST_CB_MASK                   (OVLST_UPDATE | OVLST_FLIP | OVLST_SET_POS)
-#define OVLST_THM_FULLSCREEN            0x00800000       // Theater mode enable
-#define OVLST_VIDEO_INT_BY_FULLSCN3D    0x01000000       // Video playback interrupted by full screen 3D
-#define OVLST_VIDEO_INT_BY_FULLSCNOGL   0x02000000       // Video playback interrupted by full screen OGL
-// End OVLATTR
-//--------------------------------------------------------------------------------------------------------------------------------------------
+#define OVLST_THM_FULLSCREEN            0x00800000       /* Theater mode enable */
+#define OVLST_VIDEO_INT_BY_FULLSCN3D    0x01000000       /* Video playback interrupted by full screen 3D */
+#define OVLST_VIDEO_INT_BY_FULLSCNOGL   0x02000000       /* Video playback interrupted by full screen OGL */
+/* End OVLATTR */
 
+/* Define DvdAttr
+   Including CAPS and Status for DVD */
+/*typedef unsigned long DVDATTR;*/
 
-//--------------------------------------------------------------------------------------------------------------------------------------------
-// Define DvdAttr
-// Including CAPS and Status for DVD
-//typedef unsigned long DVDATTR;
-
-// CAPS
-// SW
-#define DVDCAPS_OVERDRIVE               0x00000001       // W1 overdrive enable
+/* CAPS
+   SW */
+#define DVDCAPS_OVERDRIVE               0x00000001       /* W1 overdrive enable */
 #define DVDCAPS_ROTATE                  0x00000002
 
-// HW
-#define DVDCAPS_HW_DXVA                 0x00000100       // Enable/Disable DXVA
-#define DVDCAPS_HW_DXVA_IDCT            0x00000200       // Enable/Disable HW IDCT support
-#define DVDCAPS_HW_DXVA_USE_NV12        0x00000400       // Use NV12 as video format
-#define DVDCAPS_HW_NEC_DXVA_OFF         0x00000800       // Disable DXVA on non_LCD device for NEC
-#define DVDCAPS_HW_QUALITYENHANCE       0x00001000       // DVD quality enhance mode
-#define DVDCAPS_HW_SUB_PICTURE_BY_REG   0x00002000       // Enable/Disable HW SubPicture
-#define DVDCAPS_HW_HDDVD                0x00004000       // HDDVD (1280 * 720) supporting
-#define DVDCAPS_HW_HDTV                 0x00008000       // HDTV (1920 * 1080) supporting
+/* HW */
+#define DVDCAPS_HW_DXVA                 0x00000100       /* Enable/Disable DXVA */
+#define DVDCAPS_HW_DXVA_IDCT            0x00000200       /* Enable/Disable HW IDCT support */
+#define DVDCAPS_HW_DXVA_USE_NV12        0x00000400       /* Use NV12 as video format */
+#define DVDCAPS_HW_NEC_DXVA_OFF         0x00000800       /* Disable DXVA on non_LCD device for NEC */
+#define DVDCAPS_HW_QUALITYENHANCE       0x00001000       /* DVD quality enhance mode */
+#define DVDCAPS_HW_SUB_PICTURE_BY_REG   0x00002000       /* Enable/Disable HW SubPicture */
+#define DVDCAPS_HW_HDDVD                0x00004000       /* HDDVD (1280 * 720) supporting */
+#define DVDCAPS_HW_HDTV                 0x00008000       /* HDTV (1920 * 1080) supporting */
 
-// Status
-// Set / Use in display driver
+/* Status
+   Set / Use in display driver */
 #define DVDST_OVERDRIVE_TEMP_DISABLE    0x00010000
 
-// Playback mode
+/* Playback mode */
 #define DVDST_PLAYBACK_MODE_MASK        0x000e0000
-// [17-18]: 11: deinterlace     10: weave   01: bob
-// [19]:    1: movie
+/* [17-18]: 11: deinterlace     10: weave   01: bob
+ * [19]:    1: movie
+ */
 #define DVDST_BOB_MODE                  0x00020000
 #define DVDST_WEAVE_MODE                0x00040000
 #define DVDST_DEINTERLACE_MODE          0x00060000
 #define DVDST_MOVIE_MODE                0x00080000
 
-// Set / Use in miniport driver
-#define DVDST_DISABLE_VPE_IRQ           0x00100000       // Disable VPE IRQ
+/* Set / Use in miniport driver */
+#define DVDST_DISABLE_VPE_IRQ           0x00100000       /* Disable VPE IRQ */
 
-// Others
-#define DVDST_APP_FAIL                  0x01000000       // 1:indicate need clear DVD on flag at DDDestroySurface
-#define DVDST_DISABLE_TDMC_BY_REG       0x02000000       // Disable TDMC interface if cap present
+/* Others */
+#define DVDST_APP_FAIL                  0x01000000       /* 1:indicate need clear DVD on flag at DDDestroySurface */
+#define DVDST_DISABLE_TDMC_BY_REG       0x02000000       /* Disable TDMC interface if cap present */
 
-// Decode
-#define DVDST_SW_DECODE                 0x08000000       // SW Decode
-#define DVDST_MC_MVCU_ON                0x10000000       // MC & IDCT types
+/* Decode */
+#define DVDST_SW_DECODE                 0x08000000       /* SW Decode */
+#define DVDST_MC_MVCU_ON                0x10000000       /* MC & IDCT types */
 #define DVDST_MC_TDMC_ON                0x20000000
 #define DVDST_MC_DXVA_ON                0x40000000
 #define DVDST_IDCT_DXVA_ON              0x80000000
 #define DVDST_DECODE_MASK               (DVDST_SW_DECODE | DVDST_MC_MVCU_ON | DVDST_MC_TDMC_ON | DVDST_MC_DXVA_ON | DVDST_IDCT_DXVA_ON)
-// End DVDATTR
-//--------------------------------------------------------------------------------------------------------------------------------------------
+/* End DVDATTR */
 
-//--------------------------------------------------------------------------------------------------------------------------------------------
-// DXVA definitions
-//
+/* DXVA definitions */
 #define DVDMC_NO_ERROR                      0
 #define DVDMC_ERROR_MEMORY_ALLOCATION       1
 #define DVDMC_ERROR_INITIALIZATION          3
 
 #define DVD_CMD_SIZE_HDTV                   0x4200000
 #define DVD_CMD_SIZE_HDDVD                  0x2080000
-//#define DVD_CMD_SIZE                        0xd00000
+/*#define DVD_CMD_SIZE                        0xd00000*/
 #define DVD_CMD_SIZE                        0x200000
 
 
-#define MAX_NO_OF_DXVA_BUFFERS              8       // max # of DXVA compressed symbol buffers                                                // request task could be decomposed to
+#define MAX_NO_OF_DXVA_BUFFERS              8       /* max # of DXVA compressed symbol buffers
+                                                       request task could be decomposed to */
 #define MAX_DXVA_MBBLOCK_NUMBER             MAX_NO_OF_DXVA_BUFFERS
 #define MAX_DXVA_UNCOMPRESSED_BUF_NUM       8
 #define MAX_DXVA_DECODE_QUEUE_LENGTH        16
 
-#define DVD_PADDING_LINE_ADJUSTMENT         0x80    // lines to reserve to prevent garbage on the bottom of the screen
+#define DVD_PADDING_LINE_ADJUSTMENT         0x80    /* lines to reserve to prevent garbage on the bottom of the screen */
 
 #define FTYPE_I                             0x0001L
 #define FTYPE_P                             0x0002L
@@ -282,27 +277,27 @@ typedef unsigned long OVLATTR;
 #define DVD_DECODED                         2
 #define DVD_DISPLAYED                       3
 
-// within 20ms (experimental value), if buffer is not available, we should
-// let it go, otherwise, dvd drop frame
+/* within 20ms (experimental value), if buffer is not available, we should
+   let it go, otherwise, dvd drop frame */
 #define BEGINFRAME_TIME_OUT                 16
-// if is 4 frame for example powerdvd, use this timer
+/* if is 4 frame for example powerdvd, use this timer */
 #define BEGINFRAME_TIME_OUT_4frame          16
 
 #define MOTION_ENTERWEAVING_THRESHOLD       0x05
 #define MOTION_EXITWEAVING_THRESHOLD        0x09
 #define MOTION_COUNT_THRESHOLD              0x20
 
-// Subpicture related
+/* Subpicture related */
 #define MAX_SP_BUFFERS                      2
 #define DVD_SP_ENABLED                      2
 #define DVD_SP_HIDEN                        1
 #define DVD_SP_DISABLED                     0
 #define DVD_SP_3D_Simu                      0x80000000
 
-// Below is HW related definitions
+/* Below is HW related definitions */
 #define MAX_PATTERN             64
 
-// Decoding Command
+/* Decoding Command */
 #define PIC_BEGIN               0xa800
 #define PIC_END                 0xd000
 #define MBLK_HEADER             0xb800
@@ -310,7 +305,7 @@ typedef unsigned long OVLATTR;
 #define ZIGZAG                  0x0
 #define ALTERNATE_ZIGZAG        0x4
 
-// check mask
+/* check mask */
 #define BITMASK(n)              (1 << (n))
 #define MBLK_TYPE_MASK          (BITMASK(0) |   \
                                  BITMASK(1) |   \
@@ -325,43 +320,43 @@ typedef unsigned long OVLATTR;
 #define MBLK_HALF_PEL_H         BITMASK(30)
 #define MBLK_HALF_PEL_V         BITMASK(31)
 
-// Intra Flag
-#define MBLK_TYPE_INTER         0x00000000 // Inter MacroBlock
-#define MBLK_TYPE_INTRA         0x00000001 // Intra MacroBlock
+/* Intra Flag */
+#define MBLK_TYPE_INTER         0x00000000 /* Inter MacroBlock */
+#define MBLK_TYPE_INTRA         0x00000001 /* Intra MacroBlock */
 
-// CBP Flag
-#define MBLK_CBP_EXIST          0x00000002 // Exist Code Block Pattern
+/* CBP Flag */
+#define MBLK_CBP_EXIST          0x00000002 /* Exist Code Block Pattern */
 
-// Prediction Type
-#define MBLK_PREDICT_BWD        0x00000004 // Backward Prediction
-#define MBLK_PREDICT_FWD        0x00000008 // Forward Prediction
-#define MBLK_PREDICT_BD         MBLK_PREDICT_FWD | MBLK_PREDICT_BWD // Bidirection Prediction
-#define MBLK_PREDICT_FRAME      0x00000000 // Frame Prediction
-#define MBLK_PREDICT_FIELD      0x00000040 // Field Prediction
-#define MBLK_PREDICT_16X8       0x00000100 // 16x8 Prediction
-#define MBLK_PREDICT_DP         0x00000200 // Dual Prime Prediction
+/* Prediction Type */
+#define MBLK_PREDICT_BWD        0x00000004 /* Backward Prediction */
+#define MBLK_PREDICT_FWD        0x00000008 /* Forward Prediction */
+#define MBLK_PREDICT_BD         MBLK_PREDICT_FWD | MBLK_PREDICT_BWD /* Bidirection Prediction */
+#define MBLK_PREDICT_FRAME      0x00000000 /* Frame Prediction */
+#define MBLK_PREDICT_FIELD      0x00000040 /* Field Prediction */
+#define MBLK_PREDICT_16X8       0x00000100 /* 16x8 Prediction */
+#define MBLK_PREDICT_DP         0x00000200 /* Dual Prime Prediction */
 
-// DCT Type
-#define MBLK_DCT_FRAME          0x00000000 // use Frame DCT for current macroblock
-#define MBLK_DCT_FIELD          0x00000080 // use Field DCT for current macroblock
+/* DCT Type */
+#define MBLK_DCT_FRAME          0x00000000 /* use Frame DCT for current macroblock */
+#define MBLK_DCT_FIELD          0x00000080 /* use Field DCT for current macroblock */
 
-// Motion Vector Exist
-#define MBLK_MV0_EXIST          0x00001000 // Exist Motion Vector 0
-#define MBLK_MV1_EXIST          0x00002000 // Exist Motion Vector 1
-#define MBLK_MV2_EXIST          0x00004000 // Exist Motion Vector 2
-#define MBLK_MV3_EXIST          0x00008000 // Exist Motion Vector 3
+/* Motion Vector Exist */
+#define MBLK_MV0_EXIST          0x00001000 /* Exist Motion Vector 0 */
+#define MBLK_MV1_EXIST          0x00002000 /* Exist Motion Vector 1 */
+#define MBLK_MV2_EXIST          0x00004000 /* Exist Motion Vector 2 */
+#define MBLK_MV3_EXIST          0x00008000 /* Exist Motion Vector 3 */
 
-// Reference Field
-#define MBLK_MV0_REF_TOP        0x00000000 // Use Fwd top field as Ref for 1st Fwd pred.
-#define MBLK_MV0_REF_BOTTOM     0x00010000 // Use Fwd bottom field as Ref for 1st Fwd pred.
-#define MBLK_MV1_REF_TOP        0x00000000 // Use Bkwd top field as Ref for 1st Bkwd pred.
-#define MBLK_MV1_REF_BOTTOM     0x00020000 // Use Bkwd bottom field as Ref for 1st Bkwd pred.
-#define MBLK_MV2_REF_TOP        0x00000000 // Use Fwd top field as Ref for 2nd Fwd pred.
-#define MBLK_MV2_REF_BOTTOM     0x00040000 // Use Fwd bottom field as Ref for 2nd Fwd pred.
-#define MBLK_MV3_REF_TOP        0x00000000 // Use Bkwd top field as Ref for 2nd Bkwd pred.
-#define MBLK_MV3_REF_BOTTOM     0x00080000 // Use Bkwd bottom field as Ref for 2nd Bkwd pred.
+/* Reference Field */
+#define MBLK_MV0_REF_TOP        0x00000000 /* Use Fwd top field as Ref for 1st Fwd pred. */
+#define MBLK_MV0_REF_BOTTOM     0x00010000 /* Use Fwd bottom field as Ref for 1st Fwd pred. */
+#define MBLK_MV1_REF_TOP        0x00000000 /* Use Bkwd top field as Ref for 1st Bkwd pred. */
+#define MBLK_MV1_REF_BOTTOM     0x00020000 /* Use Bkwd bottom field as Ref for 1st Bkwd pred. */
+#define MBLK_MV2_REF_TOP        0x00000000 /* Use Fwd top field as Ref for 2nd Fwd pred. */
+#define MBLK_MV2_REF_BOTTOM     0x00040000 /* Use Fwd bottom field as Ref for 2nd Fwd pred. */
+#define MBLK_MV3_REF_TOP        0x00000000 /* Use Bkwd top field as Ref for 2nd Bkwd pred. */
+#define MBLK_MV3_REF_BOTTOM     0x00080000 /* Use Bkwd bottom field as Ref for 2nd Bkwd pred. */
 
-// Software bobbing commands
+/* Software bobbing commands */
 #ifdef SW_BOBBING
     #define DXVA_BOBBING_ADD_QUEUE              0
     #define DXVA_BOBBING_ADD_CMD                1
@@ -373,9 +368,7 @@ typedef unsigned long OVLATTR;
     #define DXVA_BOBBING_FLUSH_CMD              10
     #define DXVA_DECODE_QUEUELENGTH_QUERY       14
 #endif
-// End DXVA
-//--------------------------------------------------------------------------------------------------------------------------------------------
-
+/* End DXVA */
 
 /*
  * bit[2:0] :   WINMD
@@ -419,7 +412,7 @@ typedef struct {
 
     CARD32          id;
 
-    Bool            isSpOverlay;    // subpicture overlay
+    Bool            isSpOverlay;    /* subpicture overlay */
     Bool            isHMirror;
     Bool            isVMirror;
     Bool            isNoColorKey;
@@ -454,7 +447,7 @@ typedef struct {
     BoxRec          spSrcBox;
     BoxRec          spDstBox;
 
-    // DXVA subpicture alpha blending
+    /* DXVA subpicture alpha blending */
     int             spStatus;
     int             spMode;
     CARD32          spStartAddr;

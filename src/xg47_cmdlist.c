@@ -257,18 +257,18 @@ static void reserveData(CmdList* pCmdList, CARD32 size)
         /* HW guys do NOT recommemd to use out-batch mode. */
         if (1)
         {
-            // If roll over, we should use new batch from the begin of command list.
+            /* If roll over, we should use new batch from the begin of command list. */
             CARD32* pOldBatchBegin;
             CARD32  existCmdSize;
             pOldBatchBegin           = pCmdList->_curBatchBegin;
             pCmdList->_curBatchBegin = pCmdList->_cmdBufLinearStartAddr;
             pulNewBatchEnd           = pCmdList->_curBatchBegin + NewBatchSize;
             existCmdSize             = pCmdList->_writePtr - pOldBatchBegin;
-            //ASSERTDD(NULL != m_pulCurBatchBegin, "NO command list buffer?");
-            //ASSERTDD((pulOldBatchBegin <= m_ulBufferAddr) &&
-            //         (m_ulBufferAddr - pulOldBatchBegin <= m_ulRequestSize), "Out of boundary!");
+            /*ASSERTDD(NULL != m_pulCurBatchBegin, "NO command list buffer?");*/
+            /*ASSERTDD((pulOldBatchBegin <= m_ulBufferAddr) &&
+                     (m_ulBufferAddr - pulOldBatchBegin <= m_ulRequestSize), "Out of boundary!");*/
 
-            // Move the midway commands to new home.
+            /* Move the midway commands to new home. */
             waitCmdListAddrAvailable(pCmdList,
                                      pCmdList->_curBatchBegin,
                                      pCmdList->_curBatchBegin + existCmdSize);
@@ -279,12 +279,12 @@ static void reserveData(CmdList* pCmdList, CARD32 size)
         }
         else
         {
-            // If roll over, we should use new btach to
+            /* If roll over, we should use new btach to */
 
         }
     }
 
-    // Wait for batch available.
+    /* Wait for batch available. */
     waitCmdListAddrAvailable(pCmdList,
                              pCmdList->_curBatchDataBegin,
                              pCmdList->_curBatchDataBegin + NewBatchSize);
@@ -302,18 +302,18 @@ static void endCmdList(CmdList* pCmdList)
     addScratchBatch(pCmdList);
 
     XGIDebug(DBG_FUNCTION,"[DBG-Jong] endCmdList-3\n");
-//    linkToLastBatch(pCmdList);
+/*    linkToLastBatch(pCmdList);*/
     submit2DBatch(pCmdList);
 }
 
 static void sendGECommand(CmdList* pCmdList, CARD32 addr, CARD32 cmd)
 {
-    // Encrypt the command for AGP.
+    /* Encrypt the command for AGP. */
     CARD32 shift        = (pCmdList->_curBatchDataCount++) & 0x00000003;
     pCmdList->_bunch[0] |= (addr | 1) << (shift << 3);
     pCmdList->_bunch[shift + 1]  = cmd;
 
-    // Bunch finished, Send to HW.
+    /* Bunch finished, Send to HW. */
     if(2 == shift)
     {
     	pCmdList->_writePtr[0] = pCmdList->_bunch[0];
@@ -338,30 +338,31 @@ static void startFillData(CmdList* pCmdList, CARD32 size)
 
 static void fillData(CmdList * pCmdList,
                      unsigned char * ptr,
-                     CARD32 width,  // bytes
-                     long int delta,      // bytes
+                     CARD32 width,  /* bytes */
+                     long int delta,      /* bytes */
                      CARD32 height)
 {
     CARD32 sizeAlign;
     sizeAlign = width & ~0x03;
 
-    // fill data to the cmdbatch
-    // write 1 dword per time
-    // pack the data to 4 dwords align
-    // ...
+    /* fill data to the cmdbatch
+     * write 1 dword per time
+     * pack the data to 4 dwords align
+     * ...
+     */
     while(height--)
     {
-        // ASSERTDD((m_ulDataLength - m_ulSendDataLen) >= ulWidth, "Reserved size is not enough!");
-        // m_pulDataStartAddr = (ULONG*)((m_pulDataStartAddr) & m_ulDataPortMask);
-        // m_pulDataStartAddr = (ULONG*)((m_pulDataStartAddr) | m_ulDataPortOr);
+        /* ASSERTDD((m_ulDataLength - m_ulSendDataLen) >= ulWidth, "Reserved size is not enough!");*/
+        /* m_pulDataStartAddr = (ULONG*)((m_pulDataStartAddr) & m_ulDataPortMask);*/
+        /* m_pulDataStartAddr = (ULONG*)((m_pulDataStartAddr) | m_ulDataPortOr);*/
 
-        // Next line start address
+        /* Next line start address */
         CARD32 sizeRem = 0;
         unsigned char* ptrNext = ptr + delta;
 
-        // ????SSEable?????
+        /* ????SSEable????? */
         memcpy(pCmdList->_writePtr, ptr, sizeAlign);
-        // DumpArray32(ptr, ulSizeAlign / 4);
+        /* DumpArray32(ptr, ulSizeAlign / 4);*/
 
         pCmdList->_writePtr         += sizeAlign / 4;
         pCmdList->_sendDataLength   += sizeAlign;
@@ -383,27 +384,27 @@ static void fillData(CmdList * pCmdList,
             pCmdList->_writePtr++;
             pCmdList->_sendDataLength   += 4;
 
-            // Dump to file for debug
-            // DumpData32(0x10000, ulRemainder);
+            /* Dump to file for debug */
+            /* DumpData32(0x10000, ulRemainder);*/
         }
         ptr = ptrNext;
     }
-    // then call endCmdList() outside
+    /* then call endCmdList() outside */
 }
 
 
 static void submitData(CmdList* pCmdList)
 {
-    // ASSERTDD(m_ulSendDataLen <= m_ulDataLength, "Reserved size is not enough!");
-    // ASSERTDD(DATAFILL_INBATCH_BEGIN != m_DataFillMode, "Did not fill data after reserve.");
+    /* ASSERTDD(m_ulSendDataLen <= m_ulDataLength, "Reserved size is not enough!");*/
+    /* ASSERTDD(DATAFILL_INBATCH_BEGIN != m_DataFillMode, "Did not fill data after reserve.");*/
 
-    // Pad the data to 128 bit alignment.
+    /* Pad the data to 128 bit alignment. */
     while(0 != ((CARD32)pCmdList->_writePtr & 0x0f))
     {
         *pCmdList->_writePtr++ = 0;
     }
 
-    // Correct the data length
+    /* Correct the data length */
     *pCmdList->_curBatchDataBegin = 0xff000000 | (pCmdList->_sendDataLength/4);
     pCmdList->_curBatchDataCount += (CARD32)(pCmdList->_writePtr - pCmdList->_curBatchDataBegin);
 }
@@ -411,31 +412,32 @@ static void submitData(CmdList* pCmdList)
 
 static void waitCmdListAddrAvailable(CmdList* pCmdList, CARD32* addrStart, CARD32* addrEnd)
 {
-	// The loop of waiting for enough command list buffer
+	/* The loop of waiting for enough command list buffer */
     while(1)
     {
-        // Get the current runing batch address.
+        /* Get the current runing batch address. */
 
         CARD32* curGEWorkedCmdAddr = pCmdList->_cmdBufLinearStartAddr
             + (getGEWorkedCmdHWAddr(pCmdList) - pCmdList->_cmdBufHWStartAddr);
 
         if(NULL != curGEWorkedCmdAddr)
         {
-            if ((curGEWorkedCmdAddr < addrStart) || // cmdlist is fresh
-                (curGEWorkedCmdAddr > addrEnd))     // cmdlist already rolled over. Current batch does not overlay the buffer.
+            if ((curGEWorkedCmdAddr < addrStart) || /* cmdlist is fresh */
+                (curGEWorkedCmdAddr > addrEnd))     /* cmdlist already rolled over. Current batch does not overlay the buffer. */
             {
-                // There is enough memory at the begin of command list.
+                /* There is enough memory at the begin of command list. */
                 break;
             }
         }
         else
         {
-            // No running batch
+            /* No running batch */
             if ((NULL != pCmdList->_lastBatchBegin) &&
                 (addrStart >= pCmdList->_lastBatchBegin &&  addrEnd <= pCmdList->_lastBatchBegin))
             {
-                // If current command list overlaps the last begin
-                // Force to reset
+                /* If current command list overlaps the last begin
+                 * Force to reset
+		 */
                 reset(pCmdList);
             }
             break;
@@ -451,7 +453,7 @@ static CARD32* getGEWorkedCmdHWAddr(CmdList* pCmdList)
 
 static void sendRemainder2DCommand(CmdList* pCmdList)
 {
-    // ASSERTDD(BTYPE_2D == m_btBatchType, "Only 2D batch can use SendCommand!");
+    /* ASSERTDD(BTYPE_2D == m_btBatchType, "Only 2D batch can use SendCommand!");*/
     if (0x7f000000 != pCmdList->_bunch[0])
     {
         pCmdList->_writePtr[0]       = pCmdList->_bunch[0];
@@ -466,8 +468,8 @@ static void sendRemainder2DCommand(CmdList* pCmdList)
 
 static void addScratchBatch(CmdList* pCmdList)
 {
-    //because we add 2D scratch directly at the end of this batch
-    //ASSERT(BTYPE_2D == pCmdList->_curBatchType);
+    /*because we add 2D scratch directly at the end of this batch*/
+    /*ASSERT(BTYPE_2D == pCmdList->_curBatchType);*/
 
     pCmdList->_writePtr[0]  = 0x7f413951;
 
@@ -491,7 +493,7 @@ static void addScratchBatch(CmdList* pCmdList)
 	/* Jong 06/15/2006; this value is checked at waitfor2D() */ /* 78~7B */
     pCmdList->_writePtr[7]  = (CARD32) pCmdList->_lastBatchEnd
                              -(CARD32) pCmdList->_cmdBufLinearStartAddr
-                             +(CARD32) pCmdList->_cmdBufHWStartAddr; //garbage
+                             +(CARD32) pCmdList->_cmdBufHWStartAddr; /*garbage*/
 
     pCmdList->_writePtr[8]  = 0xff000001;
     pCmdList->_writePtr[9]  = pCmdList->_writePtr[7];
@@ -510,36 +512,36 @@ static void linkToLastBatch(CmdList* pCmdList)
 
     CARD32 beginHWAddr;
     CARD32 beginPort;
-    //batch begin addr should be 4 Dwords alignment.
-    //ASSERT(0 == (((CARD32)pCmdList->_curBatchBegin) & 0x0f);
+    /*batch begin addr should be 4 Dwords alignment.*/
+    /*ASSERT(0 == (((CARD32)pCmdList->_curBatchBegin) & 0x0f);*/
 
     if (0 == pCmdList->_curBatchDataCount)
     {
-        //is it reasonable?
+        /*is it reasonable?*/
         return;
     }
 
-    //batch end addr should be 4 Dwords alignment
-    //ASSERT(0 == (((CARD32)pCmdList->_writePtr) & 0x0f));
+    /*batch end addr should be 4 Dwords alignment*/
+    /*ASSERT(0 == (((CARD32)pCmdList->_writePtr) & 0x0f));*/
 
     beginHWAddr = (CARD32) pCmdList->_cmdBufHWStartAddr
                  +(CARD32) pCmdList->_curBatchBegin
                  -(CARD32) pCmdList->_cmdBufLinearStartAddr;
 
-    // Which begin we should send.
+    /* Which begin we should send.*/
     beginPort = getCurBatchBeginPort(pCmdList);
 
     if (NULL == pCmdList->_lastBatchBegin)
     {
         CARD32* pCmdPort;
-        // Issue PCI begin
+        /* Issue PCI begin */
 
-        // Wait for GE Idle.
+        /* Wait for GE Idle. */
         waitForPCIIdleOnly();
 
         pCmdPort = (CARD32*)((unsigned char*)pCmdList->_mmioBase + BASE_3D_ENG + beginPort);
 
-        // Enable PCI Trigger Mode
+        /* Enable PCI Trigger Mode */
         *((CARD32*)((unsigned char*)pCmdList->_mmioBase + BASE_3D_ENG + M2REG_AUTO_LINK_SETTING_ADDRESS)) =
                 (M2REG_AUTO_LINK_SETTING_ADDRESS << 22) |
                 M2REG_CLEAR_COUNTERS_MASK |
@@ -551,7 +553,7 @@ static void linkToLastBatch(CmdList* pCmdList)
                 0x08 |
                 M2REG_PCI_TRIGGER_MODE_MASK;
 
-        // Send PCI begin command
+        /* Send PCI begin command */
         pCmdPort[0] = (beginPort<<22) + (BEGIN_VALID_MASK) + pCmdList->_debugBeginID;
         pCmdPort[1] = BEGIN_LINK_ENABLE_MASK + pCmdList->_curBatchDataCount;
         pCmdPort[2] = (beginHWAddr >> 4);
@@ -559,13 +561,13 @@ static void linkToLastBatch(CmdList* pCmdList)
     }
     else
     {
-        // Encode BEGIN
+        /* Encode BEGIN */
         pCmdList->_lastBatchBegin[1] = BEGIN_LINK_ENABLE_MASK + pCmdList->_curBatchDataCount;
         pCmdList->_lastBatchBegin[2] = (beginHWAddr >> 4);
         pCmdList->_lastBatchBegin[3] = 0;
 
-        //Fixme, Flush cache
-        //_mm_mfence();
+        /*Fixme, Flush cache*/
+        /*_mm_mfence();*/
 
         pCmdList->_lastBatchBegin[0] = (beginPort<<22) + (BEGIN_VALID_MASK) + pCmdList->_debugBeginID;
 
@@ -580,7 +582,7 @@ static void linkToLastBatch(CmdList* pCmdList)
 
 CARD32 getCurBatchBeginPort(CmdList* pCmdList)
 {
-    // Convert the batch type to begin port ID
+    /* Convert the batch type to begin port ID */
     switch(pCmdList->_curBatchType)
     {
     case BTYPE_2D:
@@ -592,7 +594,7 @@ CARD32 getCurBatchBeginPort(CmdList* pCmdList)
     case BTYPE_CTRL:
         return 0x20;
     default:
-        //ASSERT(0);
+        /*ASSERT(0);*/
 		return 0xff;
     }
 }
@@ -603,7 +605,7 @@ static void triggerHWCommandList(CmdList* pCmdList, CARD32 triggerCounter)
 
     XGIDebug(DBG_CMD_BUFFER, "[DBG]Before trigger [2800]=%0x\n", *((CARD32*)((unsigned char*)pCmdList->_mmioBase + BASE_3D_ENG)) );
 
-    //Fixme, currently we just trigger one time
+    /*Fixme, currently we just trigger one time */
     while (triggerCounter--)
     {
         *((CARD32*)((unsigned char*)pCmdList->_mmioBase + BASE_3D_ENG + M2REG_PCI_TRIGGER_REGISTER_ADDRESS))
@@ -755,7 +757,7 @@ static inline void waitfor2D(CmdList* pCmdList)
 {
     CARD32 lastBatchEndHW = (CARD32) pCmdList->_lastBatchEnd
                             -(CARD32) pCmdList->_cmdBufLinearStartAddr
-                            +(CARD32) pCmdList->_cmdBufHWStartAddr; //garbage
+                            +(CARD32) pCmdList->_cmdBufHWStartAddr; /*garbage*/
 
 	/* Jong 05/25/2006 */
 	int WaitCount=0;
@@ -770,14 +772,14 @@ static inline void waitfor2D(CmdList* pCmdList)
 	    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] waitfor2D()-Begin loop\n");
         while(lastBatchEndHW != (CARD32) getGEWorkedCmdHWAddr(pCmdList))
         {
-            //loop
-			// Jong 07/03/2006
-			// Why just need one time to output message and get working ?
-			//if(g_bFirst==1)
-			//{
-				//ErrorF("[DBG-Jong-07032006] waitfor2D()-in loop\n");
-				//XGIDumpRegisterValue(g_pScreen);
-			//}
+            /*loop*/
+			/* Jong 07/03/2006
+			   Why just need one time to output message and get working ?*/
+			/*if(g_bFirst==1)
+			{
+				ErrorF("[DBG-Jong-07032006] waitfor2D()-in loop\n");
+				XGIDumpRegisterValue(g_pScreen);
+			}*/
 
 			if(g_bFirst==1)
 				usleep(1); 
@@ -789,13 +791,13 @@ static inline void waitfor2D(CmdList* pCmdList)
         }
 
 		/* Jong 05/25/2006 */
-		//g_bFirst++;
-		//if(g_bFirst <= 10)
+		/*g_bFirst++;
+		if(g_bFirst <= 10)*/
 		if(g_bFirst == 1)
 		{
 			g_bFirst=0;
-			//ErrorF("Jong-07032006-waitfor2D()-End loop\n");
-			//XGIDumpRegisterValue(g_pScreen);
+			/*ErrorF("Jong-07032006-waitfor2D()-End loop\n");
+			XGIDumpRegisterValue(g_pScreen);*/
 		} 
 
 	    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] waitfor2D()-End loop\n");

@@ -266,19 +266,19 @@ static PciChipsets XGIPciChipsets[] = {
 
 /* Clock Limits */
 static int PixelClockLimit8bpp[] = {
-    267000, // Volari 8300
+    267000, /* Volari 8300 */
 };
 
 static int PixelClockLimit16bpp[] = {
-    267000, // Volari 8300
+    267000, /* Volari 8300 */
 };
 
 static int PixelClockLimit24bpp[] = {
-    267000, // Volari 8300
+    267000, /* Volari 8300 */
 };
 
 static int PixelClockLimit32bpp[] = {
-    267000, // Volari 8300
+    267000, /* Volari 8300 */
 };
 
 /*
@@ -1359,7 +1359,7 @@ static Bool XGIPreInitI2c(ScrnInfoPtr pScrn)
 
     pXGI->pI2C->BusName    = "DDC";
     pXGI->pI2C->scrnIndex  = pScrn->scrnIndex;
-    //pXGI->ddcReg = ;
+    /* pXGI->ddcReg = ; */
     pXGI->pI2C->I2CPutBits = XGII2CPutBits;
     pXGI->pI2C->I2CGetBits = XGII2CGetBits;
     pXGI->pI2C->AcknTimeout = 5;
@@ -2043,7 +2043,7 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
 
     if (!XGIPreInitLcdSize(pScrn))          goto fail;
 
-    //if (!XGIBiosDllInit(pXGI))              goto fail;
+    /*if (!XGIBiosDllInit(pXGI))              goto fail;*/
     if (!XGIBiosDllInit(pScrn))              goto fail;
 
 	/* Jong 07/07/2006; moved to front */
@@ -2201,10 +2201,10 @@ static void XGISave(ScrnInfoPtr pScrn)
     	return;
     }
 
-    //vgaHWUnlock(pVgaHW);
+    /*vgaHWUnlock(pVgaHW);*/
     vgaHWSave(pScrn, pVgaReg, VGA_SR_MODE | VGA_SR_CMAP |
                               (IsPrimaryCard ? VGA_SR_FONTS : 0));
-    //vgaHWLock(pVgaHW);
+    /*vgaHWLock(pVgaHW);*/
 
     XGIModeSave(pScrn, pXGIReg);
 
@@ -2263,7 +2263,7 @@ Bool XGIPutScreenInfo(ScrnInfoPtr pScrn)
     scrnInfo.scrnHeight = pXGI->currentLayout.mode->VDisplay;
     scrnInfo.scrnBpp    = pScrn->bitsPerPixel >> 3;
     scrnInfo.scrnPitch  = scrnInfo.scrnWidth * scrnInfo.scrnBpp;
-    //scrnInfo.scrnPitch  = pScrn->displayWidth * scrnInfo.scrnBpp;
+    /*scrnInfo.scrnPitch  = pScrn->displayWidth * scrnInfo.scrnBpp;*/
 
     ret = ioctl(pXGI->fd, XGI_IOCTL_PUT_SCREEN_INFO, &scrnInfo);
     XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIPutScreenInfo()-1\n");
@@ -2975,8 +2975,8 @@ static Bool XGIEnterVT(int scrnIndex, int flags)
         XGIEngineInit(pScrn);
     }
 
-//    if (pXGI->InitializeAccelerator)
-//        pXGI->InitializeAccelerator(pScrn);
+/*    if (pXGI->InitializeAccelerator)
+        pXGI->InitializeAccelerator(pScrn);*/
 
     pScrn->AdjustFrame(scrnIndex, pScrn->frameX0, pScrn->frameY0, 0);
 

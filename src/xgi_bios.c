@@ -168,7 +168,9 @@ Bool XGICheckModeSupported(XGIPtr pXGI,
             if(w2bw >= 135) flag = 0;
             */
         }
-        //XG47 W2 can not support above 1920 modes with 32bits color under 250/250 275/275; only don't support 20x15x32 under 300/300
+        /* XG47 W2 can not support above 1920 modes with 32bits color under 250/250 275/275; 
+	 * only don't support 20x15x32 under 300/300
+	 */
         if (((pXGI->lcdWidth >= 1920) || (pMode1->width >= 1920)) && (pMode1->pixelSize == 32))
         {
             flag = 0;
@@ -209,7 +211,7 @@ void XGIGetFlatPanelSize(XGIPtr pXGI)
     xf86ExecX86int10(pXGI->pInt10);
 
     pXGI->lcdRefRate = (CARD16)XG47GetRefreshRateByIndex((CARD8)((pXGI->pInt10->cx>>8) & 0x0F));
-    //pXGI->lcdRefRate |= (pXGI->pInt10->cx & 0x0F00);   /* Used for BW Check later. */
+    /*pXGI->lcdRefRate |= (pXGI->pInt10->cx & 0x0F00);*/   /* Used for BW Check later. */
 
     pXGI->lcdWidth = pXGI->pInt10->bx;
     pXGI->lcdHeight = pXGI->pInt10->dx;
@@ -453,28 +455,28 @@ CARD32 XGIGetDisplayAttributes(XGIPtr pXGI, CARD32 displayDevice)
         reg0 = (CARD8)INB(XGI_REG_CRX+1) & 0xE0;
         if(reg0 == 0x80)
         {
-            displayDevice &= ~ZVMX_ATTRIB_NTSC;    //PAL
+            displayDevice &= ~ZVMX_ATTRIB_NTSC;    /*PAL*/
             displayDevice &= ~ZVMX_ATTRIB_NTSCJ;
             displayDevice |= ZVMX_ATTRIB_PAL;
             displayDevice &= ~ZVMX_ATTRIB_PALM;
         }
         else if(reg0 == 0x40)
         {
-            displayDevice &= ~ZVMX_ATTRIB_PAL;    //PAL_M
+            displayDevice &= ~ZVMX_ATTRIB_PAL;    /*PAL_M*/
             displayDevice &= ~ZVMX_ATTRIB_NTSC;
             displayDevice &= ~ZVMX_ATTRIB_NTSCJ;
             displayDevice |= ZVMX_ATTRIB_PALM;
         }
         else if(reg0 == 0x20)
         {
-            displayDevice &= ~ZVMX_ATTRIB_PAL;    //NTSC-J
+            displayDevice &= ~ZVMX_ATTRIB_PAL;    /*NTSC-J*/
             displayDevice &= ~ZVMX_ATTRIB_NTSC;
             displayDevice |= ZVMX_ATTRIB_NTSCJ;
             displayDevice &= ~ZVMX_ATTRIB_PALM;
         }
         else
         {
-            displayDevice &= ~ZVMX_ATTRIB_PAL;    //NTSC
+            displayDevice &= ~ZVMX_ATTRIB_PAL;    /*NTSC*/
             displayDevice |= ZVMX_ATTRIB_NTSC;
             displayDevice &= ~ZVMX_ATTRIB_NTSCJ;
             displayDevice &= ~ZVMX_ATTRIB_PALM;
@@ -749,8 +751,8 @@ void XGICloseSecondaryView(XGIPtr pXGI)
             /* disable internal TMDS */
             OUTB(XGI_REG_GRX, 0x3d);
             OUTB(XGI_REG_GRX+1, INB(XGI_REG_GRX+1) & ~0x01);
-            //OUTB(XGI_REG_GRX, 0x43);
-            //OUTB(XGI_REG_GRX+1, INB(XGI_REG_GRX+1) & ~0x08);
+            /*OUTB(XGI_REG_GRX, 0x43);*/
+            /*OUTB(XGI_REG_GRX+1, INB(XGI_REG_GRX+1) & ~0x08);*/
             OUTB(XGI_REG_GRX, 0x46);
             OUTB(XGI_REG_GRX+1, (INB(XGI_REG_GRX+1) & ~0x38) | 0x08);
 
@@ -796,7 +798,7 @@ void XGICloseSecondaryView(XGIPtr pXGI)
             OUTB(XGI_REG_GRX,0x2C);
             OUTB(XGI_REG_GRX+1, INB(XGI_REG_GRX+1) & ~0x40);
 
-            // Turn back VCLK2
+            /* Turn back VCLK2 */
             OUTB(XGI_REG_SRX,0x1a);
             OUTB(XGI_REG_SRX+1, vclk18);
             OUTB(XGI_REG_SRX,0x1b);
@@ -937,7 +939,7 @@ Bool XGIBiosDllPunt(XGIPtr pXGI,
 /*
  * Init bios dll
  */
-//Bool XGIBiosDllInit(XGIPtr pXGI)
+/*Bool XGIBiosDllInit(XGIPtr pXGI)*/
 Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
@@ -1423,7 +1425,7 @@ static unsigned long XGIBiosSetGradValue(XGIDigitalTVRec* pDtvInfo,
     else
         val  = setValue;
 
-    val  = (val>grad) ? grad : val; // Out of range?
+    val  = (val>grad) ? grad : val; /* Out of range? */
     if (val > currVal)
     {
         pDtvInfo->delta     = (CARD16)(val - currVal);
@@ -1465,7 +1467,7 @@ Bool XGIBiosSetTVColorInfo(XGIPtr pXGI, unsigned long brightness, unsigned long 
     unsigned long        input = 0;
     Bool                 ret;
 
-    // Read three color information first.
+    /* Read three color information first. */
     ret = XGIBiosDllPunt(pXGI,
                          GET_TV_COLOR_INFORMATION,
                          (unsigned long*)&input,
@@ -1501,7 +1503,7 @@ Bool XGIBiosGetTVPosition(XGIPtr pXGI, unsigned long *pdwX, unsigned long* pdwY)
                          (unsigned long*)&input,
                          (unsigned long*)&dtvPos);
 
-    if (!ret || dtvPos.ret == 0) return FALSE; // Calling failure.
+    if (!ret || dtvPos.ret == 0) return FALSE; /* Calling failure. */
 
     *pdwX = XGIBiosGetGradValue(&dtvPos.info[0], INVALID_VALUE);
     *pdwY = XGIBiosGetGradValue(&dtvPos.info[1], INVALID_VALUE);

@@ -70,7 +70,7 @@
 #define GET_CURRENT_MV7_LEVLE           30305
 #define INIT_VIDEO_MEMORY               30307
 #define GET_NEW_TV_INTERFACE            30308
-#define SAVE_PAL_NTSC_TO_CMOS           30500   //Save TV standard to CMOS
+#define SAVE_PAL_NTSC_TO_CMOS           30500   /*Save TV standard to CMOS*/
 
 #define NON_TV_CONNECTION               0x00000000
 #define CONNECT_COMPOSITE               0x00000001

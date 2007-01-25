@@ -360,7 +360,7 @@ int XGIXvMCCreateSubpicture(ScrnInfoPtr pScrn,
 
     pitchAlign = 31;
     surfPitch = (pSubpicture->width + pitchAlign) & ~pitchAlign;
-    surfSize = surfPitch * pSubpicture->height * 2; //two subpicture surface
+    surfSize = surfPitch * pSubpicture->height * 2; /* two subpicture surface */
     pXGISubpicture = (XGIXvMCSubpictureRec *)*priv;
 
     if (!pXGI->spID)

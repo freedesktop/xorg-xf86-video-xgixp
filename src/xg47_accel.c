@@ -237,9 +237,10 @@ void XG47EngineInit(ScrnInfoPtr pScrn)
     /* unprotect all register except which protected by 3c5.0e.7 */
     bOut3c5(0x11,0x92);
 
-    // -------> copy from OT2D
-    // PCI Retry Control Register.
-    // disable PCI read retry & enable write retry in mem. (10xx xxxx)b
+    /* -------> copy from OT2D
+     * PCI Retry Control Register.
+     * disable PCI read retry & enable write retry in mem. (10xx xxxx)b
+     */
     temp = bIn3x5(0x55);
     bOut3x5(0x55, (temp & 0xbf) | 0x80);
 
@@ -409,7 +410,7 @@ Bool XG47AccelInit(ScreenPtr pScreen)
 
     accel_info.clp_x1 = 0;
     accel_info.clp_y1 = 0;
-    //accel_info.clp_x2 = pScrn->displayWidth;
+    /*accel_info.clp_x2 = pScrn->displayWidth;*/
     accel_info.clp_x2 = pScrn->virtualX;    /* Virtual width */
     accel_info.clp_y2 = pScrn->virtualY;
 
@@ -424,15 +425,15 @@ Bool XG47AccelInit(ScreenPtr pScreen)
 void XG47EnableGE(XGIPtr pXGI)
 {
     CARD32 iWait;
-    // this->vAcquireRegIOProctect();
-    // Save and close dynamic gating
+    /* this->vAcquireRegIOProctect();*/
+    /* Save and close dynamic gating */
     CARD8 bOld3cf2a = bIn3cf(0x2a);
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47EnableGE\n");
 
     bOut3cf(0x2a, bOld3cf2a & 0xfe);
 
-    // Reset both 3D and 2D engine
+    /* Reset both 3D and 2D engine */
     bOut3x5(0x36, 0x84);
     iWait = 10;
     while (iWait--)
@@ -452,17 +453,17 @@ void XG47EnableGE(XGIPtr pXGI)
     {
         INB(0x36);
     }
-    // Enable 2D engine only
+    /* Enable 2D engine only */
     bOut3x5(0x36, 0x80);
 
-	// Enable 2D+3D engine
+    /* Enable 2D+3D engine */
     bOut3x5(0x36, 0x84);
 
-    // Restore dynamic gating
+    /* Restore dynamic gating */
     bOut3cf(0x2a, bOld3cf2a);
 
-    // this->vReleaseRegIOProctect();
-    // m_b3DGEOn = FALSE;
+    /* this->vReleaseRegIOProctect();
+    m_b3DGEOn = FALSE;*/
 
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47EnableGE\n");
 }
@@ -472,8 +473,8 @@ void XG47DisableGE(XGIPtr pXGI)
     CARD32 iWait;
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47DisableGE\n");
-    // this->vAcquireRegIOProctect();
-    // Reset both 3D and 2D engine
+    /* this->vAcquireRegIOProctect();*/
+    /* Reset both 3D and 2D engine */
     bOut3x5(0x36, 0x84);
     iWait = 10;
     while (iWait--)
@@ -492,10 +493,10 @@ void XG47DisableGE(XGIPtr pXGI)
     {
         INB(0x36);
     }
-    // Disable 2D engine only
+    /* Disable 2D engine only */
     bOut3x5(0x36, 0);
-    // this->vReleaseRegIOProctect();
-    // m_b3DGEOn = FALSE;
+    /* this->vReleaseRegIOProctect();
+     m_b3DGEOn = FALSE;*/
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47DisableGE\n");
 }
 
@@ -610,10 +611,10 @@ static void XG47SetupForScreenToScreenCopy(ScrnInfoPtr pScrn,
     /* LEAVEFUNC(XG47SetupForScreenToScreenCopy); */
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SetupForScreenToScreenCopy\n");
 
-//#ifdef XGI_DUMP_DUALVIEW
-//	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForScreenToScreenCopy()----\n");
-//    XGIDumpRegisterValue(pScrn);
-//#endif
+/*#ifdef XGI_DUMP_DUALVIEW
+	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForScreenToScreenCopy()----\n");
+    XGIDumpRegisterValue(pScrn);
+#endif*/
 }
 
 static void XG47SubsequentScreenToScreenCopy(ScrnInfoPtr pScrn,
@@ -670,10 +671,10 @@ static void XG47SubsequentScreenToScreenCopy(ScrnInfoPtr pScrn,
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SubsequentScreenToScreenCopy\n");
 
 /* Jong 06/29/2006 */
-//#ifdef XGI_DUMP
-//	ErrorF("Jong06292006-XGI_DUMP-XG47SubsequentScreenToScreenCopy()----\n");
-//    XGIDumpRegisterValue(pScrn);
-//#endif
+/*#ifdef XGI_DUMP
+	ErrorF("Jong06292006-XGI_DUMP-XG47SubsequentScreenToScreenCopy()----\n");
+    XGIDumpRegisterValue(pScrn);
+#endif*/
 }
 
 void XG47SetupForSolidFill(ScrnInfoPtr pScrn,
@@ -703,10 +704,9 @@ void XG47SetupForSolidFill(ScrnInfoPtr pScrn,
 
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SetupForSolidFill\n");
 
-//#ifdef XGI_DUMP_DUALVIEW
-//	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForSolidFill()----\n");
-//    XGIDumpRegisterValue(pScrn);
-//#endif
+/*#ifdef XGI_DUMP_DUALVIEW
+	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForSolidFill()----\n");    XGIDumpRegisterValue(pScrn);
+#endif*/
 }
 
 void XG47SubsequentSolidFillRect(ScrnInfoPtr pScrn,
@@ -796,10 +796,10 @@ static void XG47SetupForMono8x8PatternFill(ScrnInfoPtr pScrn,
 
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SetupForMono8x8PatternFill\n");
 
-//#ifdef XGI_DUMP_DUALVIEW
-//	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForMono8x8PatternFill()----\n");
-//    XGIDumpRegisterValue(pScrn);
-//#endif
+/*#ifdef XGI_DUMP_DUALVIEW
+	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForMono8x8PatternFill()----\n");
+    XGIDumpRegisterValue(pScrn);
+#endif*/
 }
 
 static void XG47SubsequentMono8x8PatternFillRect(ScrnInfoPtr pScrn,
@@ -816,7 +816,7 @@ static void XG47SubsequentMono8x8PatternFillRect(ScrnInfoPtr pScrn,
 
     XG47BeginCmdList(CMDBATCH_SIZE);
 
-    // PATCH ??
+    /* PATCH ?? */
 /*
     XG47SetGECmd(ENG_DRAWINGFLAG, 0x00004000);
     XG47SetGECmd(ENG_LENGTH, 0x00010001);
@@ -914,10 +914,10 @@ static void XG47SetupForColor8x8PatternFill(ScrnInfoPtr pScrn,
 
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SetupForColor8x8PatternFill\n");
 
-//#ifdef XGI_DUMP_DUALVIEW
-//	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForColor8x8PatternFill()----\n");
-//    XGIDumpRegisterValue(pScrn);
-//#endif
+/*#ifdef XGI_DUMP_DUALVIEW
+	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForColor8x8PatternFill()----\n");
+    XGIDumpRegisterValue(pScrn);
+#endif*/
 }
 
 static void XG47SubsequentColor8x8PatternFillRect(ScrnInfoPtr pScrn,
@@ -1010,10 +1010,10 @@ static void XG47SetupForSolidLine(ScrnInfoPtr pScrn,
 
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SetupForSolidLine\n");
 
-//#ifdef XGI_DUMP_DUALVIEW
-//	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForSolidLine()----\n");
-//    XGIDumpRegisterValue(pScrn);
-//#endif
+/*#ifdef XGI_DUMP_DUALVIEW
+	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForSolidLine()----\n");
+    XGIDumpRegisterValue(pScrn);
+#endif*/
 }
 
 static void XG47SubsequentSolidHorVertLine(ScrnInfoPtr pScrn,
@@ -1283,7 +1283,7 @@ int testRWPCIE(ScrnInfoPtr pScrn)
     XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl-05292006][2D]begin test rw in kernel\n");
 
     if (!XGIPcieMemAllocate(pScrn,
-                            sz_test, // 20 byte
+                            sz_test, /* 20 byte */
                             0,
                             &hd_addr,
                             (unsigned long *)(&virt_addr)))

@@ -74,6 +74,6 @@ extern int FuncLevel;
 void XGIDebug(int level, const char *format, ...);
 #else
 #define XGIDebug(arg,...)
-#endif //DEBUG_PRINT
+#endif /*DEBUG_PRINT*/
 
-#endif //_XGI_DEBUG_H_
+#endif /*_XGI_DEBUG_H_*/

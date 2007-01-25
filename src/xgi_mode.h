@@ -32,7 +32,7 @@ typedef struct {
     CARD16  modeNo;             /* video mode number. */
     CARD16  width;              /* width of the graphic mode in pixel. */
     CARD16  height;             /* height of the graphic mode in scanline.*/
-    //CARD16  pixelSize;          /* bits/pixel of the graphic mode. */
+    /*CARD16  pixelSize;*/        /* bits/pixel of the graphic mode. */
     CARD16  refSupport[4];
     CARD16  refBIOS[4];
     CARD16  refReserved[1];
@@ -49,7 +49,7 @@ typedef struct {
 #define MODE_720x576     0x3A
 #define MODE_800x514     0x62
 #define MODE_800x600     0x62
-#define MODE_848X480     0x45      // 848x480.
+#define MODE_848X480     0x45      /* 848x480. */
 #define MODE_1024x600    0x3B
 #define MODE_1024x768    0x63
 #define MODE_1152x864    0x68
@@ -63,7 +63,7 @@ typedef struct {
 #define MODE_1400x1050   0x3C
 #define MODE_1600x1200   0x65
 #define MODE_1680x1050   0x6B
-#define MODE_1920X1080   0x44      // 1920x1080.
+#define MODE_1920X1080   0x44      /* 1920x1080. */
 #define MODE_1920x1200   0x42
 #define MODE_1920x1440   0x66
 #define MODE_2048x1536   0x67

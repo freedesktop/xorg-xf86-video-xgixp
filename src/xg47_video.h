@@ -117,7 +117,7 @@ void WaitForVBlankEnd(XGIPtr pXGI)
 
 CARD32 WaitVRetrace(XGIPtr pXGI, CARD16 flag)
 {
-    //CARD16      timeOut = 1000;
+    /*CARD16      timeOut = 1000;*/
     CARD32      vTrace = TRUE;
 
     if (flag == VGA_RETRACE)

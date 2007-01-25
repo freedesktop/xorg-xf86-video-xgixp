@@ -56,7 +56,7 @@ void XG47ResetVideo(ScrnInfoPtr pScrn)
     OUTW(0x3C4, 0x9211);
 
     XG47HwEnableVideo(pScrn);
-    // Wait vertical blank start signal.
+    /* Wait vertical blank start signal. */
     XG47WaitForSync(pScrn);
 
     /* hStart: 0x2414 hEnd: 0x2416 vStart: 0x2418 vEnd: 0x241a */
@@ -108,7 +108,7 @@ void XG47ResetVideo(ScrnInfoPtr pScrn)
      *                  <7:0>:          W1_SHARP_PAR<7:0>
      *                                  Window1 Sharp parameter
      */
-    OUTB(0x242b, 0x00);//4
+    OUTB(0x242b, 0x00);/*4*/
     /*
      * 3D4/3D5 B1  R/W  <7:0>:      LBUF0_MAX_RLEN <7:0>
      *                                  Maximum allowed length (1 ~ 256 DQWORD)
@@ -203,7 +203,7 @@ void XG47ResetVideo(ScrnInfoPtr pScrn)
 
     XG47HwSetColorKey(pScrn);
 
-    pXGIPort->id = 1;   // in order for setting Win2 colorkey
+    pXGIPort->id = 1;   /* in order for setting Win2 colorkey */
     XG47HwSetColorKey(pScrn);
     pXGIPort->id = 0;
 
@@ -260,7 +260,7 @@ void XG47HwDisableDeinterlace(ScrnInfoPtr pScrn)
 Bool XG47HwIsDetectionDone(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
     if (INDW(0x22e0) & 0x80000000)
     {
@@ -276,7 +276,7 @@ Bool XG47HwIsDetectionDone(ScrnInfoPtr pScrn)
 CARD32 XG47HwGetFieldMotion(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
     return (INDW(0x22e0) & 0x3ffff);
 }
@@ -284,7 +284,7 @@ CARD32 XG47HwGetFieldMotion(ScrnInfoPtr pScrn)
 CARD32 XG47HwGetFrameMotion(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
     return (INDW(0x22e4) & 0x3ffff);
 }
@@ -293,7 +293,7 @@ CARD32 XG47HwGetFrameMotion(ScrnInfoPtr pScrn)
 Bool XG47HwDetectedMovie(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
     if (INDW(0x22e0) & 0x200000)
     {
@@ -308,7 +308,7 @@ Bool XG47HwDetectedMovie(ScrnInfoPtr pScrn)
 Bool XG47HwDetectedMovieParity(ScrnInfoPtr pScrn)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
     if (INDW(0x22e0) & 0x80000)
     {
@@ -323,7 +323,7 @@ Bool XG47HwDetectedMovieParity(ScrnInfoPtr pScrn)
 Bool XG47HwDetectedProgressive(ScrnInfoPtr pScrn)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
     if (INDW(0x22e0) & 0x100000)
     {
@@ -338,7 +338,7 @@ Bool XG47HwDetectedProgressive(ScrnInfoPtr pScrn)
 void XG47Hw3To2DetectionDisable(ScrnInfoPtr pScrn)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
     if (INDW(0x2550) & 0x4000000)
     {
@@ -349,7 +349,7 @@ void XG47Hw3To2DetectionDisable(ScrnInfoPtr pScrn)
 void XG47Hw3To2DetectionEnable(ScrnInfoPtr pScrn)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
     if (!(INDW(0x2550) & 0x4000000))
     {
@@ -363,7 +363,7 @@ void XG47Hw3To2DetectionSetSTAddr(ScrnInfoPtr pScrn,
                                   unsigned long MVDETPFR)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
     OUTDW(0x2540, ((INDW(0x2540) & 0xfe000000 ) | ((CARD32)MVDETCURR >> 3)));
     OUTDW(0x2544, ((INDW(0x2544) & 0xfe000000 ) | ((CARD32)MVDETPFD  >> 3)));
@@ -373,7 +373,7 @@ void XG47Hw3To2DetectionSetSTAddr(ScrnInfoPtr pScrn,
 void XG47Hw3To2DetectionInitPara(ScrnInfoPtr pScrn)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
     const CARD32 FRAME_MOTION_THRESH         = 6;
     const CARD32 FIELD_MOTION_THRESH         = 6;
@@ -385,23 +385,23 @@ void XG47Hw3To2DetectionInitPara(ScrnInfoPtr pScrn)
     const CARD32 SCENE_CHANGE_THRESH         = 50000;
 
     const CARD32 FRAME_WEIGHTED_AVERAGE_NUM  = 2;
-    const CARD32 FIELD_WEIGHTED_AVERAGE_NUM  = 0; //2;
-    const CARD32 FRAME_MOVIE_NUM             = 1; // for quick movie mode recovery, but "0" will cause pendulum scene error
-    const CARD32 FIELD_MOVIE_NUM             = 3; //1;
+    const CARD32 FIELD_WEIGHTED_AVERAGE_NUM  = 0; /*2;*/
+    const CARD32 FRAME_MOVIE_NUM             = 1; /* for quick movie mode recovery, but "0" will cause pendulum scene error */
+    const CARD32 FIELD_MOVIE_NUM             = 3; /*1;*/
     const CARD32 STATIC_PATTERN_NUMBER       = 0;
 
     const CARD32 FRAME_ADAP_THRESH_FACTOR    = 3;
-    const CARD32 FIELD_ADAP_THRESH_FACTOR    = 0; //6;
+    const CARD32 FIELD_ADAP_THRESH_FACTOR    = 0; /*6;*/
     const CARD32 FRAME_ENTER_ENABLE          = 1;
     const CARD32 FIELD_ENTER_ENABLE          = 0;
     const CARD32 FRAME_QUIT_ENABLE           = 1;
-    const CARD32 FIELD_QUIT_ENABLE           = 1; // combine with FIELD_QUIT_TIGHTER=0,
-                                                 // fix Faroudja 3:2 test error when moving block flips over from bottom to top
-    const CARD32 FIELD_QUIT_RATIO            = 3; //0;
+    const CARD32 FIELD_QUIT_ENABLE           = 1; /* combine with FIELD_QUIT_TIGHTER=0,*/
+                                                 /* fix Faroudja 3:2 test error when moving block flips over from bottom to top*/
+    const CARD32 FIELD_QUIT_RATIO            = 3; /*0;*/
     const CARD32 FRAME_QUIT_TIGHTER          = 1;
     const CARD32 FIELD_QUIT_TIGHTER          = 0;
 
-    // ???
+    /* ??? */
     const CARD32 DISPLAY_QUIT_ENABLE         = 0;
     const CARD32 CAP_TIMING_INVERT           = 0;
     const CARD32 SEGMENT                     = 0;
@@ -452,7 +452,7 @@ void XG47Hw3To2DetectionInitPara(ScrnInfoPtr pScrn)
 void XG47Hw3To2DetectionSetPara(ScrnInfoPtr pScrn, Bool isTopFirst)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
     if (isTopFirst)
     {
@@ -467,7 +467,7 @@ void XG47Hw3To2DetectionSetPara(ScrnInfoPtr pScrn, Bool isTopFirst)
 void XG47HwTriggerDetection(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
     OUTDW(0x22e0, INDW(0x22e0) | 0x80000000);
 }
@@ -475,25 +475,26 @@ void XG47HwTriggerDetection(ScrnInfoPtr pScrn)
 void XG47HwClearYUV420To422(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
-    OUTDW(0x2550, INDW(0x2550) & 0xff800000); // clear [22:0]
+    OUTDW(0x2550, INDW(0x2550) & 0xff800000); /* clear [22:0] */
 }
 #if 0
 void XG47HwOverDriveLoadLUT(ScrnInfoPtr pScrn)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
 
-    // Disable Overdrive and disable write to LUT
+    /* Disable Overdrive and disable write to LUT*/
     OUTB(0x247C, ((INB(0x247C) & 0x7f) | 0x4));
 
     for (CARD16 i = 0; i < 8 * 32 * 4; i++)
     {
-        // Overdrive LUT Data Write Bus, each time fill in 4 cells
-        // 2478<23:0>:          LOD_LUT_DIN
-
-        // Overdrive LUT Address Write Bus. Higher two bits are used to select one of four 32x32 LUT.
-        // 247B<9:0>:           LOD_LUT_AIN
+        /* Overdrive LUT Data Write Bus, each time fill in 4 cells
+         * 2478<23:0>:          LOD_LUT_DIN
+	 *
+         * Overdrive LUT Address Write Bus. Higher two bits are used to select one of four 32x32 LUT.
+         * 247B<9:0>:           LOD_LUT_AIN
+	 */
 
         CARD32 dw2478 =  (OverDriveArray[4*i])           |
                         (OverDriveArray[4*i + 1] << 6)  |
@@ -506,13 +507,14 @@ void XG47HwOverDriveLoadLUT(ScrnInfoPtr pScrn)
         OUTB(0x2479, (CARD8)((dw2478 >> 8) & 0xff));
         OUTB(0x247a, (CARD8)((dw2478 >> 16) & 0xff));
 
-        // Overdrive LUT Write Enable
-        // 247B<10>:            LOD_LUT_WEB
-        //                      1: Read Only
-        //                     *0: Write only
+        /* Overdrive LUT Write Enable
+         * 247B<10>:            LOD_LUT_WEB
+         *                      1: Read Only
+         *                     *0: Write only
+	 */
         OUTB(0x247C, INB(0x247C) & ~0x4);
 
-        // Disable write to LUT
+        /* Disable write to LUT */
         OUTB(0x247C, INB(0x247C) | 0x4);
 
     }
@@ -525,28 +527,34 @@ void XG47HwOverDriveSetPara(ScrnInfoPtr pScrn)
     if (!m_pOverDriveMem)
         return;
 
-    // Window 1 LCD Overdrive Write Back Frame Buffer Start Address
-    // 2474<24:0>:          LOD_STADD
-    unsigned long LOD_addr = (m_pOverDriveMem->GetLogicAddr() - (DWORD_PTR)m_ppdev->m_pbVideoMemBase) >> 4;
+    /* Window 1 LCD Overdrive Write Back Frame Buffer Start Address
+     * 2474<24:0>:          LOD_STADD
+     */
+    unsigned long LOD_addr = (m_pOverDriveMem->GetLogicAddr() -
+	(DWORD_PTR)m_ppdev->m_pbVideoMemBase) >> 4;
+
     OUTDW(0x2474, (INDW(0x2474) & 0xff000000) | ((CARD32)LOD_addr & 0xffffff));
 
-    // Overdrive LUT content value divided by 2.
-    // 247B<11>:            LOD_DIV2
-    //                  i.e. {Content, 2’b0} => {1’b0,Content,1’b0}
+    /* Overdrive LUT content value divided by 2.
+     * 247B<11>:            LOD_DIV2
+     *                  i.e. {Content, 2’b0} => {1’b0,Content,1’b0}
+     */
     OUTB(0x247C, INB(0x247C) & ~0x8);
 
-    // 247B<14:12>          Reserved
-
-    // Overdrive Read Buffer Water Mark
-    // 247D<3:0>            RBUF_WATERMARK
-    // 247D<7:4>            WBUF_WATERMARK
+    /* 247B<14:12>          Reserved
+     *
+     * Overdrive Read Buffer Water Mark
+     * 247D<3:0>            RBUF_WATERMARK
+     * 247D<7:4>            WBUF_WATERMARK
+     */
     OUTB(0x247D, 0x8C);
 }
 
-// Enable Window1 LCD Overdrive function
-// 247B<15>:            LODEN
-//                      1: Enable
-//                     *0: Disable
+/* Enable Window1 LCD Overdrive function
+ * 247B<15>:            LODEN
+ *                      1: Enable
+ *                     *0: Disable
+ */
 void  XG47HwOverDriveEnable(ScrnInfoPtr pScrn)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
@@ -564,32 +572,33 @@ void  XG47HwOverDriveDisable()
     {
         CARD16 wVsync1, wVsync2;
 
-        // Can't turn it off at Vsync Start,
-        // From Qing Yu: Simulation shows it causes h/w hang
+        /* Can't turn it off at Vsync Start,
+         From Qing Yu: Simulation shows it causes h/w hang */
         if (IsExpansionMode())
         {
             CARD8 save3CF_30 = m_ppdev->IN3CFB(0x30);
 
-            // Enable shadow
+            /* Enable shadow */
             m_ppdev->OUT3CFB(0x30, save3CF_30 | 0x40);
 
-            // Read Vsync Start from register
+            /* Read Vsync Start from register */
             wVsync1 = (CARD16)(m_ppdev->IN3X5B(0x10))                 |
                       (CARD16)((m_ppdev->IN3X5B(0x07) & 0x04) << 6)   |
                       (CARD16)((m_ppdev->IN3X5B(0x07) & 0x80) << 2)   |
                       (CARD16)((m_ppdev->IN3X5B(0x27) & 0x20) << 5);
 
-            // Restore 3CF.30
+            /* Restore 3CF.30 */
             m_ppdev->OUT3CFB(0x30, save3CF_30);
 
-            // Adjust according to LCD size and mode
-            wVsync1 -= ((CARD16)m_ppdev->m_pHWDev->m_DeviceLimits.dwLCDHeight - (CARD16)m_ppdev->m_cyScreen);
+            /* Adjust according to LCD size and mode */
+            wVsync1 -= ((CARD16)m_ppdev->m_pHWDev->m_DeviceLimits.dwLCDHeight -
+		(CARD16)m_ppdev->m_cyScreen);
             wVsync1 += 2;
             wVsync2 = wVsync1 + 1;
         }
         else
         {
-            // Read Vsync Start from register
+            /* Read Vsync Start from register */
             wVsync1 = (CARD16)(m_ppdev->IN3X5B(0x10))                 |
                       (CARD16)((m_ppdev->IN3X5B(0x07) & 0x04) << 6)   |
                       (CARD16)((m_ppdev->IN3X5B(0x07) & 0x80) << 2)   |
@@ -607,13 +616,13 @@ void  XG47HwOverDriveDisable()
             return;
         }
 
-        // turn it off when  scan line out of W1 VSTART <-> VEND range, otherwise h/w hang.
+        /* turn it off when  scan line out of W1 VSTART <-> VEND range, otherwise h/w hang. */
         if ((wScan < wVStart) || (wScan > wVEnd))
         {
             m_ppdev->OUTB(0x247c, m_ppdev->INB(0x247c) & 0x7f);
             m_bOverDriveEnabled = FALSE;
         }
-        // hopefully we'll get chance to turn it off soon
+        /* hopefully we'll get chance to turn it off soon */
     }
 }
 #endif
@@ -623,17 +632,17 @@ void  XG47HwOverDriveDisable()
 void XG47HwEnableEdgePatch(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
-    // HW algorithm has some problem, disable this function in XG47
+    /* HW algorithm has some problem, disable this function in XG47 */
     OUTB(0x2413, INB(0x2413) | 0x40);
-    //OUTB(0x2413, INB(0x2413) & ~0x40);
+    /*OUTB(0x2413, INB(0x2413) & ~0x40);*/
 }
 
 void XG47HwDisableEdgePatch(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
 
     OUTB(0x2413, INB(0x2413) | 0x40);
 }
@@ -646,11 +655,11 @@ void XG47HwEnableInterpolation(ScrnInfoPtr pScrn, CARD32 mask)
 
     if (mask & VIDEO_INTERPOLATION_H)
     {
-        OUTB(index, INB(index) & 0xfe); //Horizontal
+        OUTB(index, INB(index) & 0xfe); /*Horizontal*/
     }
     if (mask & VIDEO_INTERPOLATION_V)
     {
-        OUTB(index, INB(index) & 0xfd); //Vertical
+        OUTB(index, INB(index) & 0xfd); /*Vertical*/
     }
 }
 
@@ -662,19 +671,19 @@ void XG47HwDisableInterpolation(ScrnInfoPtr pScrn, CARD32 mask)
 
     if (mask & VIDEO_INTERPOLATION_H)
     {
-        OUTB(index, INB(index) | 0x1); //Horizontal
+        OUTB(index, INB(index) | 0x1); /*Horizontal*/
     }
     if (mask & VIDEO_INTERPOLATION_V)
     {
-        OUTB(index, INB(index) | 0x2); //Vertical
+        OUTB(index, INB(index) | 0x2); /*Vertical*/
     }
 }
 
 int XG47HwGetHStart(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
-    //XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
-    CARD16      hTotal, hRetraceStart, hRetraceDelay, hDEODelay; // HDEO for W1.
+    /*XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;*/
+    CARD16      hTotal, hRetraceStart, hRetraceDelay, hDEODelay; /* HDEO for W1.*/
     CARD16      hStart, hSyncStart;
     CARD16      temp;
     Bool        isInW2 = (pXGI->ovlAttr & OVLST_VIDEO_ON_W2) ? TRUE : FALSE;
@@ -728,7 +737,7 @@ int XG47HwGetHStart(ScrnInfoPtr pScrn)
         hRetraceStart = In3x5(0x04) + ((In3x5(0x2B) & 8) << 5);
     }
 
-    if  ((pXGI->displayDevice & ST_DISP_TV) || (In3cf(0x5B) & ST_DISP_TV)) // TV
+    if  ((pXGI->displayDevice & ST_DISP_TV) || (In3cf(0x5B) & ST_DISP_TV)) /* TV */
     {
         /* TV don't have Horizon Retrace Delay. */
         hRetraceDelay  = 0;
@@ -859,13 +868,13 @@ void XG47HwSetBobbing(ScrnInfoPtr pScrn, Bool isOdd)
         return;
     }
 
-    data_241e = INB(0x241e) & 0xfc; // Clear movie mode
-    data_2430 = (INB(0x2430) & 0xf8) | 0x1; // Odd field shift up 1 line
-    data_2458 = 0xc4; // BOB, double buffer, TOP first, use STARTADD as TOP/BOTTOM select
+    data_241e = INB(0x241e) & 0xfc; /* Clear movie mode */
+    data_2430 = (INB(0x2430) & 0xf8) | 0x1; /* Odd field shift up 1 line */
+    data_2458 = 0xc4; /* BOB, double buffer, TOP first, use STARTADD as TOP/BOTTOM select */
 
     if (isOdd)
     {
-        data_2458 |= 0x10; //A0 Version has bug
+        data_2458 |= 0x10; /*A0 Version has bug*/
     }
 
     if(data_241e != INB(0x241e))
@@ -897,14 +906,14 @@ void XG47HwSetWeaving(ScrnInfoPtr pScrn)
         return;
     }
 
-    data_241e = INB(0x241e) & 0xfc; // Clear movie mode
+    data_241e = INB(0x241e) & 0xfc; /* Clear movie mode */
 
     if(data_241e != INB(0x241e))
     {
         OUTB(0x241e, data_241e);
     }
 
-    // Weave, use STARTADD as TOP/BOTTOM select
+    /* Weave, use STARTADD as TOP/BOTTOM select */
     if(0x88 != INB(0x2458))
     {
         OUTB(0x2458, 0x88);
@@ -936,8 +945,8 @@ void XG47HwSetMovie(ScrnInfoPtr pScrn,
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
 
-    CARD8 data_2458 = 0x81;  // Movie mode, use STARTADD as TOP/BOTTOM select
-    CARD8 data_241e = (INB(0x241e) & 0xfc) | 0x1;   // Movie mode
+    CARD8 data_2458 = 0x81;  /* Movie mode, use STARTADD as TOP/BOTTOM select */
+    CARD8 data_241e = (INB(0x241e) & 0xfc) | 0x1;   /* Movie mode */
 
     if (isParityFW)
     {
@@ -964,7 +973,7 @@ void XG47HwSetMovie(ScrnInfoPtr pScrn,
         OUTB(0x241e, data_241e);
     }
 
-    // Update refAddr according to the current SRC RECT
+    /* Update refAddr according to the current SRC RECT */
     refAddr += m_pSrcSurfaceGbl->lPitch * 2 * m_rclSrc.top + ((m_rclSrc.left + 7) & ~7) * 2;
 
     OUTDW(0x2454, (CARD32)(INDW(0x2454) & 0xe0000000 | (refAddr >> 4)));
@@ -998,10 +1007,10 @@ void XG47HwInitYUV420To422(ScrnInfoPtr pScrn)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
 
-    OUTDW(0x2550, ((INDW(0x2550) & 0xff000000 ) | (1<<23))); // enable HW update
+    OUTDW(0x2550, ((INDW(0x2550) & 0xff000000 ) | (1<<23))); /* enable HW update */
 
-    // A1 and later, A0 has bug
-    OUTB(0x2569, INB(0x2569) | 0x1); //update status after H/W process is done
+    /* A1 and later, A0 has bug */
+    OUTB(0x2569, INB(0x2569) | 0x1); /* update status after H/W process is done */
 
 }
 
@@ -1013,14 +1022,14 @@ void XG47HwSetYUV420To422(ScrnInfoPtr   pScrn,
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
     CARD32 data = 0;
-    CARD32 mask = 0xff800000; // bit[31:23] keeps no change
-    //CARD32 picW = (m_YV12SrcPitch + 15) >> 4;
-    //CARD32 picH = (m_YV12SrcHeight + 3) >> 2;
+    CARD32 mask = 0xff800000; /* bit[31:23] keeps no change */
+    /*CARD32 picW = (m_YV12SrcPitch + 15) >> 4;*/
+    /*CARD32 picH = (m_YV12SrcHeight + 3) >> 2;*/
 
-    // bit [3:0]
+    /* bit [3:0] */
     if (isField)
     {
-        data |= 0x8; // Field pic YUV420->422
+        data |= 0x8; /* Field pic YUV420->422 */
         if (!isOdd)
         {
             data |= 0x2;
@@ -1028,19 +1037,19 @@ void XG47HwSetYUV420To422(ScrnInfoPtr   pScrn,
     }
     else
     {
-        data |= 0x4; // Frame pic YUV420->422
+        data |= 0x4; /* Frame pic YUV420->422 */
     }
 
-    // bit [ 6:4] DVD frame buffer index (0~7)
+    /* bit [ 6:4] DVD frame buffer index (0~7) */
     data |= ((CARD8)srcID << 4);
-    // bit [15:7]  pic height
-    //data |= ((CARD16)picH << 7);
-    // bit [22:16] pic width
-    //data |= ((CARD8)picW << 16);
+    /* bit [15:7]  pic height */
+    /*data |= ((CARD16)picH << 7);*/
+    /* bit [22:16] pic width */
+    /*data |= ((CARD8)picW << 16);*/
 
     OUTDW(0x254c, (CARD32)((INDW(0x254c) & 0xfc000000 ) | (CARD32)targAddr >> 3));
     OUTDW(0x2550, (INDW(0x2550) & mask ) | data);
-    OUTB(0x2550,  INB(0x2550)  | 0x01); // enable
+    OUTB(0x2550,  INB(0x2550)  | 0x01); /* enable */
 }
 
 
@@ -1048,9 +1057,9 @@ void XG47HwResetYUV420To422(ScrnInfoPtr pScrn)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
 
-    OUTB(0x2553, INB(0x2553) | 0x80); // reset HW
+    OUTB(0x2553, INB(0x2553) | 0x80); /* reset HW */
     OUTB(0x2553, INB(0x2553) & 0x7f);
-    // clear busy status
+    /* clear busy status */
     OUTB(0x22e3, INB(0x22e3) & 0x7f);
 }
 
@@ -1060,12 +1069,12 @@ void XG47HwSetConvertedSrc(ScrnInfoPtr pScrn, unsigned long srcAddr)
     XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
     CARD32      currAddr;
 
-    // Src Line Buffer Level, Threshold and PageBreak for YUV422
+    /* Src Line Buffer Level, Threshold and PageBreak for YUV422 */
     OUTW(0x2410, (INW(0x2410)  & 0xfc00) | pXGIPort->lineBufLevel);
-    OUTB(0x2412, (INB(0x2412)  & 0x80) | 0x8); //m_LineBufferThresh);
-    // Src Row Byte
+    OUTB(0x2412, (INB(0x2412)  & 0x80) | 0x8); /*m_LineBufferThresh);*/
+    /* Src Row Byte */
     OUTW(0x240c, (INW(0x240c) & 0xf000) | (pXGIPort->rowByteY >> 3));
-    // Format
+    /* Format */
     OUTB(0x2428, (INB(0x2428) & 0xc0) | 0x10);
     if (pXGIPort->lineBufLevel > 0x60)
     {
@@ -1076,7 +1085,8 @@ void XG47HwSetConvertedSrc(ScrnInfoPtr pScrn, unsigned long srcAddr)
         OUTB(0x2429, INB(0x2429) & 0xe8);
     }
 
-    //currAddr = (CARD32)srcAddr + m_pSrcSurfaceGbl->lPitch * 2 * m_rclSrc.top + ((m_rclSrc.left + 7) & ~7) * 2;
+    /*currAddr = (CARD32)srcAddr + m_pSrcSurfaceGbl->lPitch * 2 * m_rclSrc.top +
+	((m_rclSrc.left + 7) & ~7) * 2;*/
     OUTDW(0x2400, (CARD32)((INDW(0x2400) & 0xe0000000) | (currAddr >> 4)));
 }
 
@@ -1253,7 +1263,7 @@ void XG47HwEnableVideo(ScrnInfoPtr pScrn)
     /* Turn on PCLK */
     if (b3x5be != bIn3x5(0xbe))
     {
-        //WaitVRetrace(pXGI, VGA_RETRACE);
+        /*WaitVRetrace(pXGI, VGA_RETRACE);*/
         XG47WaitForSync(pScrn);
         bOut3x5(0xbe, b3x5be);
     }
@@ -1285,13 +1295,13 @@ void XG47HwEnableVideo(ScrnInfoPtr pScrn)
     /* Turn on video overlay */
     if (pXGIPort->id && (b3cf81 != bIn3cf(0x81)))
     {
-        //WaitVRetrace(pXGI, VGA_RETRACE);
+        /*WaitVRetrace(pXGI, VGA_RETRACE);*/
         XG47WaitForSync(pScrn);
         bOut3cf(0x81, b3cf81);
     }
     else if (b3cf80 != bIn3cf(0x80))
     {
-        //WaitVRetrace(pXGI, VGA_RETRACE);
+        /*WaitVRetrace(pXGI, VGA_RETRACE);*/
         XG47WaitForSync(pScrn);
         bOut3cf(0x80, b3cf80);
     }
@@ -1338,13 +1348,13 @@ void XG47HwDisableVideo(ScrnInfoPtr pScrn)
     /* Turn off video overlay */
     if (pXGIPort->id && (b3cf81 != bIn3cf(0x81)))
     {
-        //WaitVRetrace(pXGI, VGA_RETRACE);
+        /*WaitVRetrace(pXGI, VGA_RETRACE);*/
         XG47WaitForSync(pScrn);
         bOut3cf(0x81, b3cf81);
     }
     else if (b3cf80 != bIn3cf(0x80))
     {
-        //WaitVRetrace(pXGI, VGA_RETRACE);
+        /*WaitVRetrace(pXGI, VGA_RETRACE);*/
         XG47WaitForSync(pScrn);
         bOut3cf(0x80, b3cf80);
     }
@@ -1352,7 +1362,7 @@ void XG47HwDisableVideo(ScrnInfoPtr pScrn)
     /* Turn off PCLK */
     if (b3x5be != bIn3x5(0xbe))
     {
-        //WaitVRetrace(pXGI, VGA_RETRACE);
+        /*WaitVRetrace(pXGI, VGA_RETRACE);*/
         XG47WaitForSync(pScrn);
         bOut3x5(0xbe, b3x5be);
     }
@@ -1680,7 +1690,7 @@ long XG47Convert(long data, long defaultValue, long min, long max)
             data = XG47LinearConvert(min, 0, min, (int)defaultValue, (int)data, 0);
         else if (data > 0)
             data = XG47LinearConvert(0, max, (int)defaultValue, max, (int)data, 0);
-        else // (Hue == 0)
+        else /* (Hue == 0) */
             data = DEFAULT_HUE;
     }
 
@@ -1764,8 +1774,8 @@ Bool XG47IsExpansionMode(ScrnInfoPtr pScrn)
 
     if (pXGI->displayDevice & (ST_DISP_LCD | ST_DISP_LCD_MV))
     {
-        //GetPanelStatus(m_ppdev);
-        //if (pXGI->deviceStatus & DEVST_PANEL_EXPANSION_ON) // Support Expansion/Centering?
+        /*GetPanelStatus(m_ppdev);*/
+        /*if (pXGI->deviceStatus & DEVST_PANEL_EXPANSION_ON)*/ /* Support Expansion/Centering? */
         {
             if (((pXGI->displayDevice & ST_DISP_LCD_MV) && !(pXGI->ovlAttr & OVLST_VIDEO_ON_W2))
                 ||
@@ -1775,7 +1785,7 @@ Bool XG47IsExpansionMode(ScrnInfoPtr pScrn)
             }
             else
             {
-                isPanelExpension = (bIn3cf(0x5d) & 0x1) ? TRUE : FALSE; // Expension/Centering
+                isPanelExpension = (bIn3cf(0x5d) & 0x1) ? TRUE : FALSE; /* Expension/Centering */
             }
         }
     }
@@ -1797,7 +1807,7 @@ void XG47PanningExpansionAdjust(ScrnInfoPtr pScrn, BoxPtr pDstBox)
     right  = (CARD16)pDstBox->x2;
     bottom = (CARD16)pDstBox->y2;
 
-    // Expand dest rect too if expansion mode ON
+    /* Expand dest rect too if expansion mode ON */
     isPanelExpension = XG47IsExpansionMode(pScrn);
     panelSizeX = pXGI->lcdWidth;
     panelSizeY = pXGI->lcdHeight;
@@ -1823,7 +1833,7 @@ void XG47PanningExpansionAdjust(ScrnInfoPtr pScrn, BoxPtr pDstBox)
     isOutOfScreen =  ((top >= panningY) || (left   >= panningX)
                      || (bottom <= 0)   || (right  <= 0));
 
-/*
+#if 0
     if (m_ppdev->m_pHWDev->m_GraCaps & GRACAPS_PANNING)
     {
         CARD16    LineShifted;
@@ -1836,7 +1846,7 @@ void XG47PanningExpansionAdjust(ScrnInfoPtr pScrn, BoxPtr pDstBox)
 
         CalculateZoomFactor(wSrcW, wSrcH, wDstW, wDstH);
 
-        // Cut top or left source for panning mode
+        /* Cut top or left source for panning mode */
         if (wTop < 0 && wBottom > 0)
         {
             LineShifted = -wTop;
@@ -1859,7 +1869,7 @@ void XG47PanningExpansionAdjust(ScrnInfoPtr pScrn, BoxPtr pDstBox)
         m_rclSrc.top  += (long)srcTopAdjusted;
         m_rclSrc.left += (long)srcLeftAdjusted;
     }
-*/
+#endif
     if (right - left < 16)  right = left + 16;
 
     pDstBox->x1 = left;
@@ -1939,13 +1949,13 @@ void XG47HwResetMC(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
 
-    // 2281 bit[1:0] set to 2'b10, reset MC and PCIE request
+    /* 2281 bit[1:0] set to 2'b10, reset MC and PCIE request */
     OUTB(0x2281, (INB(0x2281) & 0xfc) | 0x2);
 
-    // 2358 bit 31=1'b1 means PCIE request finished reset
+    /* 2358 bit 31=1'b1 means PCIE request finished reset */
     while(!(INB(0x235b) & 0x80));
 
-    // MC Control Register, MC on
+    /* MC Control Register, MC on */
     OUTB(0x2281, 0x1);
 }
 
@@ -1959,27 +1969,28 @@ void XG47HwSetIDCTorMC(ScrnInfoPtr pScrn)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
 
-    // This is to XP's new feather of use seperate 4 decode output buffer.
-    // 2282[5]: Seperate Display and Decode Command 0: combine 1: seperate
-    // 2282[3]: Surface Type 0: MVCA Surface 1: YUV Planner mode
+    /* This is to XP's new feather of use seperate 4 decode output buffer.
+     * 2282[5]: Seperate Display and Decode Command 0: combine 1: seperate
+     * 2282[3]: Surface Type 0: MVCA Surface 1: YUV Planner mode
+     */
     if (pXGI->dvdAttr & DVDCAPS_HW_DXVA_IDCT)
     {
         if (pXGI->dvdAttr & DVDCAPS_HW_DXVA_USE_NV12)
-            OUTB(0x2282, 0xfc); // Support IDCT & MC using NV12
+            OUTB(0x2282, 0xfc); /* Support IDCT & MC using NV12 */
         else
-            OUTB(0x2282, 0xf8); // Support IDCT & MC using YV12
+            OUTB(0x2282, 0xf8); /* Support IDCT & MC using YV12 */
 
-        OUTB(0x2283, 0x02 | 0x04); // Enable 8-uncompressed-buffer mode and disable bits swap
+        OUTB(0x2283, 0x02 | 0x04); /* Enable 8-uncompressed-buffer mode and disable bits swap */
         pXGI->dvdAttr = ((pXGI->dvdAttr & ~DVDST_DECODE_MASK) | DVDST_IDCT_DXVA_ON);
     }
     else
     {
         if (pXGI->dvdAttr & DVDCAPS_HW_DXVA_USE_NV12)
-            OUTB(0x2282, 0xec); // Support MC only using NV12
+            OUTB(0x2282, 0xec); /* Support MC only using NV12 */
         else
-            OUTB(0x2282, 0xe8); // Support MC only using YV12
+            OUTB(0x2282, 0xe8); /* Support MC only using YV12 */
 
-        OUTB(0x2283, 0x02); // Enable 8-uncompressed-buffer mode
+        OUTB(0x2283, 0x02); /* Enable 8-uncompressed-buffer mode */
         pXGI->dvdAttr = ((pXGI->dvdAttr & ~DVDST_DECODE_MASK) | DVDST_MC_DXVA_ON);
     }
 
@@ -1994,10 +2005,10 @@ void XG47HwEnableSubpicture(ScrnInfoPtr pScrn)
     XGIPtr      pXGI = XGIPTR(pScrn);
     XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
 
-    // Set W2 RGB8 format
+    /* Set W2 RGB8 format */
     OUTB(0x24a8, (INB(0x24a8) & 0xf8) | 0x01);
 
-    // Select SP index in low 4 bits (Bit2) & Enable SubPicture(Bit1)
+    /* Select SP index in low 4 bits (Bit2) & Enable SubPicture(Bit1) */
     if (pXGIPort->spMode == FOURCC_IA44)
     {
         OUTB(0x2470, INB(0x2470) & ~0x02);
@@ -2006,33 +2017,34 @@ void XG47HwEnableSubpicture(ScrnInfoPtr pScrn)
     {
         OUTB(0x2470, INB(0x2470) & ~0x06);
     }
-    // Disable W2 Horizontal interpolation & Bypass W2 CSC
+    /* Disable W2 Horizontal interpolation & Bypass W2 CSC */
     OUTB(0x24aa, INB(0x24aa) | 0x01);
-    OUTB(0x24a9, INB(0x24a9) | 0x18); //temp bypass HSCB
+    OUTB(0x24a9, INB(0x24a9) | 0x18); /*temp bypass HSCB*/
 
-    // Clear W2 Sharpness factor. it will cause subtitle hairy
-    // low 3 bits is factor, high 5 bits is threshold (Only take effect when factor non-zero),
+    /* Clear W2 Sharpness factor. it will cause subtitle hairy
+     * low 3 bits is factor, high 5 bits is threshold (Only take effect when factor non-zero),
+     */
     OUTB(0x24ab, INB(0x24ab) & ~0x07);
 
-    // W2 line buffer
+    /* W2 line buffer */
     OUTW(0x2490, (INW(0x2490) & 0xfc00) | (unsigned short)(((pXGIPort->spWidth >> 4) + 7) & ~7));
-    // Line Buffer Threshold as 0 to eliminate subpicture noise
+    /* Line Buffer Threshold as 0 to eliminate subpicture noise */
     OUTB(0x2492, (INB(0x2492) & 0x80) | 0);
 
-    // W2 Src Row Byte
+    /* W2 Src Row Byte */
     OUTW(0x248c, (INW(0x248c) & 0xf000) | (unsigned short)(pXGIPort->spPitch >> 4));
     OUTB(0x248d, INB(0x248d) & 0xf0);
 
-    // Set W2 RGB FIFO mode
+    /* Set W2 RGB FIFO mode */
     OUTB(0x24a9, (INB(0x24a9) & 0xf8) | 0x02);
 
-    // Set W2 using Windows Key and Color Key
+    /* Set W2 using Windows Key and Color Key */
     OUTB(0x24c0, 0xc0);
 
-    // Enable W2 Alpha
+    /* Enable W2 Alpha */
     OUTB(0x24c2, INB(0x24c2) | 0x01);
 
-    // Enable W2 colorkey
+    /* Enable W2 colorkey */
     OUTB(0x24c2, INB(0x24c2) | 0x10);
 }
 
@@ -2047,7 +2059,7 @@ Bool XG47SubpictureEnable(ScrnInfoPtr pScrn)
     {
         XG47HwEnableSubpicture(pScrn);
 
-        // Enable Video W2
+        /* Enable Video W2 */
         XG47WaitForSync(pScrn);
         OUT3CFB(0x81, IN3CFB(0x81) | 0x01);
         OUTB(0x2470, INB(0x2470)  | 0x02);
@@ -2064,20 +2076,20 @@ void XG47SubpictureDisable(ScrnInfoPtr pScrn, Bool isKillOrHide)
 
     if (pXGIPort->spStatus != DVD_SP_DISABLED)
     {
-        if (isKillOrHide == TRUE) // Kill
+        if (isKillOrHide == TRUE) /* Kill */
         {
-            // Disable Subpicture
+            /* Disable Subpicture */
             OUTB(0x2470, INB(0x2470)  & ~0x02);
-            // Disable 2nd VE
-            //temp
-            //WaitForBlankStart;
+            /* Disable 2nd VE */
+            /*temp*/
+            /*WaitForBlankStart;*/
             OUT3CFB(0x81, IN3CFB(0x81) & ~0x01);
 
             pXGIPort->spStatus = DVD_SP_DISABLED;
         }
         else
         {
-            // Just hide.
+            /* Just hide. */
             OUTB(0x2496, INB(0x2494));
             OUTB(0x2497, (INB(0x2497) & 0xf0) | (INB(0x2495) & 0xf));
             OUTB(0x249a, INB(0x2498));
@@ -2099,7 +2111,9 @@ void XG47SubpictureAdjustRect(ScrnInfoPtr pScrn)
 
     w1ZoomX  = pXGIPort->zoomX;
     w1ZoomY  = pXGIPort->zoomY;
-    // When change color depth, Zoom is zero since ppdev is re-initailized, make it 0x400 which means no zoom at all.
+    /* When change color depth, Zoom is zero since ppdev is re-initailized,
+     * make it 0x400 which means no zoom at all.
+     */
     if (0 == w1ZoomY)
     {
         w1ZoomY = 0x400;
@@ -2116,7 +2130,7 @@ void XG47SubpictureAdjustRect(ScrnInfoPtr pScrn)
 
     if (w1SrcBox.x1 >= spDstBox.x2)
     {
-        // whole subpicture cut out.
+        /* whole subpicture cut out. */
         spSrcBox.x1 = spDstBox.x1 = 0;
         spSrcBox.x2 = spDstBox.x2 = 1;
         spSrcBox.y1 = spDstBox.y1 = 0;
@@ -2136,7 +2150,7 @@ void XG47SubpictureAdjustRect(ScrnInfoPtr pScrn)
 
     if (w1SrcBox.y1 >= spDstBox.y2)
     {
-        // whole subpicture cut out.
+        /* whole subpicture cut out. */
         spSrcBox.x1 = spDstBox.x1 = 0;
         spSrcBox.x2 = spDstBox.x2 = 1;
         spSrcBox.y1 = spDstBox.y1 = 0;
@@ -2154,7 +2168,7 @@ void XG47SubpictureAdjustRect(ScrnInfoPtr pScrn)
         spDstBox.y2 -=  w1SrcBox.y1;
     }
 
-    // enlarge dest to screen size, and adjust the destination position (for PowerDVD align issue)
+    /* enlarge dest to screen size, and adjust the destination position (for PowerDVD align issue) */
     if (spDstBox.y1)
         spDstBox.y1 = (spDstBox.y1 - 1) * 1024 / w1ZoomY;
     if (spDstBox.y2)
@@ -2192,9 +2206,9 @@ void XG47SubpictureSetDest(ScrnInfoPtr pScrn)
     spSrcBox = pXGIPort->spSrcBox;
     spDstBox = pXGIPort->spDstBox;
 
-    // Set W2 STARTADDR
+    /* Set W2 STARTADDR */
     OUTDW(0x2480, (CARD32)(startAddr >> 4));
-    // Colorkey & Colorkey Mask
+    /* Colorkey & Colorkey Mask */
     OUTDW(0x24b8, (INDW(0x24b8) & 0xc0000000) | (INDW(0x2438) & 0x3fffffff));
     OUTDW(0x24bc, (INDW(0x24bc) & 0xc0000000) | (INDW(0x243c) & 0x3fffffff));
 

@@ -175,7 +175,7 @@ void XGIDumpRegisterValue(ScrnInfoPtr pScrn)
     int             i, j;
     unsigned char   temp;
 
-    // 0x3C5
+    /* 0x3C5 */
     ErrorF("\n==================0x%x===============\n", 0x3C5);
 
     for(i=0; i<0x10; i++)
@@ -203,7 +203,7 @@ void XGIDumpRegisterValue(ScrnInfoPtr pScrn)
         ErrorF("\n");
     }
 
-    // 0x3D5
+    /* 0x3D5 */
     ErrorF("\n==================0x%x===============\n", 0x3D5);
     for(i=0; i<0x10; i++)
     {
@@ -230,7 +230,7 @@ void XGIDumpRegisterValue(ScrnInfoPtr pScrn)
         ErrorF("\n");
     }
 
-    // 0x3CF
+    /* 0x3CF */
     ErrorF("\n==================0x%x===============\n", 0x3CF);
     for(i=0; i<0x10; i++)
     {

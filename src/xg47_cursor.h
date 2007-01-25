@@ -30,20 +30,20 @@
 #define _XG47_CURSOR_H_
 
 #define  ST_CURSORTYPE_MASK    0x000F
-#define  ST_MONO_CURSOR        0x0001    // mono cursor
-#define  ST_COLOR_CURSOR       0x0002    // color cursor
-#define  ST_ALPHA_CURSOR       0x0004    // alpha cursor
+#define  ST_MONO_CURSOR        0x0001    /* mono cursor */
+#define  ST_COLOR_CURSOR       0x0002    /* color cursor */
+#define  ST_ALPHA_CURSOR       0x0004    /* alpha cursor */
 
 #define  ST_CURSORSIZE_MASK    0x00F0
-#define  ST_32X32_CURSOR       0x0020    // 32x32
-#define  ST_64X64_CURSOR       0x0040    // 64x64
-#define  ST_128X128_CURSOR     0x0080    // 128x128
+#define  ST_32X32_CURSOR       0x0020    /* 32x32 */
+#define  ST_64X64_CURSOR       0x0040    /* 64x64 */
+#define  ST_128X128_CURSOR     0x0080    /* 128x128 */
 
-#define  ST_CURSOR_VISIBLE     0x0100    // cursor is visible
+#define  ST_CURSOR_VISIBLE     0x0100    /* cursor is visible */
 
 #define  ST_CURSORDIS_MASK     0xC000
-#define  ST_CURSOR_ON_W2       0x8000    // cursor on W2
-#define  ST_CURSOR_ON_CRTC     0x4000    // cursor on CRTC
+#define  ST_CURSOR_ON_W2       0x8000    /* cursor on W2 */
+#define  ST_CURSOR_ON_CRTC     0x4000    /* cursor on CRTC */
 
 #define  CSOR_FMT_MASK         0x3000
 #define  CSOR_FMT_A8R8B8G8     0x2000
@@ -52,11 +52,13 @@
 #define  MAX_64X64_CURSOR_SIZE    0x4000
 #define  MAX_128X128_CURSOR_SIZE  0x10000
 
-#define  MAX_HW_HEADS               8    // max of hardware externsion
+#define  MAX_HW_HEADS               8    /* max of hardware externsion */
 
-//-----------------------------------------------------------------------------
-// Cusor control registers
-//-----------------------------------------------------------------------------
+/*
+ *-----------------------------------------------------------------------------
+ * Cusor control registers
+ *-----------------------------------------------------------------------------
+ */
 #define AGI_CURSOR_HLOW             0x40
 #define AGI_CURSOR_HHIGH            0x41
 #define AGI_CURSOR_VLOW             0x42

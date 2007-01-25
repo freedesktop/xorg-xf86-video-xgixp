@@ -347,7 +347,7 @@ static XF86VideoAdaptorPtr XG47SetupImageVideo(ScreenPtr pScreen)
     xvmcSubpictureIndex = MAKE_ATOM("XVMC_SUBPICTURE_INDEX");
     xvmcMode  = MAKE_ATOM("XVMC_MODE");
 
-    //xvmcSubSrcX, xvmcSubSrcY, xvmcSubDstX, xvmcSubDstY, xvmcSubW, xvmcSubH;
+    /*xvmcSubSrcX, xvmcSubSrcY, xvmcSubDstX, xvmcSubDstY, xvmcSubW, xvmcSubH;*/
 
     XG47ResetVideo(pScrn);
 
@@ -424,7 +424,7 @@ static void XG47StopVideo(ScrnInfoPtr pScrn,
     {
         if(pXGIPort->videoStatus & CLIENT_VIDEO_ON)
         {
-            //XG47DisableVideo(pScrn);
+            /*XG47DisableVideo(pScrn);*/
 
             XG47WaitForSync(pScrn);
 
@@ -465,7 +465,7 @@ static void XG47StopVideo(ScrnInfoPtr pScrn,
              *                                  1: DTV Format
              *                                  *0: CCIR Format
              */
-            //OUTB(0x2450, INB(0x2450) & ~0x04);
+            /*OUTB(0x2450, INB(0x2450) & ~0x04);*/
         }
 
         if(pXGIPort->linear)
@@ -535,7 +535,7 @@ static int XG47SetPortAttribute(ScrnInfoPtr pScrn,
         pXGIPort->contrast = value;
         XG47HwSetVideoContrast(pScrn);
     }
-//#ifdef XVMC
+/*#ifdef XVMC*/
     else if (attribute == xvmcMode)
     {
         pXGIPort->mode = value;
@@ -548,7 +548,7 @@ static int XG47SetPortAttribute(ScrnInfoPtr pScrn,
     {
         pXGIPort->uncompressIndex = value;
     }
-//#endif
+/*#endif*/
     else
         return BadMatch;
 
@@ -585,7 +585,7 @@ static int XG47GetPortAttribute(ScrnInfoPtr pScrn,
     {
         *pValue = pXGIPort->contrast;
     }
-//#ifdef XVMC
+/*#ifdef XVMC*/
     else if (attribute == xvmcMode)
     {
         *pValue = pXGIPort->mode;
@@ -598,7 +598,7 @@ static int XG47GetPortAttribute(ScrnInfoPtr pScrn,
     {
         *pValue = pXGIPort->uncompressIndex;
     }
-//#endif
+/*#endif*/
     else
         return BadMatch;
 
@@ -904,7 +904,7 @@ static int XG47DisplayVideoWithYV12(ScrnInfoPtr pScrn,
         left <<= 1;
         pDstStart += left;
         nlines = ((y2 + 0xFFFF) >> 16) - top;
-        //XG47CopyDataYUY2ToYV12();
+        /*XG47CopyDataYUY2ToYV12();*/
         break;
     }
 
@@ -1647,10 +1647,10 @@ static int XG47PutVideo(ScrnInfoPtr pScrn,
 	/* Jong 11/28/2006; test */
 	ErrorF("Jong-XG47PutVideo()...XvMC...\n");
 
-    //ErrorF("XVMC index = %x\n", pXGIPort->uncompressIndex);
-    //ErrorF("XVMC mode  = %s\n", pXGIPort->mode == WEAVE ? "Weave" : "Bob");
-    //ErrorF("XVMC subpictureIndex = %s\n", pXGIPort->subpictureIndex ? "Enable" : "Disable");
-    //ErrorF("XVMC subpictureIndex = %x\n", pXGIPort->subpictureIndex);
+    /*ErrorF("XVMC index = %x\n", pXGIPort->uncompressIndex);*/
+    /*ErrorF("XVMC mode  = %s\n", pXGIPort->mode == WEAVE ? "Weave" : "Bob");*/
+    /*ErrorF("XVMC subpictureIndex = %s\n", pXGIPort->subpictureIndex ? "Enable" : "Disable");*/
+    /*ErrorF("XVMC subpictureIndex = %x\n", pXGIPort->subpictureIndex);*/
 
     pXGIPort->videoStatus  = CLIENT_VIDEO_ON;
     pXGIPort->vidMode      = VIDEOMODE_YV12;

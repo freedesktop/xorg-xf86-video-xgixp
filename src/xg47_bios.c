@@ -59,20 +59,20 @@ extern ScreenPtr g_pScreen;
  */
 const CARD16 XG47RefreshTable[] = {
     0,
-    44,                                     // VVMX_INDEX_REF44
-    48,                                     // ZVMX_INDEX_REF48
-    0xb2,                                   //50i
-    0x132,                                  //50r
-    50,                                     //50
-    0xbc,                                   //60i
-    0x13c,                                  //60r
-    60,                                     // ZVMX_INDEX_REF60
-    70,                                     // ZVMX_INDEX_REF70
-    72,                                     // ZVMX_INDEX_REF72
-    75,                                     // ZVMX_INDEX_REF75
-    85,                                     // ZVMX_INDEX_REF85
-    100,                                    // ZVMX_INDEX_REF90
-    120,                                    // ZVMX_INDEX_REF95
+    44,                                     /* VVMX_INDEX_REF44 */
+    48,                                     /* ZVMX_INDEX_REF48 */
+    0xb2,                                   /* 50i */
+    0x132,                                  /* 50r */
+    50,                                     /* 50 */
+    0xbc,                                   /* 60i */
+    0x13c,                                  /* 60r */
+    60,                                     /* ZVMX_INDEX_REF60 */
+    70,                                     /* ZVMX_INDEX_REF70 */
+    72,                                     /* ZVMX_INDEX_REF72 */
+    75,                                     /* ZVMX_INDEX_REF75 */
+    85,                                     /* ZVMX_INDEX_REF85 */
+    100,                                    /* ZVMX_INDEX_REF90 */
+    120,                                    /* ZVMX_INDEX_REF95 */
 };
 
 /*
@@ -279,9 +279,9 @@ void XG47CloseAllDevice(XGIPtr pXGI, CARD8 device2Close)
              * because BIOS skip shadow and LCD on/off control.
              * So we turn centering bit off here.
              */
-            OUTB(XGI_REG_GRX, 0x69);      //Vertical
+            OUTB(XGI_REG_GRX, 0x69);      /*Vertical*/
             OUTB(XGI_REG_GRX+1, INB(XGI_REG_GRX+1)&~0x80);
-            OUTB(XGI_REG_GRX, 0x6d);      //Horizontal
+            OUTB(XGI_REG_GRX, 0x6d);      /*Horizontal*/
             OUTB(XGI_REG_GRX+1, INB(XGI_REG_GRX+1)&~0x80);
 
             /* Disable scaling */
@@ -399,7 +399,7 @@ void XG47OpenAllDevice(XGIPtr pXGI, CARD8 device2Open)
         /* CRT on */
         OUTB(XGI_REG_GRX, 0x33);
         OUTB(XGI_REG_GRX+1, (CARD8)INB(XGI_REG_GRX+1) | 0x20);
-        //Sync on
+        /* Sync on */
         OUTB(XGI_REG_GRX,0x23);
         OUTB(XGI_REG_GRX+1,(CARD8)INB(XGI_REG_GRX+1) & ~0x03);
     }
@@ -415,17 +415,18 @@ void XG47OpenAllDevice(XGIPtr pXGI, CARD8 device2Open)
             OUTB(XGI_REG_GRX, 0x44);
             OUTB(XGI_REG_GRX+1, INB(XGI_REG_GRX+1)|0x03);
 
-            //we already control the H/V DE control on/off in BIOS code
-            /* Eable centering
+            /*we already control the H/V DE control on/off in BIOS code*/
+            /*Enable centering*/
+#if 0
             OUTB(XGI_REG_GRX, 0x5d);
             if ((INB(XGI_REG_GRX+1) & GRAF_EXPANSION) == 0)
             {
-                OUTB(XGI_REG_GRX, 0x69);      //Vertical
+                OUTB(XGI_REG_GRX, 0x69);      /*Vertical*/
                 OUTB(XGI_REG_GRX+1, INB(XGI_REG_GRX+1) | 0x80);
-                OUTB(XGI_REG_GRX, 0x6d);      //Horizontal
+                OUTB(XGI_REG_GRX, 0x6d);      /*Horizontal*/
                 OUTB(XGI_REG_GRX+1, INB(XGI_REG_GRX+1) | 0x80);
             }
-            */
+#endif
 
             /* Enable scaling */
             OUTB(XGI_REG_GRX, 0xd1);
@@ -624,20 +625,22 @@ void XG47OpenAllDevice(XGIPtr pXGI, CARD8 device2Open)
  * from bios dll: modeset.c
  */
 
-//Input
-//  device:  Bit3~0: DVI/TV/CRT/LCD
-//  index:   the index to the mode table: XG47ModeTable
-//  modeNum: the BIOS mode number
-//  colorIndex:   the color index
-//    0x2 - 8  bpp
-//    0x6 - 16 bpp
-//    0x8 - 32 bpp A8R8G8B8
-//    0xA - 32 bpp A2R10G10B10
-//Modification
-//  Update the mode table: myVideoModeInfoTable in first time call
-//Return
-//   refresh rates supported by specified video mode and device (See BIOS spec: Get refresh rate support for definition)
-//
+/*Input
+ *  device:  Bit3~0: DVI/TV/CRT/LCD
+ *  index:   the index to the mode table: XG47ModeTable
+ *  modeNum: the BIOS mode number
+ *  colorIndex:   the color index
+ *    0x2 - 8  bpp
+ *    0x6 - 16 bpp
+ *    0x8 - 32 bpp A8R8G8B8
+ *    0xA - 32 bpp A2R10G10B10
+ *Modification
+ *  Update the mode table: myVideoModeInfoTable in first time call
+ *Return
+ *   refresh rates supported by specified video mode and device
+ *   (See BIOS spec: Get refresh rate support for definition)
+ *
+ */
 CARD16 XGIGetRefreshSupport(XGIPtr pXGI, CARD8 device, CARD8 index, CARD16 modeNum, CARD16 colorIndex)
 {
     XGIModePtr  pModeTable = XG47ModeTable;
@@ -905,9 +908,9 @@ Bool XG47GetValidMode(XGIPtr pXGI,
         if(ret_value > pXGI->freeFbSize)  return FALSE;
 
         pMode1->modeNo &= ~0x7F;
-        //pMode1->modeNo |= (CARD16)XGIConvertResToModeNo(pMode1->width,
-        //                                                pMode1->height,
-        //                                                pMode1->pixelSize);
+        /*pMode1->modeNo |= (CARD16)XGIConvertResToModeNo(pMode1->width,
+                                                        pMode1->height,
+                                                        pMode1->pixelSize);*/
 
 		/* Jong 09/16/2006; can't get valid mode from table !!! */
         for (k = 0; k < XG47ModeTableSize; k++)
@@ -1081,9 +1084,9 @@ Bool XG47GetValidMode(XGIPtr pXGI,
         if(ret_value > pXGI->freeFbSize)  return FALSE;
 
         pMode1->modeNo &= ~0x7F;
-        //pMode1->modeNo |= (CARD16)XGIConvertResToModeNo(pMode1->width,
-        //                                                pMode1->height,
-        //                                                pMode1->pixelSize);
+        /*pMode1->modeNo |= (CARD16)XGIConvertResToModeNo(pMode1->width,
+                                                        pMode1->height,
+                                                        pMode1->pixelSize);*/
         for (k = 0; k < XG47ModeTableSize; k++)
         {
             if ((pModeTable[k].width == pMode1->width)
@@ -1344,11 +1347,11 @@ void XG47BiosValueInit(ScrnInfoPtr pScrn)
     OUTB(XGI_REG_CRX, 0x5D);
     if(INB(XGI_REG_CRX + 1) & 0x01 )
     {
-        pXGI->maxBandwidth = pXGI->maxBandwidth * 8;    //32bit, DDR *4*2 --> *8
+        pXGI->maxBandwidth = pXGI->maxBandwidth * 8;    /* 32bit, DDR *4*2 --> *8 */
     }
     else
     {
-        pXGI->maxBandwidth = pXGI->maxBandwidth * 16;   //64bit, DDR *8*2 --> *16
+        pXGI->maxBandwidth = pXGI->maxBandwidth * 16;   /* 64bit, DDR *8*2 --> *16 */
     }
 
     pXGI->maxBandwidth = (CARD16)(((CARD32)pXGI->maxBandwidth * 60) / 100);
@@ -1643,8 +1646,8 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         }
 
 		/* Jong 10/04/2006; use code segment instead from "dualView == 0x02" */
-        // pXGI->pInt10->bx |= ((CARD16)XGIConvertResToModeNo(pMode0->width, pMode0->height)
-        //                     | (pMode0->modeNo & 0x80)) << 8;
+        /* pXGI->pInt10->bx |= ((CARD16)XGIConvertResToModeNo(pMode0->width, pMode0->height)
+                             | (pMode0->modeNo & 0x80)) << 8;*/
 
         pXGI->pInt10->cx = (modeSpec << 8) | (pMode0->refRate & 0x01FF);
 
@@ -1759,8 +1762,8 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
 	/* Jong 09/21/2006; dualView == 0x02 indicate second view? right? */ 
     if(dualView == 0x02)
     {
-        //Moved to miniport
-        //XGICloseSecondaryView(pXGI);
+        /*Moved to miniport*/
+        /*XGICloseSecondaryView(pXGI);*/
 
 		/* Jong 09/21/2006; what is this for ??? */
         if(condition & SUPPORT_W2_CLOSE)
@@ -1780,7 +1783,7 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         OUTB(XGI_REG_GRX+1, (INB(XGI_REG_GRX+1) & ~0xF0) | want_3cf_5a);
 
 		/* Jong 10/04/2006; debug different modes for dual view */
-		//--------------------------------------------------------
+		/*--------------------------------------------------------*/
         modeSpec |= XGIGetColorIndex(pMode1->pixelSize);
         if (modeSpec & 0x08)        /* 32 bit true color */
         {
@@ -1789,7 +1792,7 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
 
 		/* Jong 10/04/2006; test with hard code */
 		/* modeSpec = 0x8; */
-		//--------------------------------------------------------
+		/*--------------------------------------------------------*/
 
 		/* Jong 09/21/2006; call BIOS to set mode */
         pXGI->pInt10->ax = 0x1200;
@@ -1949,7 +1952,7 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         {
             OUTB(XGI_REG_GRX,0x5a);
             OUTB(XGI_REG_CRX,0x5a);
-            if((INB(XGI_REG_GRX+1) & 0x80) && (INB(XGI_REG_CRX+1) & 0x04))  // single sync digital
+            if((INB(XGI_REG_GRX+1) & 0x80) && (INB(XGI_REG_CRX+1) & 0x04))  /* single sync digital */
             {
                 w2_hend--;
                 /* Horizontal Zoom */
@@ -2218,8 +2221,8 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
             OUTB(XGI_REG_CRX, 0xC0);
             if(INB(XGI_REG_CRX+1) & 0x80)
                 temp_x += 0x14;
-            //else
-            //    temp_x += 0x04;
+            /*else
+                temp_x += 0x04;*/
 
             OUTB(XGI_REG_CRX, 0xD2);
             OUTB(XGI_REG_CRX+1, temp_x);
@@ -2311,7 +2314,7 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
                 modeinfo[1] = 768;
             }
         }
-        modeinfo[3] = 1;                    //only one true color format(32bit)
+        modeinfo[3] = 1;                    /*only one true color format(32bit)*/
 
         if (pXGI->pBiosDll->biosDtvCtrl)
             (*pXGI->pBiosDll->biosDtvCtrl)(pScrn,
@@ -2339,7 +2342,7 @@ int XG47BiosSpecialFeature(ScrnInfoPtr pScrn,
     {
     case GET_FLAT_PANEL_INFORMATION:
         x = (CARD16 *)pOutBuf;
-        //x[0] = wPanelSize;
+        /*x[0] = wPanelSize;*/
         x[1] = pXGI->lcdWidth;
         x[2] = pXGI->lcdHeight;
         x[3] = pXGI->lcdType;
@@ -2383,7 +2386,7 @@ int XG47BiosSpecialFeature(ScrnInfoPtr pScrn,
         {
             CARD32 dwNewIF = 0;
 
-            // Query DTV to know new interface or not.
+            /* Query DTV to know new interface or not. */
             if (pXGI->pBiosDll->biosDtvCtrl)
             {
                 (*pXGI->pBiosDll->biosDtvCtrl)(pScrn, (CARD32)GET_NEW_TV_INTERFACE, 0, (unsigned long*)&dwNewIF);
@@ -2398,20 +2401,20 @@ int XG47BiosSpecialFeature(ScrnInfoPtr pScrn,
         xd=(CARD32 *)pInBuf;
         pXGI->pInt10->ax = 0x1280;
         pXGI->pInt10->bx = 0x0214;
-        if(xd[0]==0) pXGI->pInt10->bx |= 0x1000;   //PAL
-        if(xd[1]!=0) pXGI->pInt10->bx |= 0x0100;   //TV Native mode
-        if(xd[2]!=0) pXGI->pInt10->bx |=0x4000;   //multiview
+        if(xd[0]==0) pXGI->pInt10->bx |= 0x1000;   /*PAL*/
+        if(xd[1]!=0) pXGI->pInt10->bx |= 0x0100;   /*TV Native mode*/
+        if(xd[2]!=0) pXGI->pInt10->bx |=0x4000;   /*multiview*/
         pXGI->pInt10->num = 0x10;
         xf86ExecX86int10(pXGI->pInt10);
 
         if((pXGI->pInt10->ax & 0xFF00)!=0) return FALSE;
-        if(pXGI->pInt10->bx <= 50) return FALSE;  //For old BIOS !!!
+        if(pXGI->pInt10->bx <= 50) return FALSE;  /* For old BIOS !!! */
         xd=(CARD32 *)pOutBuf;
-        xd[0]=(CARD32)pXGI->pInt10->bx;        //H-Size
-        xd[1]=(CARD32)pXGI->pInt10->cx;        //V-Size
+        xd[0]=(CARD32)pXGI->pInt10->bx;        /*H-Size*/
+        xd[1]=(CARD32)pXGI->pInt10->cx;        /*V-Size*/
         return TRUE;
 
-    // Zdu, 10/8/98, Close second view for DOS FULL Screen
+    /* Zdu, 10/8/98, Close second view for DOS FULL Screen */
     case CLOSE_SECOND_VIEW:
         XGICloseSecondaryView(pXGI);
         return TRUE;
@@ -2521,7 +2524,7 @@ Bool XG47BiosDTVControl(ScrnInfoPtr pScrn,
         *y = (CARD32)XG47SetTVColorInformation(pXGI, z, x[0]);
         break;
     case GET_NEW_TV_INTERFACE:
-        y[0] = 1; // Support here.
+        y[0] = 1; /* Support here. */
         break;
     case LINE_BEATING:
         XG47LineBeating(pXGI, (Bool)x[0]);

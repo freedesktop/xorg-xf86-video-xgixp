@@ -51,15 +51,15 @@ static CARD32   dwHandle;
 XGIDigitalTVModeRec XG47DTVModeTable[] = {
 {
   MONITOR_X640, MONITOR_Y432,BITSPIXEL_08,
-  { { 0x00, 0x00, 0x14, 0x0A, 0x00, 0x04 },          //NTSC H
-    { 0x00, 0x00, 0x0A, 0x05, 0x00, 0x02 },          //     V
-    { 0x00, 0x00, 0x20, 0x20, 0x00, 0x02 },          //     Tint
-    { 0x00, 0x00, 0x20, 0x10, 0x00, 0x02 },          //     Saturation
-    { 0x00, 0x00, 0x20, 0x10, 0x00, 0x01 },          //     Bright
-    { 0x00, 0x00, 0x04, 0x03, 0x00, 0x01 }           //     Flicker
+  { { 0x00, 0x00, 0x14, 0x0A, 0x00, 0x04 },          /*NTSC H*/
+    { 0x00, 0x00, 0x0A, 0x05, 0x00, 0x02 },          /*     V*/
+    { 0x00, 0x00, 0x20, 0x20, 0x00, 0x02 },          /*     Tint*/
+    { 0x00, 0x00, 0x20, 0x10, 0x00, 0x02 },          /*     Saturation*/
+    { 0x00, 0x00, 0x20, 0x10, 0x00, 0x01 },          /*     Bright*/
+    { 0x00, 0x00, 0x04, 0x03, 0x00, 0x01 }           /*     Flicker*/
   },
-    //low,  high, swing,def, curr, delta
-  { { 0x00, 0x00, 0x14, 0x0A, 0x00, 0x04 },          //PAL  H
+    /*low,  high, swing,def, curr, delta*/
+  { { 0x00, 0x00, 0x14, 0x0A, 0x00, 0x04 },          /*PAL  H*/
     { 0x00, 0x00, 0x0A, 0x05, 0x00, 0x02 },
     { 0x00, 0x00, 0x20, 0x20, 0x00, 0x02 },
     { 0x00, 0x00, 0x20, 0x10, 0x00, 0x02 },
@@ -155,7 +155,7 @@ XGIDigitalTVModeRec XG47DTVModeTable[] = {
 {
   MONITOR_X1024,MONITOR_Y768,BITSPIXEL_08,
   { { 0x00, 0x00, 0x14, 0x0A, 0x00, 0x04 },
-    { 0x00, 0x00, 0x0A, 0x05, 0x00, 0x01 },   //0x02
+    { 0x00, 0x00, 0x0A, 0x05, 0x00, 0x01 },   /*0x02*/
     { 0x00, 0x00, 0x20, 0x20, 0x00, 0x02 },
     { 0x00, 0x00, 0x20, 0x10, 0x00, 0x02 },
     { 0x00, 0x00, 0x20, 0x10, 0x00, 0x01 },
@@ -274,7 +274,7 @@ XGIDigitalTVModeRec XG47DTVModeTable[] = {
 {
   MONITOR_X1024,MONITOR_Y768,BITSPIXEL_16,
   { { 0x00, 0x00, 0x14, 0x0A, 0x00, 0x04 },
-    { 0x00, 0x00, 0x0A, 0x05, 0x00, 0x01 },   //0x02
+    { 0x00, 0x00, 0x0A, 0x05, 0x00, 0x01 },   /*0x02*/
     { 0x00, 0x00, 0x20, 0x20, 0x00, 0x02 },
     { 0x00, 0x00, 0x20, 0x10, 0x00, 0x02 },
     { 0x00, 0x00, 0x20, 0x10, 0x00, 0x01 },
@@ -393,7 +393,7 @@ XGIDigitalTVModeRec XG47DTVModeTable[] = {
 {
   MONITOR_X1024,MONITOR_Y768,BITSPIXEL_32,
   { { 0x00, 0x00, 0x14, 0x0A, 0x00, 0x04 },
-    { 0x00, 0x00, 0x0A, 0x05, 0x00, 0x01 },   //0x02
+    { 0x00, 0x00, 0x0A, 0x05, 0x00, 0x01 },   /*0x02*/
     { 0x00, 0x00, 0x20, 0x20, 0x00, 0x02 },
     { 0x00, 0x00, 0x20, 0x10, 0x00, 0x02 },
     { 0x00, 0x00, 0x20, 0x10, 0x00, 0x01 },
@@ -416,8 +416,8 @@ static unsigned long XG47DTVModeTableSize = sizeof(XG47DTVModeTable)/sizeof(XGID
 CARD8 lumai[]= { 0xb8, 0xb9, 0xba, 0xbb };
 CARD8 chroi[]= { 0xbc, 0xbd, 0xbe, 0xbf };
 CARD8 luma[][4] = {
-    {0x80, 0x00, 0x80, 0x00},   //By-pass
-    {0xc0, 0x00, 0x00, 0x00},   //
+    {0x80, 0x00, 0x80, 0x00},   /*By-pass*/
+    {0xc0, 0x00, 0x00, 0x00},
     {0xcc, 0x9a, 0x00, 0x00},
     {0xb4, 0x0c, 0x00, 0x00},
     {0xb3, 0xa0, 0x06, 0x00},
@@ -426,7 +426,7 @@ CARD8 luma[][4] = {
     {0xa0, 0x9b, 0x10, 0x05}
 };
 CARD8 chro[][4] = {
-    {0x00, 0x00, 0x80, 0x00},   //By-pass
+    {0x00, 0x00, 0x80, 0x00},   /*By-pass*/
     {0x40, 0x00, 0x00, 0x00},
     {0x4c, 0x9a, 0x00, 0x00},
     {0x34, 0x0c, 0x00, 0x00},
@@ -435,7 +435,7 @@ CARD8 chro[][4] = {
     {0x26, 0x9e, 0x0d, 0x02},
     {0x20, 0x9b, 0x10, 0x05}
 };
-CARD8 conv[] = { 1, 3, 5, 7 };    //select table
+CARD8 conv[] = { 1, 3, 5, 7 };    /*select table*/
 
 void XG47SetDefaultFlickerValue(XGIPtr pXGI, CARD16 i)
 {
@@ -481,7 +481,7 @@ Bool XG47SetTVFlickerInformation(XGIPtr pXGI, XGIDigitalTVRec *pDtv, CARD32 inde
 
 CARD16 XG47GetFlickerIndex()
 {
-    //CARD16 index;
+    /*CARD16 index;*/
     return(0);
 }
 
@@ -500,31 +500,31 @@ CARD8 ntsc_mv7i[4][MV7_REG] =
 {
  {0x00, 0x17, 0x21, 0x1B, 0x1B, 0x24, 0x0F, 0x0F, 0x60, 0x05, 0x04, 0x01,
   0x03, 0x0A, 0x05, 0x00, 0xFF, 0x03, 0x0F, 0x78, 0x00, 0x00, 0x00, 0x15,
-  0x05, 0x15 },  //Levle0
+  0x05, 0x15 },  /*Level0*/
  {0x36, 0x17, 0x21, 0x1B, 0x1B, 0x24, 0x0F, 0x0F, 0x60, 0x05, 0x02, 0x01,
   0x03, 0x0B, 0x03, 0x0F, 0xF3, 0x03, 0x0F, 0x78, 0x00, 0x00, 0x00, 0x15,
-  0x05, 0x15 },  //Level1
+  0x05, 0x15 },  /*Level1*/
  {0x3E, 0x1D, 0x25, 0x1B, 0x1B, 0x24, 0x0F, 0x0F, 0x60, 0x01, 0x04, 0x01,
   0x00, 0x0A, 0x05, 0x00, 0xFF, 0x03, 0x0F, 0x78, 0x00, 0x00, 0x00, 0x11,
-  0x07, 0x11 },  //Level2
+  0x07, 0x11 },  /*Level2*/
  {0x3E, 0x17, 0x21, 0x1B, 0x1B, 0x24, 0x0F, 0x0F, 0x60, 0x05, 0x04, 0x01,
   0x02, 0x0A, 0x05, 0x00, 0xFF, 0x03, 0x0F, 0x78, 0x00, 0x00, 0x00, 0x15,
-  0x05, 0x15 }  //Level3
+  0x05, 0x15 }  /*Level3*/
 };
 CARD8 pal_mv7i[4][MV7_REG] =
 {
  {0x00, 0x1A, 0x2A, 0x1C, 0x3D, 0x14, 0xFE, 0x7E, 0x60, 0x05, 0x07, 0x00,
   0x00, 0x08, 0x04, 0x00, 0x55, 0x01, 0x07, 0x7E, 0x02, 0x54, 0x00, 0x22,
-  0x02, 0x22 },     //Levle0
+  0x02, 0x22 },     /*Level0*/
  {0x36, 0x1A, 0x2A, 0x1C, 0x3D, 0x14, 0xFE, 0x7E, 0x60, 0x05, 0x07, 0x00,
   0x00, 0x08, 0x04, 0x00, 0x55, 0x01, 0x07, 0x7E, 0x02, 0x54, 0x00, 0x22,
-  0x02, 0x22 },     //Levle1
+  0x02, 0x22 },     /*Levle1*/
  {0x36, 0x1A, 0x2A, 0x1C, 0x3D, 0x14, 0xFE, 0x7E, 0x60, 0x05, 0x07, 0x00,
   0x00, 0x08, 0x04, 0x00, 0x55, 0x01, 0x07, 0x7E, 0x02, 0x54, 0x00, 0x22,
-  0x02, 0x22 },     //Level2
+  0x02, 0x22 },     /*Level2*/
  {0x36, 0x1A, 0x2A, 0x1C, 0x3D, 0x14, 0xFE, 0x7E, 0x60, 0x05, 0x07, 0x00,
   0x00, 0x08, 0x04, 0x00, 0x55, 0x01, 0x07, 0x7E, 0x02, 0x54, 0x00, 0x22,
-  0x02, 0x22 }      //Level3
+  0x02, 0x22 }      /*Level3*/
 };
 
 #define CVE2IDX 11
@@ -535,14 +535,14 @@ CARD8 cve2indexi[CVE2IDX] =
 
 CARD8 cve2ntsci[2][CVE2IDX] =
 {
- {0xC6, 0x00, 0x46, 0x02, 0x4A, 0x00, 0x3C, 0x00, 0x48, 0xA3, 0xCA},//En
- {0xC8, 0x00, 0x46, 0x02, 0x3C, 0x00, 0x3C, 0x00, 0x10, 0xA3, 0xCA} //Dis
+ {0xC6, 0x00, 0x46, 0x02, 0x4A, 0x00, 0x3C, 0x00, 0x48, 0xA3, 0xCA},/*En*/
+ {0xC8, 0x00, 0x46, 0x02, 0x3C, 0x00, 0x3C, 0x00, 0x10, 0xA3, 0xCA} /*Dis*/
 };
 CARD8 cve2pali[2][CVE2IDX] =
 {
- {0xBC, 0x01, 0x33, 0x00, 0x3E, 0x03, 0x33, 0x00, 0x10, 0x9C, 0xC0},//En
- {0xC8, 0x00, 0x3E, 0x03, 0x3E, 0x03, 0x3E, 0x03, 0x10, 0x9C, 0xC0} //Dis
-//0xD2/0xC8,  0x3F -Dis update
+ {0xBC, 0x01, 0x33, 0x00, 0x3E, 0x03, 0x33, 0x00, 0x10, 0x9C, 0xC0},/*En*/
+ {0xC8, 0x00, 0x3E, 0x03, 0x3E, 0x03, 0x3E, 0x03, 0x10, 0x9C, 0xC0} /*Dis*/
+/*0xD2/0xC8,  0x3F -Dis update*/
 };
 
 CARD16 MV7SetRegisters(XGIPtr pXGI, CARD16 aps)
@@ -556,7 +556,7 @@ CARD16 MV7SetRegisters(XGIPtr pXGI, CARD16 aps)
         m_MV7_APS = aps & 0x03;
 
     OUTB(XGI_REG_CRX, 0xc0);
-    if((CARD8)INB(XGI_REG_CRX+1) & 0x80)      //PAL
+    if((CARD8)INB(XGI_REG_CRX+1) & 0x80)      /*PAL*/
     {
         pMV7 = pal_mv7i[aps];
 
@@ -567,7 +567,7 @@ CARD16 MV7SetRegisters(XGIPtr pXGI, CARD16 aps)
         for(length = 0; length < CVE2IDX; length++)
             XG47SetExternalRegister(pXGI, cve2indexi[length], *(pMV7+length));
 
-        //Black,White level depend on bios for Dis
+        /*Black,White level depend on bios for Dis*/
         if(!aps)
         {
             XG47SetExternalRegister(pXGI, 0x0E, I2C0E);
@@ -576,7 +576,7 @@ CARD16 MV7SetRegisters(XGIPtr pXGI, CARD16 aps)
             XG47SetExternalRegister(pXGI, 0x1F, I2C1F);
         }
     }
-    else                                           //NTSC
+    else                                           /*NTSC*/
     {
         pMV7 = ntsc_mv7i[aps];
 
@@ -586,7 +586,7 @@ CARD16 MV7SetRegisters(XGIPtr pXGI, CARD16 aps)
         for(length = 0; length < CVE2IDX; length++)
             XG47SetExternalRegister(pXGI, cve2indexi[length], *(pMV7+length));
 
-        //Black,White level depend on bios for Dis
+        /*Black,White level depend on bios for Dis*/
         if(!aps)
         {
             XG47SetExternalRegister(pXGI, 0x0E, I2C0E);
@@ -602,9 +602,9 @@ CARD16 MV7SetRegisters(XGIPtr pXGI, CARD16 aps)
 CARD16 MV7GetInformation()
 {
     if(biosCapability & BIOS_MV7_DISABLED)
-        return 0;       //MV7 not support
+        return 0;       /*MV7 not support*/
     else
-        return 3;       //MV7 support
+        return 3;       /*MV7 support*/
 }
 
 CARD16 MV7GetLevel()
@@ -618,7 +618,7 @@ Bool XG47EnableTV(XGIPtr pXGI, unsigned long enableTV)
     Bool    isClearBit = FALSE, retVal = FALSE;
     CARD8   reg3X5_C2 = In3x5(0xc2);
 
-    // clear TV protection bit to enable writing TV registers (CBAi1/XP/Napa2)
+    /* clear TV protection bit to enable writing TV registers (CBAi1/XP/Napa2)*/
     if(reg3X5_C2 & 0x40)
     {
         reg3X5_C2 = reg3X5_C2 & 0xbf;
@@ -626,10 +626,10 @@ Bool XG47EnableTV(XGIPtr pXGI, unsigned long enableTV)
         isClearBit = TRUE;
     }
 
-    // initialize TV registers
+    /* initialize TV registers */
     pXGI->pInt10->ax = 0x120e;
     pXGI->pInt10->bx = 0x0214;
-    pXGI->pInt10->cx = enableTV;    // 1: Enable, 0: Disable
+    pXGI->pInt10->cx = enableTV;    /* 1: Enable, 0: Disable */
     pXGI->pInt10->num = 0x10;
     xf86ExecX86int10(pXGI->pInt10);
 
@@ -663,13 +663,13 @@ unsigned long XG47IsTVConnected(XGIPtr pXGI)
 
     pXGI->pInt10->ax = 0x1280;
     pXGI->pInt10->bx = 0x0114;
-    pXGI->pInt10->num = 0x10;   // 1: Enable, 0: Disable
+    pXGI->pInt10->num = 0x10;   /* 1: Enable, 0: Disable */
     xf86ExecX86int10(pXGI->pInt10);
 
-    //status = NO_ERROR ? pXGI->pInt10->bx & 0xff : 0;
+    /*status = NO_ERROR ? pXGI->pInt10->bx & 0xff : 0;*/
     status = pXGI->pInt10->bx & 0xff;
 
-     // Old TV, or DTV detached or detect failed
+     /* Old TV, or DTV detached or detect failed */
     if ((pXGI->pInt10->ax >> 8) & 0xff || !pXGI->pInt10->bx)
     {
         status = 0;
@@ -801,7 +801,7 @@ unsigned long XG47DetectTVConnection(XGIPtr pXGI)
     OUTB(XGI_REG_CRX,0xd7);
 
     suspend = INB(XGI_REG_CRX+1);
-    OUTB(XGI_REG_CRX+1, (CARD8)suspend & ~0xa0); //Enable TV, DAC to TV
+    OUTB(XGI_REG_CRX+1, (CARD8)suspend & ~0xa0); /*Enable TV, DAC to TV*/
     OUTB(XGI_REG_GRX,0x27);
     path = INB(XGI_REG_GRX+1);
     if (path & 2)
@@ -812,18 +812,18 @@ unsigned long XG47DetectTVConnection(XGIPtr pXGI)
          */
         XG47SetExternalRegister(pXGI, 0xa0, tv_a0 | 8);
         OUTB(XGI_REG_GRX,0x27);
-        OUTB(XGI_REG_GRX+1, (CARD8)path & ~0x02);    //TV GPIO  Path
+        OUTB(XGI_REG_GRX+1, (CARD8)path & ~0x02);    /*TV GPIO  Path*/
     }
 
     XG47SetExternalRegister(pXGI, 0xa1, 0x56);
-    XG47DelayTimer(pXGI, 320);     //10mS
-    if (tv_a0 & 4)          //S-video
+    XG47DelayTimer(pXGI, 320);     /*10mS*/
+    if (tv_a0 & 4)          /*S-video*/
     {
         tv_a8 = XG47GetExternalRegister(pXGI, (CARD16)0xa8) & 0x10;
         if (!tv_a8)
         {
             XG47SetExternalRegister(pXGI, 0xa0, (XG47GetExternalRegister(pXGI, 0xa0) & ~0x04) | 0x01);
-            XG47DelayTimer(pXGI, 320);     //10mS
+            XG47DelayTimer(pXGI, 320);     /*10mS*/
             tv_a8 = ((XG47GetExternalRegister(pXGI, (CARD16)0xa8) & 0x30) == 0x20) ? 0x20 : 0;
         }
     }
@@ -833,7 +833,7 @@ unsigned long XG47DetectTVConnection(XGIPtr pXGI)
         if (!tv_a8)
         {
             XG47SetExternalRegister(pXGI, 0xa0, (XG47GetExternalRegister(pXGI, 0xa0) & ~0x01) | 0x04);
-            XG47DelayTimer(pXGI, 320);     //10mS
+            XG47DelayTimer(pXGI, 320);     /*10mS*/
             tv_a8 = XG47GetExternalRegister(pXGI, (CARD16)0xa8) & 0x10;
         }
     }
@@ -841,9 +841,9 @@ unsigned long XG47DetectTVConnection(XGIPtr pXGI)
     XG47SetExternalRegister(pXGI, 0xa0, tv_a0);
 
     OUTB(XGI_REG_CRX,0xd7);
-    OUTB(XGI_REG_CRX+1, suspend); //suspend
+    OUTB(XGI_REG_CRX+1, suspend); /*suspend*/
     OUTB(XGI_REG_GRX,0x27);
-    OUTB(XGI_REG_GRX+1, path);    //TV GPIO Path
+    OUTB(XGI_REG_GRX+1, path);    /*TV GPIO Path*/
 
     device = 0x00;
     if(tv_a8 & 0x20) device |= 0x01;
@@ -865,7 +865,7 @@ void XG47InitTVScreen(XGIPtr pXGI, CARD16 xRes, CARD16 yRes, CARD16 color, CARD1
     CARD16  cal, cal2, offset;
     CARD8   tvDAC, tv_d7;
 
-    //Is it support mode?
+    /*Is it support mode?*/
     if (XG47GetCurrentTable(pXGI, xRes,yRes,color))
     {
         currentXRes = xRes;
@@ -877,22 +877,22 @@ void XG47InitTVScreen(XGIPtr pXGI, CARD16 xRes, CARD16 yRes, CARD16 color, CARD1
         return;
     }
 
-    //enable TV
+    /*enable TV*/
     OUTB(XGI_REG_CRX, 0xd7);
     tv_d7 = INB(XGI_REG_CRX+1);
-    OUTB(XGI_REG_CRX+1, (tv_d7 & 0xDF));    //clear bit5
+    OUTB(XGI_REG_CRX+1, (tv_d7 & 0xDF));    /*clear bit5*/
 
     tvDAC = (CARD8)XG47GetExternalRegister(pXGI, 0xa0);
-    XG47SetExternalRegister(pXGI, 0xa0, 0x00);    //Dis TV
-    I2C0E = XG47GetExternalRegister(pXGI, 0x0E);  //Keep BIOS data
+    XG47SetExternalRegister(pXGI, 0xa0, 0x00);    /*Dis TV*/
+    I2C0E = XG47GetExternalRegister(pXGI, 0x0E);  /*Keep BIOS data*/
     I2C0F = XG47GetExternalRegister(pXGI, 0x0F);
     I2C1E = XG47GetExternalRegister(pXGI, 0x1E);
     I2C1F = XG47GetExternalRegister(pXGI, 0x1F);
-    //I2C20 = XG47GetExternalRegister(pXGI, 0x20);
-    //I2C22 = XG47GetExternalRegister(pXGI, 0x22);
+    /*I2C20 = XG47GetExternalRegister(pXGI, 0x20);*/
+    /*I2C22 = XG47GetExternalRegister(pXGI, 0x22);*/
 
-    //Calibration logic from BIOS value to Logical minal value
-    //Horizontal
+    /*Calibration logic from BIOS value to Logical minal value*/
+    /*Horizontal*/
     cal  = (XG47GetExternalRegister(pXGI, 0x95)<<8) & 0x1f00;
     cal |= XG47GetExternalRegister(pXGI, 0x94);
     offset = pXGI->pDtvInfo[HTOTAL].defoffset * pXGI->pDtvInfo[HTOTAL].delta;
@@ -905,18 +905,18 @@ void XG47InitTVScreen(XGIPtr pXGI, CARD16 xRes, CARD16 yRes, CARD16 color, CARD1
     cal += offset;
     pXGI->pDtvInfo[HTOTAL].high    = cal;
 
-    //Vertical
+    /*Vertical*/
     cal  = (XG47GetExternalRegister(pXGI, 0x8f)<<4) & 0x0f00;
-    cal |= XG47GetExternalRegister(pXGI, 0x8e);                  //V start
+    cal |= XG47GetExternalRegister(pXGI, 0x8e);                  /*V start*/
     cal2 = (XG47GetExternalRegister(pXGI, 0x8f)<<8) & 0x0f00;
-    cal2|= XG47GetExternalRegister(pXGI, 0x90);                  //V end
+    cal2|= XG47GetExternalRegister(pXGI, 0x90);                  /*V end*/
     offset = pXGI->pDtvInfo[VTOTAL].defoffset * pXGI->pDtvInfo[VTOTAL].delta;
     cal += offset;
     cal2+= offset;
     pXGI->pDtvInfo[VTOTAL].low  = cal;
     pXGI->pDtvInfo[VTOTAL].high = cal2;
 
-    //Tint
+    /*Tint*/
     XG47SetExternalRegister(pXGI, 0x25, 0x00);
     XG47DelayTimer(pXGI, 1);
     cal = 0x00;
@@ -924,31 +924,31 @@ void XG47InitTVScreen(XGIPtr pXGI, CARD16 xRes, CARD16 yRes, CARD16 color, CARD1
     pXGI->pDtvInfo[TINT].low    = (cal - offset);
     pXGI->pDtvInfo[TINT].high   = 0x00;
 
-    //Saturation
-    //XG47SetExternalRegister(pXGI, 0x20, I2C20);
-    //XG47SetExternalRegister(pXGI, 0x22, I2C22);
+    /*Saturation*/
+    /*XG47SetExternalRegister(pXGI, 0x20, I2C20);*/
+    /*XG47SetExternalRegister(pXGI, 0x22, I2C22);*/
     offset = pXGI->pDtvInfo[SATUR].defoffset * pXGI->pDtvInfo[SATUR].delta;
     pXGI->pDtvInfo[SATUR].low   = XG47GetExternalRegister(pXGI, 0x20) - offset;
     pXGI->pDtvInfo[SATUR].high  = XG47GetExternalRegister(pXGI, 0x22) - offset;
 
-    //Bright
+    /*Bright*/
     XG47SetExternalRegister(pXGI, 0x1e, I2C1E);
     XG47SetExternalRegister(pXGI, 0x1f, I2C1F);
     cal = I2C1E;
     offset = pXGI->pDtvInfo[BRIGHT].defoffset * pXGI->pDtvInfo[BRIGHT].delta;
     pXGI->pDtvInfo[BRIGHT].low  = cal - offset;
 
-    //Flicker
-    //TVX2
+    /*Flicker*/
+    /*TVX2*/
     pXGI->pDtvInfo[FLICKER].low = XG47GetFlickerIndex();
     pXGI->pDtvInfo[FLICKER].high=0x00;
 
     MV7SetRegisters(pXGI, m_MV7_APS);
-    //LoadSetting_I();                     //Get the curoffset save value
+    /*LoadSetting_I();*/                    /*Get the curoffset save value*/
 
     XG47SetExternalRegister(pXGI, 0xa0, (CARD8)tvDAC);
 
-    //restore TV
+    /*restore TV*/
     OUTB(XGI_REG_CRX,0xd7);
     OUTB(XGI_REG_CRX+1, tv_d7);
 }
@@ -974,14 +974,14 @@ void XG47ConvertTVMode(XGIPtr pXGI, CARD16 isPAL)
         return;
 
     tv_a0= XG47GetExternalRegister(pXGI, 0xA0);
-    XG47SetExternalRegister(pXGI, 0xA0, (CARD16)(tv_a0 & ~0x5));//Disable TV out
+    XG47SetExternalRegister(pXGI, 0xA0, (CARD16)(tv_a0 & ~0x5));/*Disable TV out*/
 
     pXGI->pInt10->ax =0x120E;
     pXGI->pInt10->bx =0x0114;
     pXGI->pInt10->cx = (CARD8)isPAL;
     pXGI->pInt10->num = 0x10;
     xf86ExecX86int10(pXGI->pInt10);
-    XG47SetExternalRegister(pXGI, 0xA0, tv_a0);//Enable TV out
+    XG47SetExternalRegister(pXGI, 0xA0, tv_a0);/*Enable TV out*/
 }
 
 /*
@@ -1013,11 +1013,11 @@ void XG47LineBeating(XGIPtr pXGI, Bool ctrl)
     if(ctrl)
     {
         XG47SetExternalRegister(pXGI, 0xAD,0x02);
-        XG47DelayTimer(pXGI, 160);      //5mS
+        XG47DelayTimer(pXGI, 160);      /*5mS*/
         XG47SetExternalRegister(pXGI, 0xAD,0x06);
-        XG47DelayTimer(pXGI, 640);      //20mS
+        XG47DelayTimer(pXGI, 640);      /*20mS*/
         XG47SetExternalRegister(pXGI, 0xAD,0x02);
-        XG47DelayTimer(pXGI, 160);      //5mS
+        XG47DelayTimer(pXGI, 160);      /*5mS*/
         XG47SetExternalRegister(pXGI, 0xAD,0x03);
     }
     else
@@ -1036,7 +1036,7 @@ void XG47ControlTVDisplay(XGIPtr pXGI, Bool ctrl)
 
     if(ctrl)
     {
-        //For W2 TV output setting.
+        /*For W2 TV output setting.*/
         if(!XG47GetExternalRegister(pXGI, (CARD16)0xa0))
         {
             OUTB(XGI_REG_CRX, 0xd7);
@@ -1048,36 +1048,36 @@ void XG47ControlTVDisplay(XGIPtr pXGI, Bool ctrl)
             else TV_set = 0x00;
             XG47SetExternalRegister(pXGI, 0xa0, TV_set);
         }
-        //TV on
+        /*TV on*/
         OUTB(XGI_REG_CRX, 0xd1);
         OUTB(XGI_REG_CRX+1, (CARD8)INB(XGI_REG_CRX+1) | 0xe0);
-        //TV enable 3D5.D7
+        /*TV enable 3D5.D7*/
         OUTB(XGI_REG_CRX, 0xd7);
         OUTB(XGI_REG_GRX, 0x55);
-        if(INB(XGI_REG_GRX+1)&0x04)       // Check TV_DPMS status, 1: DPMS on, LCD should turn off.
+        if(INB(XGI_REG_GRX+1)&0x04)       /* Check TV_DPMS status, 1: DPMS on, LCD should turn off. */
         {
-            OUTB(XGI_REG_CRX+1, (CARD8)INB(XGI_REG_CRX+1) | 0x20); //Disable TV
+            OUTB(XGI_REG_CRX+1, (CARD8)INB(XGI_REG_CRX+1) | 0x20); /*Disable TV*/
         }
         else
         {
-            OUTB(XGI_REG_CRX+1, (CARD8)INB(XGI_REG_CRX+1) & ~0x20); //Enable TV
+            OUTB(XGI_REG_CRX+1, (CARD8)INB(XGI_REG_CRX+1) & ~0x20); /*Enable TV*/
         }
         OUTB(XGI_REG_GRX, 0x27);
-        OUTB(XGI_REG_GRX+1, (CARD8)INB(XGI_REG_GRX+1) & ~0x02);  //TV GPIO  Path
+        OUTB(XGI_REG_GRX+1, (CARD8)INB(XGI_REG_GRX+1) & ~0x02);  /*TV GPIO  Path*/
     }
     else
     {
-        //TV off
+        /*TV off*/
         OUTB(XGI_REG_CRX,0xd1);
         OUTB(XGI_REG_CRX+1, (CARD8)INB(XGI_REG_CRX+1) & ~0xe0);
-        //TV suspend 3D5.D7
+        /*TV suspend 3D5.D7*/
         OUTB(XGI_REG_CRX,0xd7);
-        OUTB(XGI_REG_CRX+1, (CARD8)INB(XGI_REG_CRX+1) | 0x20); //suspend
+        OUTB(XGI_REG_CRX+1, (CARD8)INB(XGI_REG_CRX+1) | 0x20); /*suspend*/
         OUTB(XGI_REG_GRX,0x27);
-        OUTB(XGI_REG_GRX+1, (CARD8)INB(XGI_REG_GRX+1) | 0x02);  //TV GPIO Path
+        OUTB(XGI_REG_GRX+1, (CARD8)INB(XGI_REG_GRX+1) | 0x02);  /*TV GPIO Path*/
 
     }
-    //TV dummy
+    /*TV dummy*/
     XG47GetExternalRegister(pXGI, 0x3e);
 }
 
@@ -1091,17 +1091,17 @@ CARD32 XG47GetTVColorItems()
 
 Bool XG47GetTVColorInformation(XGIPtr pXGI, XGIDigitalTVRec *pDtv, CARD32 index)
 {
-    //TINT
+    /*TINT*/
     pDtv[0].maxLevel1 = pXGI->pDtvInfo[TINT].swingwid;
     pDtv[0].maxLevel2 = pXGI->pDtvInfo[TINT].defoffset;
     pDtv[0].delta     = pXGI->pDtvInfo[TINT].delta;
     pDtv[0].direction = pXGI->pDtvInfo[TINT].curoffset;
-    //SATURATION
+    /*SATURATION*/
     pDtv[1].maxLevel1 = pXGI->pDtvInfo[SATUR].swingwid;
     pDtv[1].maxLevel2 = pXGI->pDtvInfo[SATUR].defoffset;
     pDtv[1].delta     = pXGI->pDtvInfo[SATUR].delta;
     pDtv[1].direction = pXGI->pDtvInfo[SATUR].curoffset;
-    //BRIGHTNESS
+    /*BRIGHTNESS*/
     pDtv[2].maxLevel1 = pXGI->pDtvInfo[BRIGHT].swingwid;
     pDtv[2].maxLevel2 = pXGI->pDtvInfo[BRIGHT].defoffset;
     pDtv[2].delta     = pXGI->pDtvInfo[BRIGHT].delta;
@@ -1114,7 +1114,7 @@ Bool XG47SetTVColorInformation(XGIPtr pXGI, XGIDigitalTVRec *pDtv, CARD32 index)
 {
     CARD16 wCal, wCal2;
 
-    //TINT
+    /*TINT*/
     if(!(index & SET_DEFAULT_POSITION))
     {
         pXGI->pDtvInfo[TINT].curoffset = (CARD8)pDtv[0].direction;
@@ -1124,7 +1124,7 @@ Bool XG47SetTVColorInformation(XGIPtr pXGI, XGIDigitalTVRec *pDtv, CARD32 index)
 
     XG47SetExternalRegister(pXGI, 0x25,(CARD16)(wCal & 0xff));
 
-    //Saturation
+    /*Saturation*/
     if(!(index & SET_DEFAULT_POSITION))
     {
         pXGI->pDtvInfo[SATUR].curoffset = (CARD8)pDtv[1].direction;
@@ -1134,7 +1134,7 @@ Bool XG47SetTVColorInformation(XGIPtr pXGI, XGIDigitalTVRec *pDtv, CARD32 index)
     XG47SetExternalRegister(pXGI, 0x20, (CARD16)(wCal & 0xff));
     XG47SetExternalRegister(pXGI, 0x22, (CARD16)(wCal2& 0xff));
 
-    //Bright
+    /*Bright*/
     if(!(index & SET_DEFAULT_POSITION))
     {
         pXGI->pDtvInfo[BRIGHT].curoffset = (CARD8)pDtv[2].direction;
@@ -1171,7 +1171,7 @@ Bool XG47GetTVScreenPosition(XGIPtr pXGI, XGIDigitalTVRec *pDtv, CARD32 index)
 Bool XG47SetTVScreenPosition(XGIPtr pXGI, XGIDigitalTVRec *pDtv, CARD32 index)
 {
     CARD16 wCal, wCal2, wCal3;
-    //int i, j;
+    /*int i, j;*/
 
     if(index & SET_DEFAULT_POSITION)
     {
@@ -1206,11 +1206,11 @@ Bool XG47SetTVScreenPosition(XGIPtr pXGI, XGIDigitalTVRec *pDtv, CARD32 index)
             pXGI->pDtvInfo[VTOTAL].curoffset = (BYTE)pDtv[1].direction;
 
             wCal = pXGI->pDtvInfo[VTOTAL].low - pXGI->pDtvInfo[VTOTAL].curoffset * pXGI->pDtvInfo[VTOTAL].delta;
-            //wCal2= lpMyinfo[VTOTAL].high -
-            //       lpMyinfo[VTOTAL].curoffset*lpMyinfo[VTOTAL].delta;
-            //wCal3 = (wCal & 0x0F00) | (wCal2 & 0xF000) >> 8;
-            //SetExternalRegister(0x8f,(CARD16)(wCal3 >> 8));
-            //SetExternalRegister(0x90,(CARD16)(wCal2& 0xff));
+            /*wCal2= lpMyinfo[VTOTAL].high -
+                   lpMyinfo[VTOTAL].curoffset*lpMyinfo[VTOTAL].delta;*/
+            /*wCal3 = (wCal & 0x0F00) | (wCal2 & 0xF000) >> 8;*/
+            /*SetExternalRegister(0x8f,(CARD16)(wCal3 >> 8));*/
+            /*SetExternalRegister(0x90,(CARD16)(wCal2& 0xff));*/
             XG47SetExternalRegister(pXGI, 0x8e,(CARD16)(wCal & 0xff));
 
         }
@@ -1235,7 +1235,7 @@ void XG47ChipType()
 
 void XGI47BiosAttachDTV(XGIPtr pXGI)
 {
-    //Get BIOS capability
+    /*Get BIOS capability*/
     pXGI->pInt10->ax = 0x1290;
     pXGI->pInt10->bx = 0x14;
     pXGI->pInt10->dx = 0;
@@ -1248,8 +1248,8 @@ void XGI47BiosAttachDTV(XGIPtr pXGI)
         biosCapability = 0;
 
     XG47ChipType();
-    //Initial lpMyinfo
+    /*Initial lpMyinfo*/
     XG47GetCurrentTable(pXGI, MONITOR_X640, MONITOR_Y432,BITSPIXEL_08);
-    flicker = 0; //Flicker test
+    flicker = 0; /*Flicker test*/
 }
 

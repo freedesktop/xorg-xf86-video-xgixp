@@ -47,15 +47,15 @@ XGIPixelClockRec XG47ModeVClockTable[]={
     {320, 200, 60, 13},
     {320, 200, 70, 13},
     {320, 240, 60, 13},
-    //{320, 240, 72, 16},
+    /*{320, 240, 72, 16},*/
     {320, 240, 75, 16},
     {320, 240, 85, 18},
     {400, 300, 60, 20},
     {400, 300, 75, 25},
     {400, 300, 85, 28},
-    //{512, 384, 44, 23},
+    /*{512, 384, 44, 23},*/
     {512, 384, 60, 33},
-    //{512, 384, 70, 38},
+    /*{512, 384, 70, 38},*/
     {512, 384, 75, 39},
     {512, 384, 85, 48},
     {640, 400, 60, 25},
@@ -63,7 +63,7 @@ XGIPixelClockRec XG47ModeVClockTable[]={
     {640, 400, 85, 31},
     {640, 432, 60, 25},
     {640, 480, 60, 25},
-    //{640, 480, 72, 31},
+    /*{640, 480, 72, 31},*/
     {640, 480, 75, 32},
     {640, 480, 85, 36},
     {640, 480,100, 43},
@@ -339,7 +339,7 @@ unsigned int XG47DDCRead(ScrnInfoPtr pScrn)
 void XG47ModeSave(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
-    //int     i = 0;
+    /*int     i = 0;*/
     CARD8   modeNo;
 
 /*
@@ -415,10 +415,11 @@ void XG47SetCRTCViewBaseAddr(ScrnInfoPtr pScrn, unsigned long startAddr)
 {
     XGIPtr       pXGI = XGIPTR(pScrn);
 
-    // Set base address for CRTC
-    //
-    // It should be guaranteed that the base address is aligned with 32 (8 pixels x 4 bpp) bytes.
-    // so we needn't to set offset.
+    /* Set base address for CRTC
+     *
+     * It should be guaranteed that the base address is aligned with 32 (8 pixels x 4 bpp) bytes.
+     * so we needn't to set offset.
+     */
 
     if (!pXGI->noAccel) pXGI->pXaaInfo->Sync(pScrn);
 
@@ -444,7 +445,7 @@ void XG47SetW2ViewBaseAddr(ScrnInfoPtr pScrn, unsigned long startAddr)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
 
-    // Set Second View starting Address.
+    /* Set Second View starting Address. */
     startAddr = (startAddr + 0x07) >> 4;
     Out (0x2480, (CARD8)(startAddr & 0xFF));
     Out (0x2481, (CARD8)((startAddr >> 8) & 0xFF));
@@ -551,21 +552,21 @@ Bool XG47ModeInit(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
 			/* How about LCD ??? */
 			ConnectedDevices=bIn3x5(0x5A);
 
-			if (ConnectedDevices & 0x01) // single DVI
+			if (ConnectedDevices & 0x01) /* single DVI */
 			{
 				askMode[index].condition = ST_DISP_DVI;
 			}
 			else
 			{
-				if (ConnectedDevices & 0x0E == 0x0E) // DVI + CRT
+				if (ConnectedDevices & 0x0E == 0x0E) /* DVI + CRT */
 				{
 					askMode[index].condition = ST_DISP_CRT | ST_DISP_DVI;
 				}
-				else if (ConnectedDevices & 0x02) // single CRT
+				else if (ConnectedDevices & 0x02) /* single CRT */
 				{
 					askMode[index].condition = ST_DISP_CRT;
 				}
-				else if(ConnectedDevices & 0x10) // TV : need to be verified more
+				else if(ConnectedDevices & 0x10) /* TV : need to be verified more */
 				{
 					askMode[index].condition = ST_DISP_TV;
 				}
@@ -654,7 +655,6 @@ Bool XG47ModeInit(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
 	}
 
 #if 0
-/*
     askMode.width       = dispMode->HDisplay;
     askMode.height      = dispMode->VDisplay;
     askMode.pixelSize   = pScrn->bitsPerPixel;
@@ -712,14 +712,13 @@ Bool XG47ModeInit(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
         askMode.refRate = 60;
     }
 
-	// Jong 09/15/2006; Force to dual view 
+	/* Jong 09/15/2006; Force to dual view */
 #ifdef XGI_DUMP_DUALVIEW
 	ErrorF("Jong-Debug-Before calling XGIBiosModeInit()-2-askMode[index].modeNo=0x%x--\n", askMode[index].modeNo);
 #endif
 
     if (!XGIBiosModeInit(pScrn, &askMode, 1, 0)) return FALSE;
-    // if (!XGIBiosModeInit(pScrn, &askMode, 0, 0)) return FALSE; 
-*/
+    /* if (!XGIBiosModeInit(pScrn, &askMode, 0, 0)) return FALSE;*/
 #endif
 
 	/* Jong 10/05/2006; fix bug of supporting different modes for each view of dual view mode */
@@ -813,21 +812,21 @@ int XG47ValidMode(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
 			/* How about LCD ??? */
 			ConnectedDevices=bIn3x5(0x5A);
 
-			if (ConnectedDevices & 0x01) // single DVI
+			if (ConnectedDevices & 0x01) /* single DVI */
 			{
 				askMode[0].condition = ST_DISP_DVI;
 			}
 			else
 			{
-				if (ConnectedDevices & 0x0E) // DVI + CRT
+				if (ConnectedDevices & 0x0E) /* DVI + CRT */
 				{
 					askMode[0].condition = ST_DISP_CRT | ST_DISP_DVI;
 				}
-				else if (ConnectedDevices & 0x02) // single CRT
+				else if (ConnectedDevices & 0x02) /* single CRT */
 				{
 					askMode[0].condition = ST_DISP_CRT;
 				}
-				else if(ConnectedDevices & 0x10) // TV : need to be verified more
+				else if(ConnectedDevices & 0x10) /* TV : need to be verified more */
 				{
 					askMode[0].condition = ST_DISP_TV;
 				}
@@ -890,7 +889,7 @@ int XG47ValidMode(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
 
         break;
     }
-    //askMode[0].condition   = ST_DISP_CRT;
+    /*askMode[0].condition   = ST_DISP_CRT;*/
 
     if (dispMode->VRefresh <= 0.0)
     {

@@ -57,15 +57,15 @@ typedef struct {
 /*
  * TV IP Core
  */
-#define TV_TVX                          0x00000000      //TVX
-#define TV_TVX1K                        0x00000001      //TVX 1K support
-#define TV_TVX2                         0x00000002      //TVX2 External
-#define TV_TVXI                         0x00000003      //TVX2 Internal
-#define TV_CHRONTEL_7004                0x10000004      //CH7003/04
-#define TV_CHRONTEL_7007                0x10000007      //CH7007/08
-#define TV_CHRONTEL_7009                0x10000009      //CH7009/11
-#define TV_PHILIPS_7102                 0x20000001      //PH7102
-#define TV_NEW_INTERFACE                0x80000000      //TVX/TVX2 New IF
+#define TV_TVX                          0x00000000      /*TVX*/
+#define TV_TVX1K                        0x00000001      /*TVX 1K support*/
+#define TV_TVX2                         0x00000002      /*TVX2 External*/
+#define TV_TVXI                         0x00000003      /*TVX2 Internal*/
+#define TV_CHRONTEL_7004                0x10000004      /*CH7003/04*/
+#define TV_CHRONTEL_7007                0x10000007      /*CH7007/08*/
+#define TV_CHRONTEL_7009                0x10000009      /*CH7009/11*/
+#define TV_PHILIPS_7102                 0x20000001      /*PH7102*/
+#define TV_NEW_INTERFACE                0x80000000      /*TVX/TVX2 New IF*/
 
 /*
  *  Digital TV Information.
@@ -125,7 +125,7 @@ typedef struct {
 /* bit [15:8] LCD Information */
 #define SUPPORT_PANEL_EXPANSION         0x00000400
 #define SUPPORT_PANEL_CENTERING         0x00000800
-#define SUPPORT_PANEL_V_EXPANSION       0x00001000      //4:3 Expanded Centering
+#define SUPPORT_PANEL_V_EXPANSION       0x00001000      /*4:3 Expanded Centering*/
 #define SUPPORT_PANEL_FULLEXP           0x00001000      /* NEC request */
 #define SUPPORT_PANEL_SMARTEXP          0x00002000
 /* bit [23:16] TV information */
@@ -180,7 +180,7 @@ typedef struct {
 #define FPSIZE_14X10    9
 #define FPSIZE_16X12    0xA
 #endif
-// To keep compatibility with KB2.5 old BIOS(KTT 6.0)
+/* To keep compatibility with KB2.5 old BIOS(KTT 6.0)*/
 #define FPSIZE_8X6_KB   2
 #define FPSIZE_10X7_KB  3
 #define FPSIZE_12X10_KB 4
@@ -255,29 +255,29 @@ typedef struct {
 #define DEV_SUPPORT_VIRTUAL     0x0010
 
 /* Jong 09/12/2006; device attributes */
-#define ZVMX_MASK_LCDCTRL       0x0000FF00  // mask of LCD control bits.
-#define ZVMX_ATTRIB_TFT         0x00000100  // TFT flat panel type.
-#define ZVMX_ATTRIB_DSTN        0x00000200  // DSTN flat panel type.
-#define ZVMX_ATTRIB_EXPANSION   0x00000400  // Expension.
-#define ZVMX_ATTRIB_CENTERING   0x00000800  // Centering.
-#define ZVMX_ATTRIB_LCD_ALL     0x00000F00  // LCD support all.
-#define ZVMX_ATTRIB_V_EXPANSION 0x00001000  // 4:3 Expanded Centering.
+#define ZVMX_MASK_LCDCTRL       0x0000FF00  /* mask of LCD control bits. */
+#define ZVMX_ATTRIB_TFT         0x00000100  /* TFT flat panel type. */
+#define ZVMX_ATTRIB_DSTN        0x00000200  /* DSTN flat panel type. */
+#define ZVMX_ATTRIB_EXPANSION   0x00000400  /* Expension. */
+#define ZVMX_ATTRIB_CENTERING   0x00000800  /* Centering. */
+#define ZVMX_ATTRIB_LCD_ALL     0x00000F00  /* LCD support all. */
+#define ZVMX_ATTRIB_V_EXPANSION 0x00001000  /* 4:3 Expanded Centering. */
 
-#define ZVMX_ATTRIB_OVERLAYFOCUS    0x00001000  // LCD Overlay.
+#define ZVMX_ATTRIB_OVERLAYFOCUS    0x00001000  /* LCD Overlay. */
 
-#define ZVMX_MASK_TVCTRL        0x00FF0000  // mask of TV control bits.
-#define ZVMX_ATTRIB_NTSC        0x00010000  // TV standard is NTSC.
-#define ZVMX_ATTRIB_PAL         0x00020000  // TV standard is PAL.
-#define ZVMX_ATTRIB_PALM        0x00400000  // TV PAL_M
-#define ZVMX_ATTRIB_NTSCJ       0x00800000  // TV NTSC-J
-#define ZVMX_ATTRIB_UNDER       0x00040000  // TV is underscan.
-#define ZVMX_ATTRIB_OVER        0x00080000  // TV is overscan.
-#define ZVMX_ATTRIB_NATIVE      0x00100000  // TV is native.
-#define ZVMX_ATTRIB_TV_ALL      0x000F0000  // TV support all.
-#define TMOD_SUPPORT_NTSCU      0x10        // MODE SUPPORT NTSC UNDERSCAN.
-#define TMOD_SUPPORT_NTSCO      0x20        // MODE SUPPORT NTSC OVERSCAN.
-#define TMOD_SUPPORT_PALU       0x40        // MODE SUPPORT PAL UNDERSCAN.
-#define TMOD_SUPPORT_PALO       0x80        // MODE SUPPORT PAL OVERSCAN.
+#define ZVMX_MASK_TVCTRL        0x00FF0000  /* mask of TV control bits. */
+#define ZVMX_ATTRIB_NTSC        0x00010000  /* TV standard is NTSC. */
+#define ZVMX_ATTRIB_PAL         0x00020000  /* TV standard is PAL. */
+#define ZVMX_ATTRIB_PALM        0x00400000  /* TV PAL_M */
+#define ZVMX_ATTRIB_NTSCJ       0x00800000  /* TV NTSC-J */
+#define ZVMX_ATTRIB_UNDER       0x00040000  /* TV is underscan. */
+#define ZVMX_ATTRIB_OVER        0x00080000  /* TV is overscan. */
+#define ZVMX_ATTRIB_NATIVE      0x00100000  /* TV is native. */
+#define ZVMX_ATTRIB_TV_ALL      0x000F0000  /* TV support all. */
+#define TMOD_SUPPORT_NTSCU      0x10        /* MODE SUPPORT NTSC UNDERSCAN. */
+#define TMOD_SUPPORT_NTSCO      0x20        /* MODE SUPPORT NTSC OVERSCAN. */
+#define TMOD_SUPPORT_PALU       0x40        /* MODE SUPPORT PAL UNDERSCAN. */
+#define TMOD_SUPPORT_PALO       0x80        /* MODE SUPPORT PAL OVERSCAN. */
 
 /*
  * 3CF.5D.[6:4,0]
@@ -289,7 +289,7 @@ typedef struct {
 #define EXPANSION_MASK          GRAF_EXPANSION+TEXT_EXPANSION
 #define V_EXPANSION_MASK        GRAF_V_EXPANSION+TEXT_V_EXPANSION
 
-// BIOS setmode
+/* BIOS setmode */
 #define BIOS_EXPANSION          0x0010
 #define BIOS_V_EXPANSION        0x0020
 
@@ -328,22 +328,22 @@ typedef struct {
 #define VREF_85Hz                   85
 #define VREF_100Hz                  100
 #define VREF_120Hz                  120
-#define ZVMX_MASK_REFINDEX      0x000F0000  // mask of refresh rate index.
-#define ZVMX_INDEX_DEFAULT      0x00000000  // vido BIOS default value.
-#define ZVMX_INDEX_REF44        0x00010000  // 87 interlaced.
-#define ZVMX_INDEX_REF48        0x00020000  // 96 interlaced.
-#define ZVMX_INDEX_REF50i       0x00030000  // 50 interlaced.
-#define ZVMX_INDEX_REF50r       0x00040000  // 50 reduced blank.
-#define ZVMX_INDEX_REF50        0x00050000  // 50 Hz.
-#define ZVMX_INDEX_REF60i       0x00060000  // 60 interlaced.
-#define ZVMX_INDEX_REF60r       0x00070000  // 60 reduced blank.
-#define ZVMX_INDEX_REF60        0x00080000  // 60 Hz.
-#define ZVMX_INDEX_REF70        0x00090000  // 70 Hz.
-#define ZVMX_INDEX_REF72        0x000A0000  // 72 Hz.
-#define ZVMX_INDEX_REF75        0x000B0000  // 75 Hz.
-#define ZVMX_INDEX_REF85        0x000C0000  // 85 Hz.
-#define ZVMX_INDEX_REF100       0x000D0000  // 100 Hz.
-#define ZVMX_INDEX_REF120       0x000E0000  // 120 Hz.
+#define ZVMX_MASK_REFINDEX      0x000F0000  /* mask of refresh rate index. */
+#define ZVMX_INDEX_DEFAULT      0x00000000  /* vido BIOS default value. */
+#define ZVMX_INDEX_REF44        0x00010000  /* 87 interlaced. */
+#define ZVMX_INDEX_REF48        0x00020000  /* 96 interlaced. */
+#define ZVMX_INDEX_REF50i       0x00030000  /* 50 interlaced. */
+#define ZVMX_INDEX_REF50r       0x00040000  /* 50 reduced blank. */
+#define ZVMX_INDEX_REF50        0x00050000  /* 50 Hz. */
+#define ZVMX_INDEX_REF60i       0x00060000  /* 60 interlaced. */
+#define ZVMX_INDEX_REF60r       0x00070000  /* 60 reduced blank. */
+#define ZVMX_INDEX_REF60        0x00080000  /* 60 Hz. */
+#define ZVMX_INDEX_REF70        0x00090000  /* 70 Hz. */
+#define ZVMX_INDEX_REF72        0x000A0000  /* 72 Hz. */
+#define ZVMX_INDEX_REF75        0x000B0000  /* 75 Hz. */
+#define ZVMX_INDEX_REF85        0x000C0000  /* 85 Hz. */
+#define ZVMX_INDEX_REF100       0x000D0000  /* 100 Hz. */
+#define ZVMX_INDEX_REF120       0x000E0000  /* 120 Hz. */
 
 
 /*
@@ -451,7 +451,7 @@ extern Bool   XGIBiosDllPunt(XGIPtr pXGI,
                              unsigned long *pInBuf,
                              unsigned long *pOutBuf);
 
-//extern Bool   XGIBiosDllInit(XGIPtr pXGI);
+/*extern Bool   XGIBiosDllInit(XGIPtr pXGI); */
 extern Bool XGIBiosDllInit(ScrnInfoPtr pScrn);
 
 extern Bool   XGIBiosValidMode(ScrnInfoPtr pScrn,

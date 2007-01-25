@@ -68,7 +68,7 @@ extern void Initialize(CARD32*  cmdBufLinearStartAddr,
 extern void Cleanup();
 extern void Reset();
 
-// extern int XGIDebug(int level, const char *format, ...);
+/* extern int XGIDebug(int level, const char *format, ...); */
 
 /*data struct define, simulate the OO*/
 
@@ -91,36 +91,35 @@ typedef enum
 
 typedef struct _CmdList
 {
-	BATCH_TYPE  _curBatchType;
-    CARD32      _curBatchDataCount;         // DWORDs
-    CARD32      _curBatchRequestSize;       // DWORDs
-    CARD32*     _curBatchBegin;             // The begin of current batch.
-    CARD32*     _curBatchDataBegin;         // The begin of data
+    BATCH_TYPE  _curBatchType;
+    CARD32      _curBatchDataCount;         /* DWORDs */
+    CARD32      _curBatchRequestSize;       /* DWORDs */
+    CARD32*     _curBatchBegin;             /* The begin of current batch. */
+    CARD32*     _curBatchDataBegin;         /* The begin of data */
 
-    CARD32*     _writePtr;                  // current writing ptr
-    CARD32      _sendDataLength;            // record the filled data size
+    CARD32*     _writePtr;                  /* current writing ptr */
+    CARD32      _sendDataLength;            /* record the filled data size */
 
     CARD32*     _cmdBufLinearStartAddr;
     CARD32*     _cmdBufHWStartAddr;
-    CARD32      _cmdBufSize;            // DWORDs
+    CARD32      _cmdBufSize;            /* DWORDs */
 
-	CARD32*     _lastBatchBegin;        // The begin of last batch.
-    CARD32*     _lastBatchEnd;          // The end of last batch.
-    BATCH_TYPE  _lastBatchType;         // The type of the last workload batch.
-    CARD32      _debugBeginID;          // write it at begin header as debug ID
+    CARD32*     _lastBatchBegin;        /* The begin of last batch. */
+    CARD32*     _lastBatchEnd;          /* The end of last batch. */
+    BATCH_TYPE  _lastBatchType;         /* The type of the last workload batch. */
+    CARD32      _debugBeginID;          /* write it at begin header as debug ID */
 
-	//2d cmd holder
-	CARD32      _bunch[4];
+    /* 2d cmd holder */
+    CARD32      _bunch[4];
 
-	//scratch pad addr, allocate at outside, pass these two parameter in
+    /* scratch pad addr, allocate at outside, pass these two parameter in */
     CARD32*     _scratchPadLinearAddr;
-	CARD32*     _scratchPadHWAddr;
+    CARD32*     _scratchPadHWAddr;
 
-	//MMIO base
-	CARD32*     _mmioBase;
-
-	//fd number
-	int			_fd;
+    /* MMIO base */
+    CARD32*     _mmioBase;
+    /* fd number */
+    int		_fd;
 }CmdList;
 
 #endif

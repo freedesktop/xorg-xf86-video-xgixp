@@ -37,7 +37,7 @@ int Log2Screen = 0;
 int Log2File = 1;
 char dbglog[] = "/var/log/xgi.log";
 
-unsigned long DebugLevel = DBG_ERROR|DBG_CMDLIST;//|DBG_CMD_BUFFER;
+unsigned long DebugLevel = DBG_ERROR|DBG_CMDLIST;/*|DBG_CMD_BUFFER;*/
 int FuncLevel = 0;
 
 void XGIDebug(int level, const char *format, ...)
@@ -74,4 +74,4 @@ void XGIDebug(int level, const char *format, ...)
         va_end(args);
     }
 }
-#endif //DEBUG_PRINT
+#endif /*DEBUG_PRINT*/

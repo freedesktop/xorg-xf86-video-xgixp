@@ -71,9 +71,9 @@
 #define NTSC            14.31818
 #define PAL             17.73448
 
-// Jong 06/21/2006
-//#define __DEBUG_FUNC__	
-//#define __DEBUG_FUNC__  0
+/* Jong 06/21/2006
+#define __DEBUG_FUNC__	
+#define __DEBUG_FUNC__  0*/
 
 #ifdef __DEBUG_FUNC__
 #define ENABLE_HW_SOLIDLINE  (pXGI->EnableSolidLine)
@@ -102,9 +102,9 @@
 #define XGI_DUMP
 #endif */
 
-//#ifndef XGI_DEBUG
-//#define XGI_DEBUG
-//#endif
+/*#ifndef XGI_DEBUG
+#define XGI_DEBUG
+#endif*/
 
 /* Jong 07/05/2006; for .so */
 #define _SO_
@@ -203,138 +203,122 @@ typedef enum {
 #define ST_DISP_SINGLE      ((1 << MAX_DEVICE_NUM) - 1)
 #define ST_DISP_DUALVIEW    (((1 << MAX_DEVICE_NUM) - 1) << MAX_DEVICE_NUM)
 #define ST_DISP_MASK        (ST_DISP_DUALVIEW | ST_DISP_SINGLE)
-//--------------------------------------------------------------------------------------------------------------------------------------------
 
-//--------------------------------------------------------------------------------------------------------------------------------------------
-// Define DevStatus
-// Two HWDeviceExtensions have different status.
+/* Define DevStatus
+   Two HWDeviceExtensions have different status. */
 typedef unsigned long DEVSTATUS;
 
-#define DEVST_MHS_DUALVIEW_ENABLE       0x00000001         // DualView(MHS) enabled.
+#define DEVST_MHS_DUALVIEW_ENABLE       0x00000001         /* DualView(MHS) enabled. */
 
-// For Set Mode
+/* For Set Mode */
 #define DEVST_SIMULATE_MODE             0x00000010
 #define DEVST_DOS_FULL_SCREEN           0x00000020
 
-// For Device
-#define DEVST_PANEL_EXPANSION           0x00000040       //Full screen expansion mode
-#define DEVST_PANEL_CENTERING           0x00000080       //Screen centering mode
-#define DEVST_PANEL_V_EXPANSION         0x00000100       //Aspect ratio expansion mode
+/* For Device */
+#define DEVST_PANEL_EXPANSION           0x00000040       /*Full screen expansion mode */
+#define DEVST_PANEL_CENTERING           0x00000080       /*Screen centering mode */
+#define DEVST_PANEL_V_EXPANSION         0x00000100       /*Aspect ratio expansion mode */
 #define DEVST_PANEL_EXPANSION_MASK      (DEVST_PANEL_EXPANSION | DEVST_PANEL_CENTERING | DEVST_PANEL_V_EXPANSION)
-#define DEVST_LCDTVONDESKTOP            0x00000200       // LCD+TV when enter DOS full screen
+#define DEVST_LCDTVONDESKTOP            0x00000200       /* LCD+TV when enter DOS full screen */
 
-// Misc
+/* Misc */
 #define DEVST_GAMMA_ENABLED             0x00000400
-// End DEVSTATUS
-//--------------------------------------------------------------------------------------------------------------------------------------------
+/* End DEVSTATUS */
 
-
-//--------------------------------------------------------------------------------------------------------------------------------------------
-// Define HwStatus
-// The current display adapter status
+/* Define HwStatus */
+/* The current display adapter status */
 typedef unsigned long HWSTATUS;
 
-//#define HWST_OVERLAY_PDEV_IDX_MASK  0x00000003       // two bits for PdevIdx (0 to 3), support up to four indices
-//#define HWST_OVERLAY_USED           0x00000004       // overlay running
+/*#define HWST_OVERLAY_PDEV_IDX_MASK  0x00000003*/       /* two bits for PdevIdx (0 to 3), support up to  four indices */
+/*#define HWST_OVERLAY_USED           0x00000004*/       /* overlay running */
 
-// Set / Use just in display driver
+/* Set / Use just in display driver */
 
-// Set / Use just in miniport
-#define HWST_RESUME_FROM_STANDBY    0x00010000       // Resume From Standby
+/* Set / Use just in miniport */
+#define HWST_RESUME_FROM_STANDBY    0x00010000       /* Resume From Standby */
 #define HWST_NEED_INITIALIZE_DTV    0x00040000
 #define HWST_POWER_BOOTRESUME       0x00100000
 
 #define HWST_GE_DISABLED            0x20000000
-// End HwStatus
-//--------------------------------------------------------------------------------------------------------------------------------------------
-
-
-//--------------------------------------------------------------------------------------------------------------------------------------------
-// Define GraCaps
-// caps
+/* End HwStatus */
+/* Define GraCaps */
+/* caps */
 typedef unsigned long GRACAPS;
 
-// For HW      (0  --- 11)
-#define GRACAPS_PANNING                 0x00000001       // Enable/Disable PANNING ablility
-#define GRACAPS_CURSOR64                0x00000002       // Is hw support 32*32 bits cursor? Michael for Monterey
-#define GRACAPS_MMX                     0x00000004       // actually CPU's cap.
-#define GRACAPS_PCI_CMDLIST_OFF_BY_REG  0x00000008       // PCI CommandList Off
-#define GRACAPS_GAMMA_BY_REG            0x00000010       // Enable gamma correction
-#define GRACAPS_POWER_SAVING_ON_BY_REG  0x00000020       // Enable Power Saving Mode
+/* For HW      (0  --- 11) */
+#define GRACAPS_PANNING                 0x00000001       /* Enable/Disable PANNING ablility */
+#define GRACAPS_CURSOR64                0x00000002       /* Is hw support 32*32 bits cursor? Michael for Monterey */
+#define GRACAPS_MMX                     0x00000004       /* actually CPU's cap. */
+#define GRACAPS_PCI_CMDLIST_OFF_BY_REG  0x00000008       /* PCI CommandList Off */
+#define GRACAPS_GAMMA_BY_REG            0x00000010       /* Enable gamma correction */
+#define GRACAPS_POWER_SAVING_ON_BY_REG  0x00000020       /* Enable Power Saving Mode */
 
-// For utility (12 --- 31)
-#define GRACAPS_MODE_FOR_EACH_USER      0x00001000       // different resolution for each user
-#define GRACAPS_OVERLAY_FULLSCREEN      0x00002000       // overlay fullscreen in secondary device under contain mode
-#define GRACAPS_HOTKEY_ROTATION         0x00004000       // enable hotkey loop under rotation mode
-#define GRACAPS_SWAP_HEAD               0x00008000       // swap head under MHS
-#define GRACAPS_HOTKEY_MHS              0x00020000       // enable hotkey under MHS
-#define GRACAPS_LCDLID_CLOSED           0x00040000       // close LCD when LCD lid closes
-#define GRACAPS_DISABLE_PANNING_BY_REG  0x00080000       // If this bit set, we do not report modes bigger than device physical size on LCD & DVI
-#define GRACAPS_TABLET_PC_BY_REG        0x00100000       // Tablet PC.
-#define GRACAPS_3D_TEXTURE_CAPS_BY_REG  0x00200000       // Adjust texture capability
+/* For utility (12 --- 31) */
+#define GRACAPS_MODE_FOR_EACH_USER      0x00001000       /* different resolution for each user */
+#define GRACAPS_OVERLAY_FULLSCREEN      0x00002000       /* overlay fullscreen in secondary device under contain mode */
+#define GRACAPS_HOTKEY_ROTATION         0x00004000       /* enable hotkey loop under rotation mode */
+#define GRACAPS_SWAP_HEAD               0x00008000       /* swap head under MHS */
+#define GRACAPS_HOTKEY_MHS              0x00020000       /* enable hotkey under MHS */
+#define GRACAPS_LCDLID_CLOSED           0x00040000       /* close LCD when LCD lid closes */
+#define GRACAPS_DISABLE_PANNING_BY_REG  0x00080000       /* If this bit set, we do not report modes bigger than device physical size on LCD & DVI */
+#define GRACAPS_TABLET_PC_BY_REG        0x00100000       /* Tablet PC. */
+#define GRACAPS_3D_TEXTURE_CAPS_BY_REG  0x00200000       /* Adjust texture capability */
 
 #ifdef T_ROTATION
-#define GRACAPS_ROTATION_BY_REG         0x00400000       // Adjust texture capability
+#define GRACAPS_ROTATION_BY_REG         0x00400000       /* Adjust texture capability */
 #endif
 
-#define GRACAPS_CONTROL_HSCB            0x00800000       // If the Utility can adjust HSCB
+#define GRACAPS_CONTROL_HSCB            0x00800000       /* If the Utility can adjust HSCB
 
-// End GRACAPS
-//--------------------------------------------------------------------------------------------------------------------------------------------
+/* End GRACAPS */
 
-
-//--------------------------------------------------------------------------------------------------------------------------------------------
-// Define HwCaps
+/* Define HwCaps */
 typedef unsigned long HWCAPS;
 
 #define HWCAPS_NONE                    0x00000000
 
-// For PCI configuration
-#define HWCAPS_AGP                     0x00000001       // AGP caps
-#define HWCAPS_INTERNALBUS_64          0x00000002       // Force 64 Bits Internal Bus only
-#define HWCAPS_INTERNALBUS_128         0x00000004       // Using 64/128 Bit Internal Bus
-#define HWCAPS_DUAL_PORT               0x00000008       // Enable/Disable Dual Port
-#define HWCAPS_LOW_LEVEL_PRODUCT       0x00000010       // Low level product (<= 32M video memory)
+/* For PCI configuration */
+#define HWCAPS_AGP                     0x00000001       /* AGP caps */
+#define HWCAPS_INTERNALBUS_64          0x00000002       /* Force 64 Bits Internal Bus only */
+#define HWCAPS_INTERNALBUS_128         0x00000004       /* Using 64/128 Bit Internal Bus */
+#define HWCAPS_DUAL_PORT               0x00000008       /* Enable/Disable Dual Port */
+#define HWCAPS_LOW_LEVEL_PRODUCT       0x00000010       /* Low level product (<= 32M video memory) */
 
-// For Device
-#define HWCAPS_CRT                     0x00000100       // support CRT output
-#define HWCAPS_LCD                     0x00000200       // LCD chips, we can ask BIOS.
-#define HWCAPS_TV                      0x00000400       // TV display
-#define HWCAPS_DVI                     0x00000800       // DVI display
-#define HWCAPS_MUTEX_DVI_CRT           0x00001000       // We can't turn on DVI+CRT together
-                                                        // For example, 7116 card
+/* For Device */
+#define HWCAPS_CRT                     0x00000100       /* support CRT output */
+#define HWCAPS_LCD                     0x00000200       /* LCD chips, we can ask BIOS. */
+#define HWCAPS_TV                      0x00000400       /* TV display */
+#define HWCAPS_DVI                     0x00000800       /* DVI display */
+#define HWCAPS_MUTEX_DVI_CRT           0x00001000       /* We can't turn on DVI+CRT together */
+                                                        /* For example, 7116 card */
 
-// For D3D
-#define HWCAPS_PURE_DEVICE             0x00010000       // Enable/Disable Pure Device
+/* For D3D */
+#define HWCAPS_PURE_DEVICE             0x00010000       /* Enable/Disable Pure Device */
 
-// Others
-#define HWCAPS_CURSOR_IN_DUALVIEW      0x01000000       // For HW cursor support at LCD view of DUAL VIEW mode.
-#define HWCAPS_ALPHA_HW_MAX            0x02000000       // Full Hardware Alpha cursor support
-#define HWCAPS_POWER_SAVING            0x04000000       // Power Saving enable.
-#define HWCAPS_GAMMA                   0x08000000       // Support Gamma
+/* Others */
+#define HWCAPS_CURSOR_IN_DUALVIEW      0x01000000       /* For HW cursor support at LCD view of DUAL VIEW mode. */
+#define HWCAPS_ALPHA_HW_MAX            0x02000000       /* Full Hardware Alpha cursor support */
+#define HWCAPS_POWER_SAVING            0x04000000       /* Power Saving enable. */
+#define HWCAPS_GAMMA                   0x08000000       /* Support Gamma */
 
-// End DEVCAPS
-//--------------------------------------------------------------------------------------------------------------------------------------------
+/* End DEVCAPS */
 
-//--------------------------------------------------------------------------------------------------------------------------------------------
-// Define GRASTATUS
+/* Define GRASTATUS */
 typedef unsigned long GRASTATUS;
 
-// Graphic Status
-#define GST_NO_ACCELERATOR              0x00000001          // No accelerator
-#define GST_SW_CURSOR                   0x00000002          // no hardware pointer.
+/* Graphic Status */
+#define GST_NO_ACCELERATOR              0x00000001          /* No accelerator */
+#define GST_SW_CURSOR                   0x00000002          /* no hardware pointer. */
 #define GST_INTERLACED                  0x00000004
-#define GST_DDRAW                       0x00000008          // directDraw enable.
-#define GST_HWSP_ENABLED                0x00000010          // h/w subpicture feature enabled
-#define GST_ALPHA_CURSOR                0x00000020          // Alpha cursor enabled.
-#define GST_ROTATION                    0x00000040          // Rotation definition
+#define GST_DDRAW                       0x00000008          /* directDraw enable. */
+#define GST_HWSP_ENABLED                0x00000010          /* h/w subpicture feature enabled */
+#define GST_ALPHA_CURSOR                0x00000020          /* Alpha cursor enabled. */
+#define GST_ROTATION                    0x00000040          /* Rotation definition */
 #define GST_DIB                         0x00000080
-#define GST_AGP_ENABLE                  0x00000100          // AGP version
-#define GST_PCIE_ENABLE                 0x00000200          // PCI-E version
+#define GST_AGP_ENABLE                  0x00000100          /* AGP version */
+#define GST_PCIE_ENABLE                 0x00000200          /* PCI-E version */
 
-// End GRASTATUS
-//--------------------------------------------------------------------------------------------------------------------------------------------
-
+/* End GRASTATUS */
 
 typedef struct {
     unsigned char regs3C2;
@@ -422,12 +406,12 @@ typedef struct {
  *          |<-----------  Swing value ----------->|
  */
 typedef struct {
-    CARD16      low;                //BIOS Default
+    CARD16      low;                /* BIOS Default */
     CARD16      high;
-    CARD8       swingwid;           //Swing Width
-    CARD8       defoffset;          //Default Offset
-    CARD8       curoffset;          //Current Offset
-    CARD8       delta;              //Delta unit
+    CARD8       swingwid;           /* Swing Width */
+    CARD8       defoffset;          /* Default Offset */
+    CARD8       curoffset;          /* Current Offset */
+    CARD8       delta;              /* Delta unit */
 } XGIDigitalTVInfoRec, *XGIDigitalTVInfoPtr;
 
 typedef struct XG47_CMDBUF_INFO
@@ -478,7 +462,7 @@ typedef struct {
 #define XGI_TOTAL_SURFACES      10
 
 typedef struct {
-    //DVDATTR       dvdAttr;
+    /* DVDATTR       dvdAttr; */
 
     unsigned long IOAddr;
     unsigned long fbAddr;
@@ -576,9 +560,9 @@ typedef struct {
     Bool                isMmioOnly;
     Bool                isShadowFB;
 
-    CARD32              displayDevice;            // the current display device
-    DEVSTATUS           deviceStatus;             // Device status, like DualViewLoop, DualView, ...
-    GRASTATUS           graStatus;                // Engine status
+    CARD32              displayDevice;            /* the current display device */
+    DEVSTATUS           deviceStatus;             /* Device status, like DualViewLoop, DualView, ... */
+    GRASTATUS           graStatus;                /* Engine status */
 
     Bool                isGammaBrightnessOn;
     int                 brightness;
