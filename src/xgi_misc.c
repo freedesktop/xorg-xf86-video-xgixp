@@ -29,15 +29,6 @@
 #include "config.h"
 #endif
 
-#include "xf86_libc.h"
-
-#ifndef XFree86LOADER
-#include <sys/mman.h>
-#ifndef MAP_FAILED
-#define MAP_FAILED ((void *)-1)
-#endif
-#endif
-
 #include "xgi.h"
 #include "xgi_regs.h"
 #include "xgi_driver.h"

@@ -177,7 +177,7 @@ static Bool XGIDGASetMode(ScrnInfoPtr pScrn, DGAModePtr pMode)
         {
             /* save the old parameters */
             oldDisplayWidth[index] = pScrn->displayWidth;
-            fprintf(stderr,"pXGI->isDgaActive is FALSE makin it TRUE\n");
+            /*fprintf(stderr,"pXGI->isDgaActive is FALSE makin it TRUE\n");*/
             pXGI->isDgaActive = TRUE;
         }
 

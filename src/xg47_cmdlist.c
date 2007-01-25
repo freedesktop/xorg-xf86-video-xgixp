@@ -29,12 +29,8 @@
 #include "config.h"
 #endif
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
-#include <sys/ioctl.h>
-
 #include "xf86.h"
+#include "xgi.h"
 #include "xg47_regs.h"
 #include "xgi_driver.h"
 #include "xg47_cmdlist.h"

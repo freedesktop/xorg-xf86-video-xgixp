@@ -28,10 +28,6 @@
 #ifndef _XGI_REGS_H_
 #define _XGI_REGS_H_
 
-#ifdef XFree86Module
-#include "xf86_ansic.h"
-#endif
-/* inb/outb ..., and this must be included after "xf86_ansic.h*/
 #include "compiler.h"
 
 static __inline__ CARD8 xinb(XGIPtr pXGI, CARD32 index)

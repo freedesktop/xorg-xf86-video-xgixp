@@ -28,6 +28,14 @@
 #ifndef _XGI_H_
 #define _XGI_H_
 
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+#include <fcntl.h>
+#include <math.h>
+#include <sys/mman.h>
+/*#include <sys/ioctl.h>*/
+
 #include "xf86str.h"        /* ScrnInfoPtr */
 #include "xf86Pci.h"        /* PCI config space */
 #include "xaa.h"            /* XAA and Cursor Support */
