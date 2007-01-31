@@ -176,7 +176,7 @@ typedef struct xgi_state_info_s
 #define XGI_IOCTL_MAXNR             20
 
 
-#define IsPrimaryCard   ((xf86IsPrimaryPci(pXGI->pPciInfo)) || (xf86IsPrimaryIsa()))
+#define IsPrimaryCard   (xf86IsPrimaryPci(pXGI->pPciInfo))
 
 extern Bool XGISwitchMode(int scrnIndex, DisplayModePtr mode, int flags);
 extern void XGIAdjustFrame(int scrnIndex, int x, int y, int flags);

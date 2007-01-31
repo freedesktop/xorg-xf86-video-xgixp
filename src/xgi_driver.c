@@ -516,41 +516,6 @@ static Bool XGIProbe(DriverPtr drv, int flags)
         xfree(usedChips);
     }
 
-
-    /* Isa Bus */
-    /*
-    numUsed = xf86MatchIsaInstances(XGI_NAME,XGIChipsets,
-                                    XGIISAchipsets, drv,XGIFindIsaDevice,devSections,
-                                    numDevSections,&usedChips);
-    if (numUsed > 0)
-    {
-        if (flags & PROBE_DETECT)
-            foundScreen = TRUE;
-        else for (i = 0; i < numUsed; i++)
-        {
-            ScrnInfoPtr pScrn = NULL;
-            if ((pScrn = xf86ConfigIsaEntity(pScrn,0,usedChips[i],
-                                             XGIISAchipsets,NULL,
-                                             NULL,NULL,NULL,NULL)))
-            {
-                pScrn->driverVersion = VERSION;
-                pScrn->driverName    = XGI_DRIVER_NAME;
-                pScrn->name          = XGI_NAME;
-                pScrn->Probe         = XGIProbe;
-                pScrn->PreInit       = XGIPreInit;
-                pScrn->ScreenInit    = XGIScreenInit;
-                pScrn->SwitchMode    = XGISwitchMode;
-                pScrn->AdjustFrame   = XGIAdjustFrame;
-                pScrn->EnterVT       = XGIEnterVT;
-                pScrn->LeaveVT       = XGILeaveVT;
-                pScrn->FreeScreen    = XGIFreeScreen;
-                pScrn->ValidMode     = XGIValidMode;
-                foundScreen = TRUE;
-            }
-        }
-        xfree(usedChips);
-    }
-    */
     xfree(devSections);
     return foundScreen;
 }
