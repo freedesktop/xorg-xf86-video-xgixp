@@ -520,20 +520,24 @@ static Bool XGIProbe(DriverPtr drv, int flags)
     return foundScreen;
 }
 
-static Bool XGIGetRec(ScrnInfoPtr pScrn)
+static XGIPtr XGIGetRec(ScrnInfoPtr pScrn)
 {
     /*
      * Allocate an XGIRec, and hook it into pScrn->driverPrivate.
      * pScrn->driverPrivate is initialised to NULL, so we can check if
      * the allocation has already been done.
      */
-    if (pScrn->driverPrivate != NULL)
-        return TRUE;
+    if (pScrn->driverPrivate == NULL) {
+	XGIPtr pXGI = xnfcalloc(sizeof(XGIRec), 1);
 
-    pScrn->driverPrivate = xnfcalloc(sizeof(XGIRec), 1);
-    /* Initialise it */
+	/* Initialise it */
+	pXGI->pBiosDll = xnfcalloc(sizeof(XGIBiosDllRec), 1);
 
-    return TRUE;
+	pScrn->driverPrivate = pXGI;
+	pXGI->pScrn = pScrn;
+    }
+
+    return (XGIPtr) pScrn->driverPrivate;
 }
 
 static void XGIFreeRec(ScrnInfoPtr pScrn)
@@ -1869,10 +1873,10 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     if (pScrn->numEntities != 1) return FALSE;
 
     /* Allocate the XGIRec driverPrivate */
-    if (!XGIGetRec(pScrn)) return FALSE;
 
-    pXGI = XGIPTR(pScrn);
-    pXGI->pScrn = pScrn;
+    pXGI = XGIGetRec(pScrn);
+    if (pXGI == NULL) return FALSE;
+
 
     /* Get the entity, and make sure it is PCI. */
     pXGI->pEnt = xf86GetEntityInfo(pScrn->entityList[0]);
