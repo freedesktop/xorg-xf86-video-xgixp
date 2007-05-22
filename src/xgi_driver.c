@@ -823,6 +823,13 @@ static void XGIDisableMMIO(ScrnInfoPtr pScrn)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
+    if (pXGI->IOBase == 0) {
+#if DBG_FLOW
+	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
+#endif
+	return;
+    }
+
     switch(pXGI->chipset)
     {
     case XG47:
@@ -2973,6 +2980,13 @@ static void XGILeaveVT(int scrnIndex, int flags)
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
+
+    if (pXGI == NULL) {
+#if DBG_FLOW
+	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
+#endif
+	return;
+    }
 
 	/* Jong 11/09/2006; only call once */
 	if((g_DualViewMode == 1) & (pXGI->FirstView == 0)) 
