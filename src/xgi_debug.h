@@ -57,8 +57,6 @@
 #define DBG_CMD_BUFFER      DBG12
 #define DBG_SPECIAL			DBG13
 
-extern int FuncLevel;
-
 #define ERRORF_DEBUG 
 #ifdef ERRORF_DEBUG
 #define PDEBUG(p) p
