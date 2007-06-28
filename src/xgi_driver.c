@@ -318,7 +318,6 @@ static void XGILoaderRefSymLists(void)
                           NULL);
 }
 
-#ifdef XFree86LOADER
 
 static MODULESETUPPROTO(XGISetup);
 
@@ -388,7 +387,6 @@ static pointer XGISetup(pointer module,
     return result;
 }
 
-#endif /* XFree86LOADER */
 
 static void XGIIdentify(int flags)
 {
@@ -2308,13 +2306,8 @@ Bool XGIFBManagerInit(ScreenPtr pScreen)
 }
 
 #ifdef OPENGL_HW_ACCEL
-#ifdef XFree86LOADER
 static Bool (* OHAScreenInit)(ScreenPtr pScreen);
 static Bool (* OHACleanup)(ScreenPtr pScreen);
-#else
-extern Bool OHAScreenInit(ScreenPtr pScreen);
-extern Bool OHACleanup(ScreenPtr pScreen);
-#endif
 #endif
 
 /* Called at the start of each server generation. */
@@ -2355,10 +2348,8 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
     XGITRACE(("XGIScreenInit %x %d\n", pScrn->memPhysBase, pScrn->fbOffset));
 
 #ifdef OPENGL_HW_ACCEL
-#ifdef XFree86LOADER
     OHAScreenInit = LoaderSymbol("OHAScreenInit");
     OHACleanup = LoaderSymbol("OHACleanup");
-#endif
 #endif
 
     pScrn->memPhysBase = pXGI->fbAddr;

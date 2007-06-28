@@ -88,7 +88,6 @@ typedef struct xgi_state_info_s
     CARD32      _toState;
 } XGIStateInfoRec;
 
-#ifdef XFree86LOADER
 #define _IOC_NRBITS     8
 #define _IOC_TYPEBITS   8
 #define _IOC_SIZEBITS   14
@@ -115,7 +114,7 @@ typedef struct xgi_state_info_s
 #define _IOR(type,nr,size)  _IOC(_IOC_READ,(type),(nr), sizeof(size))
 #define _IOW(type,nr,size)  _IOC(_IOC_WRITE,(type),(nr), sizeof(size))
 #define _IOWR(type,nr,size) _IOC(_IOC_READ|_IOC_WRITE, (type), (nr), sizeof(size))
-#endif
+
 
 /*
  * Ioctl definitions
