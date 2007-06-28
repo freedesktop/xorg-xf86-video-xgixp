@@ -35,32 +35,28 @@
 #ifdef DEBUG_PRINT
 int Log2Screen = 0;
 int Log2File = 1;
-char dbglog[] = "/var/log/xgi.log";
+static const char dbglog[] = "/var/log/xgi.log";
 
-unsigned long DebugLevel = DBG_ERROR|DBG_CMDLIST;/*|DBG_CMD_BUFFER;*/
+unsigned DebugLevel = DBG_ERROR|DBG_CMDLIST;/*|DBG_CMD_BUFFER;*/
 
 void XGIDebug(int level, const char *format, ...)
 {
     va_list args;
 
-    /* if ((level != 0) && ((level & DebugLevel) != 0)) */
-    {
+    if ((level & DebugLevel) != 0) {
         va_start(args, format);
 
-        if (Log2Screen == 1) {
-            vfprintf(stderr, format, args); /* RATS: We assume the format string
-                                             * is trusted, since it is always
-                                             * from a log message in our code. */
+        /* RATS: We assume the format string is trusted, since it is always
+         * from a log message in our code.
+         */
+        if (Log2Screen) {
+            vfprintf(stderr, format, args);
         }
 
-        if (Log2File == 1) {
-            FILE *fp = NULL;
-            fp = fopen(dbglog, "at");
+        if (Log2File) {
+            FILE *fp = fopen(dbglog, "at");
 
-            if (fp == NULL) {
-                fclose(fp);
-            }
-            else {
+            if (fp != NULL) {
                 vfprintf(fp, format, args);
                 fflush(fp);
                 fclose(fp);
