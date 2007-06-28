@@ -47,28 +47,25 @@ void XGIDebug(int level, const char *format, ...)
     {
         va_start(args, format);
 
-		if (Log2Screen == 1)
-		{
-	        vfprintf(stderr, format, args); /* RATS: We assume the format string
-	                                     * is trusted, since it is always
-	                                     * from a log message in our code. */
-		}
+        if (Log2Screen == 1) {
+            vfprintf(stderr, format, args); /* RATS: We assume the format string
+                                             * is trusted, since it is always
+                                             * from a log message in our code. */
+        }
 
-		if (Log2File == 1)
-		{
-	        FILE *fp = NULL;
-	        fp = fopen(dbglog, "at");
-	        if (fp == NULL)
-	        {
-	            fclose(fp);
-	        }
-	        else
-	        {
-				vfprintf(fp, format, args);
-				fflush(fp);
-				fclose(fp);
-	        }
-		}
+        if (Log2File == 1) {
+            FILE *fp = NULL;
+            fp = fopen(dbglog, "at");
+
+            if (fp == NULL) {
+                fclose(fp);
+            }
+            else {
+                vfprintf(fp, format, args);
+                fflush(fp);
+                fclose(fp);
+            }
+        }
 
         va_end(args);
     }
