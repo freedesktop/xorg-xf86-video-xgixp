@@ -1987,18 +1987,10 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
         /*pScrn->SwitchMode   = fbdevHWSwitchMode;
         pScrn->AdjustFrame  = fbdevHWAdjustFrame;
         pScrn->ValidMode    = fbdevHWValidMode;*/
-    }
-    /*if (!XGIPreInitFD(pScrn))               goto fail;*/
+    }
+    if (!XGIPreInitFD(pScrn))               goto fail;
 
-	/* Jong 07/07/2006; moved here but cause segmentation fault because it need MMIO */
-    /* if (!XGIPreInitMemory(pScrn))           goto fail; */
-
-	/* Jong 07/07/2006; set frame buffer size here */
-	/* moved here but cause unresolved external */
-	/* pScrn->videoRam is determined by XGIPreInitMemory() */
-    /* pXGI->fbSize = pScrn->videoRam * 1024; */
-
-	/* Jong 07/07/2006; it just do mapping for MMIO but not for FB */
+    /* Jong 07/07/2006; it just do mapping for MMIO but not for FB */
     if (!XGIMapMem(pScrn))  return FALSE;
 
     /* Enable MMIO */
@@ -2006,6 +1998,12 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     {
         XGIEnableMMIO(pScrn);
     }
+
+    if (!XGIPreInitMemory(pScrn))           goto fail;
+
+    /* pScrn->videoRam is determined by XGIPreInitMemory() */
+    pXGI->fbSize = pScrn->videoRam * 1024;
+
 
     /* Don't fail on this one */
     if (!XGIPreInitDDC(pScrn))              goto fail;
