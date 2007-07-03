@@ -46,27 +46,25 @@
     Cleanup()
 */
 
-extern int  BeginCmdList(CARD32 size);	/* cmdList size in dword */
-extern void EndCmdList();
-extern void SendGECommand(CARD32 addr, CARD32 cmd);
+struct xg47_CmdList;
 
-extern void StartFillData(CARD32 size);
-extern void SubmitData();
+/* cmdList size in dword */
+extern int  xg47_BeginCmdList(struct xg47_CmdList *, CARD32 size);
+extern void xg47_EndCmdList(struct xg47_CmdList *);
+extern void xg47_SendGECommand(struct xg47_CmdList *, CARD32 addr, CARD32 cmd);
 
-extern void FillData(unsigned char* ptr,
+extern void xg47_StartFillData(struct xg47_CmdList *, CARD32 size);
+extern void xg47_SubmitData(struct xg47_CmdList *);
+
+extern void xg47_FillData(struct xg47_CmdList *, unsigned char* ptr,
                      unsigned long width,
                      long int delta,        /* Src Pitch */
                      unsigned long height);
 
-extern void Initialize(CARD32*  cmdBufLinearStartAddr,
-                       CARD32*  cmdBufHWStartAddr,
-                       CARD32   cmdBufSize,
-                       CARD32*  scratchPadLinearAddr,
-                       CARD32*  scracthPadHWAddr,
-                       CARD32*  mmioBase,
-                       int		fd);
-extern void Cleanup();
-extern void Reset();
+extern struct xg47_CmdList *xg47_Initialize(ScrnInfoPtr pScrn, 
+    CARD32 cmdBufSize, CARD32 *mmioBase, int fd);
+extern void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList);
+extern void xg47_Reset(struct xg47_CmdList *);
 
 /* extern int XGIDebug(int level, const char *format, ...); */
 
@@ -88,38 +86,5 @@ typedef enum
     AGPCMDLIST_FLUSH_CMD_LEN        = 0x004,
     AGPCMDLIST_DUMY_END_BATCH_LEN   = AGPCMDLIST_BEGIN_SIZE
 }CMD_SIZE;
-
-typedef struct _CmdList
-{
-    BATCH_TYPE  _curBatchType;
-    CARD32      _curBatchDataCount;         /* DWORDs */
-    CARD32      _curBatchRequestSize;       /* DWORDs */
-    CARD32*     _curBatchBegin;             /* The begin of current batch. */
-    CARD32*     _curBatchDataBegin;         /* The begin of data */
-
-    CARD32*     _writePtr;                  /* current writing ptr */
-    CARD32      _sendDataLength;            /* record the filled data size */
-
-    CARD32*     _cmdBufLinearStartAddr;
-    CARD32*     _cmdBufHWStartAddr;
-    CARD32      _cmdBufSize;            /* DWORDs */
-
-    CARD32*     _lastBatchBegin;        /* The begin of last batch. */
-    CARD32*     _lastBatchEnd;          /* The end of last batch. */
-    BATCH_TYPE  _lastBatchType;         /* The type of the last workload batch. */
-    CARD32      _debugBeginID;          /* write it at begin header as debug ID */
-
-    /* 2d cmd holder */
-    CARD32      _bunch[4];
-
-    /* scratch pad addr, allocate at outside, pass these two parameter in */
-    CARD32*     _scratchPadLinearAddr;
-    CARD32*     _scratchPadHWAddr;
-
-    /* MMIO base */
-    CARD32*     _mmioBase;
-    /* fd number */
-    int		_fd;
-}CmdList;
 
 #endif

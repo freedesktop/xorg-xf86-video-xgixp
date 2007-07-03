@@ -414,16 +414,6 @@ typedef struct {
     CARD8       delta;              /* Delta unit */
 } XGIDigitalTVInfoRec, *XGIDigitalTVInfoPtr;
 
-typedef struct XG47_CMDBUF_INFO
-{
-    unsigned long*  cmdBufLinearStartAddr;
-    unsigned long*  cmdBufHWStartAddr;
-    unsigned long   cmdBufSize;
-    unsigned long*  scratchPadLinearAddr;
-    unsigned long*  scracthPadHWAddr;
-    unsigned long*  mmioBase;
-}XG47_Cmdbuf_InfoRec, *XG47_Cmdbuf_InfoPtr;
-
 typedef struct XG47_CURSOR_INFO
 {
     xf86CursorInfoPtr   pCursorInfo;
@@ -639,7 +629,7 @@ typedef struct {
 #endif
     XAAInfoRecPtr       pXaaInfo;
 
-    XG47_Cmdbuf_InfoRec cmdList;
+    struct xg47_CmdList *cmdList;
 
     Bool                directRenderingEnabled; /* DRI enabled this generation. */
     unsigned int        (*ddcRead)(ScrnInfoPtr);

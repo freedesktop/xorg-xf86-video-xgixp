@@ -2931,7 +2931,7 @@ static Bool XGIEnterVT(int scrnIndex, int flags)
             }
 
             /* reset 2D cmdlist status */
-            Reset();
+            xg47_Reset(pXGI->cmdList);
 
             /* reset 3D cmdlist status */
             /* notify 3D to start run */

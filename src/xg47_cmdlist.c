@@ -36,104 +36,132 @@
 #include "xg47_cmdlist.h"
 #include "xgi_debug.h"
 
-static CmdList s_cmdList;
-static CmdList* s_pCmdList = &s_cmdList;
+struct xg47_CmdList
+{
+    BATCH_TYPE  _curBatchType;
+    CARD32      _curBatchDataCount;         /* DWORDs */
+    CARD32      _curBatchRequestSize;       /* DWORDs */
+    CARD32*     _curBatchBegin;             /* The begin of current batch. */
+    CARD32*     _curBatchDataBegin;         /* The begin of data */
 
-static inline int beginCmdList(CmdList* pCmdList, CARD32 size);
-static inline void endCmdList(CmdList* pCmdList);
-static inline void sendGECommand(CmdList* pCmdList, CARD32 addr, CARD32 cmd);
-static inline void startFillData(CmdList* pCmdList, CARD32 size);
-static inline void fillData(CmdList * pCmdList,
-                            unsigned char * ptr,
-                            CARD32 width,          /* bytes */
-                            long int delta,        /* bytes */
-                            CARD32 height);
-static inline void submitData(CmdList* pCmdList);
-static inline void waitfor2D(CmdList* pCmdList);
+    CARD32*     _writePtr;                  /* current writing ptr */
+    CARD32      _sendDataLength;            /* record the filled data size */
+
+    CARD32*     _cmdBufLinearStartAddr;
+    CARD32*     _cmdBufHWStartAddr;
+    CARD32      _cmdBufSize;            /* DWORDs */
+
+    CARD32*     _lastBatchBegin;        /* The begin of last batch. */
+    CARD32*     _lastBatchEnd;          /* The end of last batch. */
+    BATCH_TYPE  _lastBatchType;         /* The type of the last workload batch. */
+    CARD32      _debugBeginID;          /* write it at begin header as debug ID */
+
+    /* 2d cmd holder */
+    CARD32      _bunch[4];
+
+    /* scratch pad addr, allocate at outside, pass these two parameter in */
+    CARD32*     _scratchPadLinearAddr;
+    CARD32*     _scratchPadHWAddr;
+
+    /* MMIO base */
+    CARD32*     _mmioBase;
+
+    /* fd number */
+    int		_fd;
+};
+static inline void waitfor2D(struct xg47_CmdList * pCmdList);
 
 /* Jong 07/03/2006 */
 int g_bFirst=1;
 extern ScreenPtr g_pScreen;
 
-/*Interface Part*/
-
-int BeginCmdList(CARD32 size)
+struct xg47_CmdList *
+xg47_Initialize(ScrnInfoPtr pScrn, CARD32 cmdBufSize, CARD32 *mmioBase, int fd)
 {
-    int result;
-    result = beginCmdList(s_pCmdList, size);
-    return result;
+    struct xg47_CmdList *list = xnfcalloc(sizeof(struct xg47_CmdList), 1);
+
+    list->_mmioBase = mmioBase;
+    list->_cmdBufSize = cmdBufSize;
+    list->_fd = fd;
+
+    if (!XGIPcieMemAllocate(pScrn,
+                            list->_cmdBufSize * sizeof(CARD32),
+                            0,
+			    (CARD32 *) & list->_cmdBufHWStartAddr,
+			    (CARD32 *) & list->_cmdBufLinearStartAddr)) {
+        XGIDebug(DBG_ERROR, "[DBG Error]Allocate CmdList buffer error!\n");
+	goto err;
+    }
+
+    XGIDebug(DBG_CMDLIST, "cmdBuf VAddr=0x%p  HAddr=0x%p buffsize=0x%x\n",
+	     list->_cmdBufLinearStartAddr, list->_cmdBufHWStartAddr, list->_cmdBufSize);
+
+    if (!XGIPcieMemAllocate(pScrn,
+                            4*1024,
+                            0,
+                            (CARD32 *) & list->_scratchPadHWAddr,
+                            (CARD32 *) & list->_scratchPadLinearAddr)) {
+        XGIDebug(DBG_ERROR, "[DBG ERROR]Allocate Scratch Pad error!\n");
+
+	goto err;
+    }
+
+
+    XGIDebug(DBG_CMDLIST, "[Malloc]Scratch VAddr=0x%x HAddr=0x%x\n",
+           list->_scratchPadLinearAddr, list->_scratchPadHWAddr);
+
+    xg47_Reset(list);
+
+    XGIDebug(DBG_CMDLIST, "cmdBufLinearStartAddr = %x\n"
+       "cmdBufHWStartAddr = %x\n"
+       "cmdBufSize = %x \n"
+       "scratchPadLinearAddr = %x\n"
+       "scracthPadHWAddr = %x\n"
+       "mmioBase = %x\n",
+       list->_cmdBufLinearStartAddr,
+       list->_cmdBufHWStartAddr,
+       list->_cmdBufSize,
+       list->_scratchPadLinearAddr,
+       list->_scratchPadHWAddr,
+       list->_mmioBase);
+    
+    return list;
+
+err:
+    xg47_Cleanup(pScrn, list);
+    return NULL;
 }
 
-void EndCmdList()
+void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList)
 {
-    endCmdList(s_pCmdList);
+    if (s_pCmdList) {
+	if (s_pCmdList->_scratchPadHWAddr) {
+	    XGIDebug(DBG_CMDLIST, "[DBG Free]Scratch VAddr=0x%x HAddr=0x%x\n",
+		     s_pCmdList->_scratchPadLinearAddr, s_pCmdList->_scracthPadHWAddr);
+	
+	    XGIPcieMemFree(pScrn,
+			   4*1024,
+			   0,
+			   (CARD32)(s_pCmdList->_scratchPadHWAddr),
+			   s_pCmdList->_scratchPadLinearAddr);
+	}
+	
+	if (s_pCmdList->_cmdBufLinearStartAddr) {
+	    XGIDebug(DBG_CMDLIST, "[DBG Free]cmdBuf VAddr=0x%x  HAddr=0x%x\n",
+		     s_pCmdList->_cmdBufLinearStartAddr, s_pCmdList->_cmdBufHWStartAddr);
+
+	    XGIPcieMemFree(pScrn,
+			   s_pCmdList->_cmdBufSize * sizeof(CARD32),
+			   0,
+			   (CARD32)(s_pCmdList->_cmdBufHWStartAddr),
+			   s_pCmdList->_cmdBufLinearStartAddr);
+	}
+
+	xfree(s_pCmdList);
+    }
 }
 
-void SendGECommand(CARD32 addr, CARD32 cmd)
-{
-    /* addr is offset of 2D Engine address. xx must be 4byte aligned of  21xx */
-    sendGECommand(s_pCmdList, addr & 0xfc, cmd);
-}
-
-void StartFillData(CARD32 size)
-{
-    startFillData(s_pCmdList, size);
-}
-
-void SubmitData()
-{
-    /* packed data to 128 bits align */
-    submitData(s_pCmdList);
-}
-
-void FillData(unsigned char* ptr,
-              unsigned long width,
-              long int delta,
-              unsigned long height)
-{
-    fillData(s_pCmdList, ptr, width, delta, height);
-}
-
-void Initialize(CARD32* cmdBufLinearStartAddr,
-                CARD32* cmdBufHWStartAddr,
-                CARD32  cmdBufSize,
-                CARD32* scratchPadLinearAddr,
-                CARD32* scracthPadHWAddr,
-                CARD32* mmioBase,
-                int		fd)
-{
-    s_pCmdList->_cmdBufLinearStartAddr  = cmdBufLinearStartAddr;
-    s_pCmdList->_cmdBufHWStartAddr      = cmdBufHWStartAddr;
-    s_pCmdList->_cmdBufSize             = cmdBufSize;
-    s_pCmdList->_scratchPadLinearAddr   = scratchPadLinearAddr;
-    s_pCmdList->_scratchPadHWAddr       = scracthPadHWAddr;
-    s_pCmdList->_mmioBase               = mmioBase;
-    *(s_pCmdList->_scratchPadLinearAddr) = 0;
-    s_pCmdList->_lastBatchBegin         = 0;
-    s_pCmdList->_lastBatchEnd           = 0;
-    s_pCmdList->_sendDataLength         = 0;
-    s_pCmdList->_writePtr               = 0;
-    s_pCmdList->_fd						= fd;
-
-    XGIDebug(DBG_CMDLIST, "\t pXGI->cmdList.cmdBufLinearStartAddr = %x\n"
-       "pXGI->cmdList.cmdBufHWStartAddr = %x\n"
-       "pXGI->cmdList.cmdBufSize = %x \n"
-       "pXGI->cmdList.scratchPadLinearAddr = %x\n"
-       "pXGI->cmdList.scracthPadHWAddr = %x\n"
-       "pXGI->cmdList.mmioBase = %x\n",
-       s_pCmdList->_cmdBufLinearStartAddr,
-       s_pCmdList->_cmdBufHWStartAddr,
-       s_pCmdList->_cmdBufSize,
-       s_pCmdList->_scratchPadLinearAddr,
-       s_pCmdList->_scratchPadHWAddr,
-       s_pCmdList->_mmioBase);
-}
-
-void Cleanup()
-{
-}
-
-void Reset()
+void xg47_Reset(struct xg47_CmdList *s_pCmdList)
 {
     *(s_pCmdList->_scratchPadLinearAddr) = 0;
     s_pCmdList->_lastBatchBegin         = 0;
@@ -143,20 +171,19 @@ void Reset()
 }
 
 /* Implementation Part*/
-static inline int submit2DBatch(CmdList* pCmdList);
-static inline void sendRemainder2DCommand(CmdList* pCmdList);
-static inline void reserveData(CmdList* pCmdList, CARD32 size);
-static inline void addScratchBatch(CmdList* pCmdList);
-static inline void linkToLastBatch(CmdList* pCmdList);
+static inline int submit2DBatch(struct xg47_CmdList * pCmdList);
+static inline void sendRemainder2DCommand(struct xg47_CmdList * pCmdList);
+static inline void reserveData(struct xg47_CmdList * pCmdList, CARD32 size);
+static inline void addScratchBatch(struct xg47_CmdList * pCmdList);
+static inline void linkToLastBatch(struct xg47_CmdList * pCmdList);
 
-static inline void waitCmdListAddrAvailable(CmdList* pCmdList, CARD32* addrStart, CARD32* addrEnd);
-static inline void preventOverwriteCmdbuf(CmdList* pCmdList);
-static inline void reset(CmdList* pCmdList);
-static CARD32 getCurBatchBeginPort(CmdList* pCmdList);
-static inline void triggerHWCommandList(CmdList* pCmdList, CARD32 triggerCounter);
-static inline void waitForPCIIdleOnly();
-static inline CARD32* getGEWorkedCmdHWAddr(CmdList* pCmdList);
-static void dumpCommandBuffer(CmdList* pCmdList);
+static inline void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList, CARD32* addrStart, CARD32* addrEnd);
+static inline void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList);
+static CARD32 getCurBatchBeginPort(struct xg47_CmdList * pCmdList);
+static inline void triggerHWCommandList(struct xg47_CmdList * pCmdList, CARD32 triggerCounter);
+static inline void waitForPCIIdleOnly(struct xg47_CmdList *);
+static inline CARD32* getGEWorkedCmdHWAddr(struct xg47_CmdList * pCmdList);
+static void dumpCommandBuffer(struct xg47_CmdList * pCmdList);
 
 CARD32 s_emptyBegin[AGPCMDLIST_BEGIN_SIZE] =
 {
@@ -169,7 +196,7 @@ CARD32 s_emptyBegin[AGPCMDLIST_BEGIN_SIZE] =
 /*
     return: 1 -- success 0 -- false
 */
-static int beginCmdList(CmdList* pCmdList, CARD32 size)
+int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, CARD32 size)
 {
     XGIDebug(DBG_CMDLIST, "[DEBUG] Enter beginCmdList.\n");
 
@@ -228,7 +255,7 @@ static int beginCmdList(CmdList* pCmdList, CARD32 size)
 /*
     parameter: size -- length of space in bytes
 */
-static void reserveData(CmdList* pCmdList, CARD32 size)
+static void reserveData(struct xg47_CmdList * pCmdList, CARD32 size)
 {
     /* ASSERTDD(DATAFILL_NOFILL == m_DataFillMode, "Last Data was not submited!");  */
     /* ASSERTDD(NULL != m_pulCurBatchBegin, "What's wrong?");                       */
@@ -293,7 +320,7 @@ static void reserveData(CmdList* pCmdList, CARD32 size)
 
 
 
-static void endCmdList(CmdList* pCmdList)
+void xg47_EndCmdList(struct xg47_CmdList *pCmdList)
 {
     XGIDebug(DBG_FUNCTION,"[DBG-Jong] endCmdList-1\n");
     sendRemainder2DCommand(pCmdList);
@@ -306,7 +333,7 @@ static void endCmdList(CmdList* pCmdList)
     submit2DBatch(pCmdList);
 }
 
-static void sendGECommand(CmdList* pCmdList, CARD32 addr, CARD32 cmd)
+void xg47_SendGECommand(struct xg47_CmdList *pCmdList, CARD32 addr, CARD32 cmd)
 {
     /* Encrypt the command for AGP. */
     CARD32 shift        = (pCmdList->_curBatchDataCount++) & 0x00000003;
@@ -326,7 +353,7 @@ static void sendGECommand(CmdList* pCmdList, CARD32 addr, CARD32 cmd)
     }
 }
 
-static void startFillData(CmdList* pCmdList, CARD32 size)
+void xg47_StartFillData(struct xg47_CmdList *pCmdList, CARD32 size)
 {
     reserveData(pCmdList, size);
     sendRemainder2DCommand(pCmdList);
@@ -336,7 +363,7 @@ static void startFillData(CmdList* pCmdList, CARD32 size)
     pCmdList->_sendDataLength = 0;
 }
 
-static void fillData(CmdList * pCmdList,
+void xg47_FillData(struct xg47_CmdList *pCmdList,
                      unsigned char * ptr,
                      CARD32 width,  /* bytes */
                      long int delta,      /* bytes */
@@ -393,7 +420,7 @@ static void fillData(CmdList * pCmdList,
 }
 
 
-static void submitData(CmdList* pCmdList)
+void xg47_SubmitData(struct xg47_CmdList *pCmdList)
 {
     /* ASSERTDD(m_ulSendDataLen <= m_ulDataLength, "Reserved size is not enough!");*/
     /* ASSERTDD(DATAFILL_INBATCH_BEGIN != m_DataFillMode, "Did not fill data after reserve.");*/
@@ -410,7 +437,7 @@ static void submitData(CmdList* pCmdList)
 }
 
 
-static void waitCmdListAddrAvailable(CmdList* pCmdList, CARD32* addrStart, CARD32* addrEnd)
+static void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList, CARD32* addrStart, CARD32* addrEnd)
 {
 	/* The loop of waiting for enough command list buffer */
     while(1)
@@ -432,26 +459,26 @@ static void waitCmdListAddrAvailable(CmdList* pCmdList, CARD32* addrStart, CARD3
         else
         {
             /* No running batch */
-            if ((NULL != pCmdList->_lastBatchBegin) &&
-                (addrStart >= pCmdList->_lastBatchBegin &&  addrEnd <= pCmdList->_lastBatchBegin))
-            {
+            if ((NULL != pCmdList->_lastBatchBegin) 
+		&& (addrStart >= pCmdList->_lastBatchBegin) 
+		&& (addrEnd <= pCmdList->_lastBatchBegin)) {
                 /* If current command list overlaps the last begin
                  * Force to reset
 		 */
-                reset(pCmdList);
+                xg47_Reset(pCmdList);
             }
             break;
         }
     }
 }
 
-static CARD32* getGEWorkedCmdHWAddr(CmdList* pCmdList)
+static CARD32* getGEWorkedCmdHWAddr(struct xg47_CmdList * pCmdList)
 {
 	return (CARD32*)(*(pCmdList->_scratchPadLinearAddr));
 }
 
 
-static void sendRemainder2DCommand(CmdList* pCmdList)
+static void sendRemainder2DCommand(struct xg47_CmdList * pCmdList)
 {
     /* ASSERTDD(BTYPE_2D == m_btBatchType, "Only 2D batch can use SendCommand!");*/
     if (0x7f000000 != pCmdList->_bunch[0])
@@ -466,7 +493,7 @@ static void sendRemainder2DCommand(CmdList* pCmdList)
     }
 }
 
-static void addScratchBatch(CmdList* pCmdList)
+static void addScratchBatch(struct xg47_CmdList * pCmdList)
 {
     /*because we add 2D scratch directly at the end of this batch*/
     /*ASSERT(BTYPE_2D == pCmdList->_curBatchType);*/
@@ -507,7 +534,7 @@ static void addScratchBatch(CmdList* pCmdList)
 	dumpCommandBuffer(pCmdList);
 }
 
-static void linkToLastBatch(CmdList* pCmdList)
+static void linkToLastBatch(struct xg47_CmdList * pCmdList)
 {
 
     CARD32 beginHWAddr;
@@ -537,7 +564,7 @@ static void linkToLastBatch(CmdList* pCmdList)
         /* Issue PCI begin */
 
         /* Wait for GE Idle. */
-        waitForPCIIdleOnly();
+        waitForPCIIdleOnly(pCmdList);
 
         pCmdPort = (CARD32*)((unsigned char*)pCmdList->_mmioBase + BASE_3D_ENG + beginPort);
 
@@ -580,7 +607,7 @@ static void linkToLastBatch(CmdList* pCmdList)
     pCmdList->_debugBeginID   = (pCmdList->_debugBeginID + 1) & 0xFFFF;
 }
 
-CARD32 getCurBatchBeginPort(CmdList* pCmdList)
+CARD32 getCurBatchBeginPort(struct xg47_CmdList * pCmdList)
 {
     /* Convert the batch type to begin port ID */
     switch(pCmdList->_curBatchType)
@@ -599,7 +626,7 @@ CARD32 getCurBatchBeginPort(CmdList* pCmdList)
     }
 }
 
-static void triggerHWCommandList(CmdList* pCmdList, CARD32 triggerCounter)
+static void triggerHWCommandList(struct xg47_CmdList * pCmdList, CARD32 triggerCounter)
 {
     static CARD32 s_triggerID = 1;
 
@@ -615,7 +642,7 @@ static void triggerHWCommandList(CmdList* pCmdList, CARD32 triggerCounter)
     XGIDebug(DBG_CMD_BUFFER, "[DBG]After trigger [2800]=%08x\n", *((CARD32*)((unsigned char*)pCmdList->_mmioBase + BASE_3D_ENG)) );
 }
 
-static void waitForPCIIdleOnly()
+static void waitForPCIIdleOnly(struct xg47_CmdList *s_pCmdList)
 {
     volatile CARD32* v3DStatus;
     int idleCount = 0;
@@ -634,11 +661,7 @@ static void waitForPCIIdleOnly()
     }
 }
 
-static void reset(CmdList* pCmdList)
-{
-}
-
-void dumpCommandBuffer(CmdList* pCmdList)
+void dumpCommandBuffer(struct xg47_CmdList * pCmdList)
 {
     int i;
 
@@ -671,7 +694,7 @@ void dumpCommandBuffer(CmdList* pCmdList)
     |_________|______|_______|  if roll back, will overwrite the cmdList
     B         L      G       E  So MUST wait till G execute to before L
 */
-static void preventOverwriteCmdbuf(CmdList* pCmdList)
+static void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList)
 {
     CARD32* curGEWorkedCmdAddr = 0;
     while (1)
@@ -687,7 +710,7 @@ static void preventOverwriteCmdbuf(CmdList* pCmdList)
     }
 }
 
-static int submit2DBatch(CmdList* pCmdList)
+static int submit2DBatch(struct xg47_CmdList * pCmdList)
 {
     CARD32 beginHWAddr;
     CARD32 beginPort;
@@ -721,7 +744,7 @@ static int submit2DBatch(CmdList* pCmdList)
     if (NULL == pCmdList->_lastBatchBegin)
     {
     XGIDebug(DBG_FUNCTION, "[DBG-Jong] submit2DBatch-4\n");
-        waitForPCIIdleOnly();
+        waitForPCIIdleOnly(pCmdList);
     XGIDebug(DBG_FUNCTION, "[DBG-Jong] submit2DBatch-5\n");
     }
 
@@ -753,7 +776,7 @@ static int submit2DBatch(CmdList* pCmdList)
     return retval;
 }
 
-static inline void waitfor2D(CmdList* pCmdList)
+static inline void waitfor2D(struct xg47_CmdList * pCmdList)
 {
     CARD32 lastBatchEndHW = (CARD32) pCmdList->_lastBatchEnd
                             -(CARD32) pCmdList->_cmdBufLinearStartAddr
