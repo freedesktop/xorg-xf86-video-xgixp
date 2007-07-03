@@ -126,10 +126,10 @@ static int      XGIValidMode(int scrnIndex, DisplayModePtr mode, Bool verbose,
 
 /* Internally used functions */
 static Bool     XGIMapMMIO(ScrnInfoPtr pScrn);
-static Bool     XGIUnmapMMIO(ScrnInfoPtr pScrn);
+static void XGIUnmapMMIO(ScrnInfoPtr pScrn);
 static Bool     XGIMapFB(ScrnInfoPtr pScrn);
-static Bool     XGIUnmapFB(ScrnInfoPtr pScrn);
-static Bool     XGIUnmapMem(ScrnInfoPtr pScrn);
+static void XGIUnmapFB(ScrnInfoPtr pScrn);
+static void XGIUnmapMem(ScrnInfoPtr pScrn);
 
 static void     XGISave(ScrnInfoPtr pScrn);
 static void     XGIRestore(ScrnInfoPtr pScrn);
@@ -626,11 +626,12 @@ static Bool XGIMapMMIO(ScrnInfoPtr pScrn)
     return TRUE;
 }
 
-/*
- * Unmap the MMIO region.  Used during pre-init
- * and by XGIUnmapMem below.
+/**
+ * Unmap the MMIO region.
+ * 
+ * \sa XGIUnmapMem, XGIUnmapFB
  */
-static Bool XGIUnmapMMIO(ScrnInfoPtr pScrn)
+static void XGIUnmapMMIO(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
 
@@ -640,22 +641,19 @@ static Bool XGIUnmapMMIO(ScrnInfoPtr pScrn)
 
     if (!pXGI->IOBase)
     {
-        if (pXGI->isFBDev)
-        {
+        if (pXGI->isFBDev) {
             fbdevHWUnmapMMIO(pScrn);
         }
-        else
-        {
+        else {
             xf86UnMapVidMem(pScrn->scrnIndex, pXGI->IOBase, XGI_MMIO_SIZE);
-            pXGI->IOBase= NULL;
         }
+
+	pXGI->IOBase = NULL;
     }
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
-
-    return TRUE;
 }
 
 /*
@@ -714,8 +712,13 @@ static Bool XGIMapFB(ScrnInfoPtr pScrn)
     return TRUE;
 }
 
-/* Unmap the frame buffer.  Used by R128UnmapMem, below. */
-static Bool XGIUnmapFB(ScrnInfoPtr pScrn)
+
+/**
+ * Unmap the frame buffer from process address space.
+ *
+ * \sa XGIUnmapMem, XGIUnmapMMIO
+ */
+static void XGIUnmapFB(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
 
@@ -723,42 +726,38 @@ static Bool XGIUnmapFB(ScrnInfoPtr pScrn)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    if (!pXGI->fbBase)
-    {
-        if (pXGI->isFBDev)
-        {
+    if (!pXGI->fbBase) {
+        if (pXGI->isFBDev) {
             fbdevHWUnmapVidmem(pScrn);
         }
-        else
-        {
+        else {
             xf86UnMapVidMem(pScrn->scrnIndex, pXGI->fbBase, pXGI->fbSize);
-            pXGI->fbBase = NULL;
         }
+
+	pXGI->fbBase = NULL;
     }
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
-
-    return TRUE;
 }
+
 
 /*
  * Unmap the MMIO region and the frame buffer.
  */
-static Bool XGIUnmapMem(ScrnInfoPtr pScrn)
+static void XGIUnmapMem(ScrnInfoPtr pScrn)
 {
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    if (!XGIUnmapMMIO(pScrn) || !XGIUnmapFB(pScrn)) return FALSE;
+    XGIUnmapMMIO(pScrn);
+    XGIUnmapFB(pScrn);
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
-
-    return TRUE;
 }
 
 static void XGIEnableMMIO(ScrnInfoPtr pScrn)
