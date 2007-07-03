@@ -1945,7 +1945,7 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
 
     if (!XGIProcessOptions(pScrn))          goto fail;
 
-    if (!XGIPreInitConfig(pScrn))           goto fail;
+    if (!XGIPreInitConfig(pScrn))           goto fail;
     if (pXGI->isFBDev)
     {
 
@@ -2624,7 +2624,7 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 	ErrorF("XGI-Define DPMSExtension...\n");
 
         xf86DPMSInit(pScreen, (DPMSSetProcPtr)XGIDPMSSet, 0);
-		ErrorF("XGI-xf86DPMSInit(pScreen, (DPMSSetProcPtr)XGIDPMSSet, 0)...\n");
+		ErrorF("XGI-xf86DPMSInit(pScreen, (DPMSSetProcPtr)XGIDPMSSet, 0)...\n");
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After DPMSExtension\n");
 #endif
 
@@ -2634,7 +2634,7 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 
     PDEBUG(ErrorF("*-*Jong-XGIInitVideo-End\n"));
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After XvExtension\n");
-#endif
+#endif
 #ifdef XGI_XVMC
     PDEBUG(ErrorF("*-*Jong-XGIInitMC-Begin\n"));
     XGIInitMC(pScreen);

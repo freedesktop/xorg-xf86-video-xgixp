@@ -71,9 +71,7 @@
 #define NTSC            14.31818
 #define PAL             17.73448
 
-/* Jong 06/21/2006
 #define __DEBUG_FUNC__	
-#define __DEBUG_FUNC__  0*/
 
 #ifdef __DEBUG_FUNC__
 #define ENABLE_HW_SOLIDLINE  (pXGI->EnableSolidLine)
