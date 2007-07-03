@@ -129,7 +129,6 @@ static Bool     XGIMapMMIO(ScrnInfoPtr pScrn);
 static Bool     XGIUnmapMMIO(ScrnInfoPtr pScrn);
 static Bool     XGIMapFB(ScrnInfoPtr pScrn);
 static Bool     XGIUnmapFB(ScrnInfoPtr pScrn);
-static Bool     XGIMapMem(ScrnInfoPtr pScrn);
 static Bool     XGIUnmapMem(ScrnInfoPtr pScrn);
 
 static void     XGISave(ScrnInfoPtr pScrn);
@@ -591,8 +590,7 @@ static void XGIDPMSSet(ScrnInfoPtr pScrn, int PowerManagementMode, int flags)
 }
 
 /*
- * Memory map the MMIO region.  Used during pre-init
- * and by XGIMapMem below.
+ * Memory map the MMIO region.  Used during pre-init.
  */
 static Bool XGIMapMMIO(ScrnInfoPtr pScrn)
 {
@@ -661,7 +659,7 @@ static Bool XGIUnmapMMIO(ScrnInfoPtr pScrn)
 }
 
 /*
- * Memory map the frame buffer.  Used by XGIMapMem, below.
+ * Memory map the frame buffer.  Used by pre-init.
  */
 static Bool XGIMapFB(ScrnInfoPtr pScrn)
 {
@@ -736,33 +734,6 @@ static Bool XGIUnmapFB(ScrnInfoPtr pScrn)
             xf86UnMapVidMem(pScrn->scrnIndex, pXGI->fbBase, pXGI->fbSize);
             pXGI->fbBase = NULL;
         }
-    }
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-    return TRUE;
-}
-
-/*
- * Memory map the MMIO region and the frame buffer.
- */
-static Bool XGIMapMem(ScrnInfoPtr pScrn)
-{
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-    if (!XGIMapMMIO(pScrn))
-    {
-        return FALSE;
-    }
-
-    if (!XGIMapFB(pScrn))
-    {
-        XGIUnmapMMIO(pScrn);
-        return FALSE;
     }
 
 #if DBG_FLOW
@@ -1990,36 +1961,32 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     }
     if (!XGIPreInitFD(pScrn))               goto fail;
 
-    /* Jong 07/07/2006; it just do mapping for MMIO but not for FB */
-    if (!XGIMapMem(pScrn))  return FALSE;
-
     /* Enable MMIO */
     if (!pXGI->noMMIO)
     {
+        if (!XGIMapMMIO(pScrn)) {
+            goto fail;
+        }
+
         XGIEnableMMIO(pScrn);
     }
 
+    if (!pXGI->isFBDev && !XGIPreInitInt10(pScrn)) {
+        goto fail;
+    }
+
+    if (!XGIBiosDllInit(pScrn))             goto fail;
     if (!XGIPreInitMemory(pScrn))           goto fail;
 
     /* pScrn->videoRam is determined by XGIPreInitMemory() */
     pXGI->fbSize = pScrn->videoRam * 1024;
 
+    if (!XGIMapFB(pScrn))                   goto fail;
 
     /* Don't fail on this one */
     if (!XGIPreInitDDC(pScrn))              goto fail;
 
-    if (!pXGI->isFBDev)
-    {
-        if (!XGIPreInitInt10(pScrn))        goto fail;
-    }
-
     if (!XGIPreInitLcdSize(pScrn))          goto fail;
-
-    /*if (!XGIBiosDllInit(pXGI))              goto fail;*/
-    if (!XGIBiosDllInit(pScrn))              goto fail;
-
-	/* Jong 07/07/2006; moved to front */
-    if (!XGIPreInitMemory(pScrn))           goto fail; 
 
     if (!XGIPreInitModes(pScrn))            goto fail;
 
@@ -2044,11 +2011,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     if (!XGIPreInitDRI(pScrn))                goto fail;
 #endif
 */
-
-	/* Jong 07/07/2006; set frame buffer size here */
-	/* moved to front of XGIMapMem() */
-	/* It seems need XGIPreInitMemory() to be called first */
-    pXGI->fbSize = pScrn->videoRam * 1024; 
 
     /* Free the video bios (if applicable) */
     if (pXGI->biosBase)
@@ -2377,17 +2339,22 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
             return FALSE;
     }
 
-    if (!XGIMapMem(pScrn))          goto fail;
-
-    if (!XGIPreInitInt10(pScrn))    goto fail;
-
     if (!pXGI->noMMIO)
     {
+        if (!XGIMapMMIO(pScrn)) {
+            goto fail;
+        }
+
         XGIEnableMMIO(pScrn);
 
         /* Initialize the MMIO vgahw functions */
         vgaHWSetMmioFuncs(pVgaHW, pXGI->IOBase, 0);
     }
+
+    if (!XGIMapFB(pScrn))           goto fail;
+
+    if (!XGIPreInitInt10(pScrn))    goto fail;
+
 
     /*
      * Save the current video card state. Enough state must be
