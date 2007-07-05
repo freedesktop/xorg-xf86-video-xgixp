@@ -56,10 +56,8 @@ extern void xg47_SendGECommand(struct xg47_CmdList *, CARD32 addr, CARD32 cmd);
 extern void xg47_StartFillData(struct xg47_CmdList *, CARD32 size);
 extern void xg47_SubmitData(struct xg47_CmdList *);
 
-extern void xg47_FillData(struct xg47_CmdList *, unsigned char* ptr,
-                     unsigned long width,
-                     long int delta,        /* Src Pitch */
-                     unsigned long height);
+extern void xg47_FillData(struct xg47_CmdList *, const unsigned char *ptr,
+    unsigned width, int delta, unsigned height);
 
 extern struct xg47_CmdList *xg47_Initialize(ScrnInfoPtr pScrn, 
     CARD32 cmdBufSize, CARD32 *mmioBase, int fd);

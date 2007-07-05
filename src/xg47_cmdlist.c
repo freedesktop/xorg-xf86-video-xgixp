@@ -363,14 +363,15 @@ void xg47_StartFillData(struct xg47_CmdList *pCmdList, CARD32 size)
     pCmdList->_sendDataLength = 0;
 }
 
+/**
+ * \param width  Width in bytes.
+ * \param delta  Source pitch, in bytes.
+ */
 void xg47_FillData(struct xg47_CmdList *pCmdList,
-                     unsigned char * ptr,
-                     CARD32 width,  /* bytes */
-                     long int delta,      /* bytes */
-                     CARD32 height)
+		   const unsigned char *ptr,
+		   unsigned width, int delta, unsigned height)
 {
-    CARD32 sizeAlign;
-    sizeAlign = width & ~0x03;
+    const unsigned sizeAlign = width & ~0x03;
 
     /* fill data to the cmdbatch
      * write 1 dword per time
@@ -385,7 +386,7 @@ void xg47_FillData(struct xg47_CmdList *pCmdList,
 
         /* Next line start address */
         CARD32 sizeRem = 0;
-        unsigned char* ptrNext = ptr + delta;
+        const unsigned char *ptrNext = ptr + delta;
 
         /* ????SSEable????? */
         memcpy(pCmdList->_writePtr, ptr, sizeAlign);
