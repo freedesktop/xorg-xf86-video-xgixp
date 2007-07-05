@@ -223,7 +223,7 @@ typedef unsigned long GRACAPS;
 #define GRACAPS_ROTATION_BY_REG         0x00400000       /* Adjust texture capability */
 #endif
 
-#define GRACAPS_CONTROL_HSCB            0x00800000       /* If the Utility can adjust HSCB
+#define GRACAPS_CONTROL_HSCB            0x00800000       /* If the Utility can adjust HSCB */
 
 /* End GRACAPS */
 
