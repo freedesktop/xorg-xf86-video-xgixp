@@ -1444,8 +1444,8 @@ typedef enum
 #define 	M2REG_DISABLE_MULTI_TRIANGLES_FOR_BUMPLOOP_RBOFFSET			0x88
 #define 	M2REG_DISABLE_MULTI_TRIANGLES_FOR_BUMPLOOP_SHIFT				7
 #define 	M2REG_DISABLE_MULTI_TRIANGLES_FOR_BUMPLOOP_MASK				(ONE_BIT_MASK<<7)
-/* 1 = Disable
-/* 0 = Enable
+/* 1 = Disable */
+/* 0 = Enable */
 #define 	M2REG_FOG_VALID_INRE_RBOFFSET			0x88
 #define 	M2REG_FOG_VALID_INRE_SHIFT				6
 #define 	M2REG_FOG_VALID_INRE_MASK				(ONE_BIT_MASK<<6)
@@ -1533,7 +1533,7 @@ typedef enum
 	SSSC_Invalid_Pair = 0x0,	/* No comment Given */
 	SSSC_Valid_Invalid = 0x1,	/* left valid, right invalid */
 	SSSC_Invalid_Valid = 0x2,	/* left invalid, right valid */
-	SSSC_Valid_Valid = 0x3,	/* both valid
+	SSSC_Valid_Valid = 0x3,	/* both valid */
 	SSSC_Coord_NoKill_NoClamp = 0x4,	/* No comment Given */
 	SSSC_Coord_NoKill_Clamp = 0x5,	/* No comment Given */
 	SSSC_Coord_Kill_NoClamp = 0x6,	/* No comment Given */
@@ -2317,8 +2317,8 @@ typedef enum
 #define 	M2REG_COLOR_SYNC_DEPTH_DISABLE_RBOFFSET			0x9e
 #define 	M2REG_COLOR_SYNC_DEPTH_DISABLE_SHIFT				1
 #define 	M2REG_COLOR_SYNC_DEPTH_DISABLE_MASK				(ONE_BIT_MASK<<1)
-/* 1 = Disable
-/* 0 = Enable
+/* 1 = Disable */
+/* 0 = Enable */
 #define 	M2REG_COLOR_BUFFER_PORT_RBOFFSET			0x9e
 #define 	M2REG_COLOR_BUFFER_PORT_SHIFT				0
 #define 	M2REG_COLOR_BUFFER_PORT_MASK				ONE_BIT_MASK
@@ -3189,7 +3189,7 @@ typedef enum
 	PCC_Signed10_Normalize_IFF = 0xc,	/* fixed point 10-10-10 format to IFF in [-1.0, 1.0] = fvalue/(29 - 1) in order of (X, Y, Z, 1.0) and set 1.0 to W. D[9:0] = X, D[29:20] = Z. */
 	PCC_Signed10_Normalize_IFF_Swap_XZ = 0xd,	/* 10-10-10 format to IFF in [-1.0, 1.0] = fvalue/(29 - 1) in order of (Z, Y, X, 1.0) and set 1.0 to W. */
 	PCC_Unsigned10_IFF = 0xe,	/* 10-10-10 format to IFF = fvalue in order of (X, Y, Z, 1.0) and set 1.0 to W. */
-	PCC_Unsigned10_IFF_Swap_XZ = 0xf	/* 10-10-10 format to IFF = fvalue in order of (Z, Y, X, 1.0) and set 1.0 to W. /* X зи Z. */
+	PCC_Unsigned10_IFF_Swap_XZ = 0xf	/* 10-10-10 format to IFF = fvalue in order of (Z, Y, X, 1.0) and set 1.0 to W. X зи Z. */
 } PutConversionCodes;
 
 
