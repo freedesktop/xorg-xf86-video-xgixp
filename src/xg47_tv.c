@@ -616,13 +616,13 @@ CARD16 MV7GetLevel()
 Bool XG47EnableTV(XGIPtr pXGI, unsigned long enableTV)
 {
     Bool    isClearBit = FALSE, retVal = FALSE;
-    CARD8   reg3X5_C2 = In3x5(0xc2);
+    CARD8   reg3X5_C2 = IN3X5B(0xc2);
 
     /* clear TV protection bit to enable writing TV registers (CBAi1/XP/Napa2)*/
     if(reg3X5_C2 & 0x40)
     {
         reg3X5_C2 = reg3X5_C2 & 0xbf;
-        Out3x5(0xc2, reg3X5_C2);
+        OUT3X5B(0xc2, reg3X5_C2);
         isClearBit = TRUE;
     }
 
@@ -648,7 +648,7 @@ Bool XG47EnableTV(XGIPtr pXGI, unsigned long enableTV)
 
     if(isClearBit)
     {
-        Out3x5(0xc2, reg3X5_C2 | 0x40);
+        OUT3X5B(0xc2, reg3X5_C2 | 0x40);
     }
 
     return retVal;

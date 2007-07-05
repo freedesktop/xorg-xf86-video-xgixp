@@ -197,7 +197,7 @@ void XGIDumpRegisterValue(ScrnInfoPtr pScrn)
 
         for(j=0; j<0x10; j++)
         {
-            temp = bIn3c5(i*0x10 + j);
+            temp = IN3C5B(i*0x10 + j);
             ErrorF("%3x", temp);
         }
         ErrorF("\n");
@@ -224,7 +224,7 @@ void XGIDumpRegisterValue(ScrnInfoPtr pScrn)
 
         for(j=0; j<0x10; j++)
         {
-            temp = bIn3x5(i*0x10 + j);
+            temp = IN3X5B(i*0x10 + j);
             ErrorF("%3x", temp);
         }
         ErrorF("\n");
@@ -251,7 +251,7 @@ void XGIDumpRegisterValue(ScrnInfoPtr pScrn)
 
         for(j=0; j<0x10; j++)
         {
-            temp = bIn3cf(i*0x10 + j);
+            temp = IN3CFB(i*0x10 + j);
             ErrorF("%3x", temp);
         }
         ErrorF("\n");

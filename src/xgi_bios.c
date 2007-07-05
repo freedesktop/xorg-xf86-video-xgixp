@@ -83,9 +83,9 @@ CARD16 XGIGetVClock_BandWidth(XGIPtr pXGI,
             return(154);
     }
 
-    if ((((bIn3cf(0xB8) & 0x80) == 0x80) && ((bIn3x5(0x5A) & 0x03) == 0x03)
+    if ((((IN3CFB(0xB8) & 0x80) == 0x80) && ((IN3X5B(0x5A) & 0x03) == 0x03)
                                          && (flag & DEV_SUPPORT_CRT))
-     || (((bIn3x5(0x5A) & 0x0C) == 0x0c) && ((bIn3cf(0xB8) & 0x80) == 0x80)
+     || (((IN3X5B(0x5A) & 0x0C) == 0x0c) && ((IN3CFB(0xB8) & 0x80) == 0x80)
                                          && (flag &  DEV_SUPPORT_DVI)))
     {
         /*
@@ -731,15 +731,15 @@ void XGICloseSecondaryView(XGIPtr pXGI)
 
     /* clear flag */
 	/* Jong 09/20/2006; Working status register 1; 0xF0 is for MV */
-    if (bIn3cf(0x5B) & 0xF0)
+    if (IN3CFB(0x5B) & 0xF0)
     {
-        if (bIn3cf(0x5B) & (DEV_SUPPORT_DVI << 4))
+        if (IN3CFB(0x5B) & (DEV_SUPPORT_DVI << 4))
         {
-            if (!(bIn3x5(SOFT_PAD59_INDEX) & 0x02))
+            if (!(IN3X5B(SOFT_PAD59_INDEX) & 0x02))
             {
                 XG47CloseAllDevice(pXGI, DEV_SUPPORT_DVI);
 
-                bOut3x5(SOFT_PAD59_INDEX, bIn3x5(SOFT_PAD59_INDEX) & ~0x02);
+                OUT3X5B(SOFT_PAD59_INDEX, IN3X5B(SOFT_PAD59_INDEX) & ~0x02);
             }
 
             /* driving strength */
@@ -773,9 +773,9 @@ void XGICloseSecondaryView(XGIPtr pXGI)
 
         }
 
-        if (bIn3cf(0x5B) & (DEV_SUPPORT_TV << 4))
+        if (IN3CFB(0x5B) & (DEV_SUPPORT_TV << 4))
         {
-            if (!(bIn3x5(SOFT_PAD59_INDEX) & 0x02))
+            if (!(IN3X5B(SOFT_PAD59_INDEX) & 0x02))
             {
                 XG47CloseAllDevice(pXGI, DEV_SUPPORT_TV);
 
@@ -786,9 +786,9 @@ void XGICloseSecondaryView(XGIPtr pXGI)
             OUTB(XGI_REG_CRX+1, INB(XGI_REG_CRX+1) & ~0x04);
         }
 
-        if (bIn3cf(0x5B) & (DEV_SUPPORT_CRT << 4))
+        if (IN3CFB(0x5B) & (DEV_SUPPORT_CRT << 4))
         {
-            if (!(bIn3x5(SOFT_PAD59_INDEX) & 0x02))
+            if (!(IN3X5B(SOFT_PAD59_INDEX) & 0x02))
             {
                 XG47CloseAllDevice(pXGI, DEV_SUPPORT_CRT);
 
@@ -807,9 +807,9 @@ void XGICloseSecondaryView(XGIPtr pXGI)
             OUTB(XGI_REG_SRX+1, INB(XGI_REG_SRX+1) & ~0x70 | vclk28);
         }
 
-        if (bIn3cf(0x5B) & (DEV_SUPPORT_LCD << 4))
+        if (IN3CFB(0x5B) & (DEV_SUPPORT_LCD << 4))
         {
-            if (!(bIn3x5(SOFT_PAD59_INDEX) & 0x02))
+            if (!(IN3X5B(SOFT_PAD59_INDEX) & 0x02))
             {
                 XG47CloseAllDevice(pXGI, DEV_SUPPORT_LCD);
 

@@ -74,11 +74,11 @@ Bool IsInVBlank(XGIPtr pXGI)
 {
     if (DISPHEAD_CRTC == pXGI->headID)
     {
-        return (bIn(0x3da) & 0x08);
+        return (INB(0x3da) & 0x08);
     }
     else if (DISPHEAD_WIN2 == pXGI->headID)
     {
-        return (bIn3c5(0xdc) & 0x01);
+        return (IN3C5B(0xdc) & 0x01);
     }
     return FALSE;
 }

@@ -158,10 +158,10 @@ void XG47AdjustFrame(int scrnIndex, int x, int y, int flags)
     XG47SetCRTCViewBaseAddr(pScrn, startAddr);
 
     startAddr >>= 2;
-    Out3x5(0x0d, (CARD8)startAddr);
-    Out3x5(0x0c, (CARD8)(startAddr >> 0x08));
-    Out3x5(0x8C, (CARD8)(startAddr >> 0x10));
-    Out3x5(0x8D, (CARD8)(startAddr >> 0x18));
+    OUT3X5B(0x0d, (CARD8)startAddr);
+    OUT3X5B(0x0c, (CARD8)(startAddr >> 0x08));
+    OUT3X5B(0x8C, (CARD8)(startAddr >> 0x10));
+    OUT3X5B(0x8D, (CARD8)(startAddr >> 0x18));
     */
 }
 

@@ -443,11 +443,11 @@ static void XG47StopVideo(ScrnInfoPtr pScrn,
             /*
             if (pXGI->id)
             {
-                bOut3cf(0x81, bIn3cf(0x81) & 0x7E);
+                OUT3CFB(0x81, IN3CFB(0x81) & 0x7E);
             }
             else
             {
-                bOut3cf(0x80, bIn3cf(0x80) & 0x7E);
+                OUT3CFB(0x80, IN3CFB(0x80) & 0x7E);
             }
             */
             /*
@@ -1302,11 +1302,11 @@ static void XG47VideoTimerCallback(ScrnInfoPtr pScrn, Time time)
                 /*
                 if (pXGI->id)
                 {
-                    bOut3cf(0x81, bIn3cf(0x81) & 0x7E);
+                    OUT3CFB(0x81, IN3CFB(0x81) & 0x7E);
                 }
                 else
                 {
-                    bOut3cf(0x80, bIn3cf(0x80) & 0x7E);
+                    OUT3CFB(0x80, IN3CFB(0x80) & 0x7E);
                 }
                 */
                 pXGIPort->videoStatus = FREE_TIMER;

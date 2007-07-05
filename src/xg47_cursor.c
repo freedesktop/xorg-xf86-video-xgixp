@@ -559,7 +559,7 @@ void setMonoCursorPitchOfSecondView(XGIPtr pXGI, int cursorSize)
 	/* pitch >>= 4;
 
     OUTB(0x24D2, (CARD8)(pitch & 0xFF));
-    OUTB(0x24D3, (CARD8)((In(0x24D3) & 0xFC) |((pitch >> 8) & 0x3))); */
+    OUTB(0x24D3, (CARD8)((INB(0x24D3) & 0xFC) |((pitch >> 8) & 0x3))); */
 }
 
 /* Jong 09/25/2006; support dual view */
@@ -583,9 +583,9 @@ void setMonoCursorPatternOfSecondView(XGIPtr pXGI, CARD32 patternAddr)
 
 	/* Jong 09/27/2006; try another address */
 	/* patternAddr >>= 8;
-    bOut3x5(0x44, (CARD8)(patternAddr & 0xFF));
-    bOut3x5(0x45, (CARD8)((patternAddr >> 8) & 0xFF));
-    bOut3x5(0x3D, (CARD8) ((bIn3x5(0x3D) & 0xF8) | ((patternAddr >> 16) & 0x07)) ); */
+    OUT3X5B(0x44, (CARD8)(patternAddr & 0xFF));
+    OUT3X5B(0x45, (CARD8)((patternAddr >> 8) & 0xFF));
+    OUT3X5B(0x3D, (CARD8) ((IN3X5B(0x3D) & 0xF8) | ((patternAddr >> 16) & 0x07)) ); */
 
 /* Jong 06/29/2006 */
 #ifdef XGI_DUMP_DUALVIEW
@@ -599,7 +599,7 @@ void setMonoCursorPatternOfSecondView(XGIPtr pXGI, CARD32 patternAddr)
     OUTB(0x24D4, (CARD8)(patternAddr & 0xFF));
     OUTB(0x24D5, (CARD8)((patternAddr >> 8) & 0xFF));
     OUTB(0x24D6, (CARD8)((patternAddr >> 16) & 0xFF));
-    OUTB(0x24D7, (CARD8)((In(0x24D7) & 0xFE) |((patternAddr >> 24) & 0x1))); */
+    OUTB(0x24D7, (CARD8)((INB(0x24D7) & 0xFE) |((patternAddr >> 24) & 0x1))); */
 }
 
 void setMonoCursorPattern(XGIPtr pXGI, CARD32 patternAddr)
@@ -611,16 +611,16 @@ void setMonoCursorPattern(XGIPtr pXGI, CARD32 patternAddr)
     /*
         3D5.79 and 3D5.78 define starting address bit15 - bit0.
         The 2nd Hardware starting address 3D4/3D5.3D bit18 - bit16
-        wOut3x5(0x78, (CARD16)patternAddr);
+        OUT3X5W(0x78, (CARD16)patternAddr);
     */
     data = (CARD16)patternAddr;
-    wOut3x5(0x78, data);
+    OUT3X5W(0x78, data);
 
     patternAddr >>= 16;
     patternAddr  &= 0x7;
 
-    data8 = (bIn3x5(0x3D) & 0xF8);
-    bOut3x5(0x3D, data8 | (CARD8)patternAddr);
+    data8 = (IN3X5B(0x3D) & 0xF8);
+    OUT3X5B(0x3D, data8 | (CARD8)patternAddr);
 }
 
 /* Jong 09/2/52006; support dual view */
@@ -639,33 +639,33 @@ void enableMonoCursorOfSecondView(XGIPtr pXGI, Bool visible)
 	/* Jong 09/25/2006; enable cursor and select 8-8-8-8 Mode */
     OUTB(0x24D1, ((CARD8)INB(0x24D1) & 0xF8) | 0x03); /* OK */
 
-	bOut3cf(0x77, (bIn3cf(0x77) & 0x3F) | 0xC0);  /* OK */
+	OUT3CFB(0x77, (IN3CFB(0x77) & 0x3F) | 0xC0);  /* OK */
 
 	/* if(visible) */
-		bOut3x5(0x50, bIn3x5(0x50) | 0x08); /* Turn on Video Hardware Cursor */ /* OK */
-		/*bOut3x5(0x50, bIn3x5(0x50) | 0x48);*/ /* Turn on Video Hardware Cursor and select X11 */
+		OUT3X5B(0x50, IN3X5B(0x50) | 0x08); /* Turn on Video Hardware Cursor */ /* OK */
+		/*OUT3X5B(0x50, IN3X5B(0x50) | 0x48);*/ /* Turn on Video Hardware Cursor and select X11 */
 	/* else */
-		/* bOut3x5(0x50, bIn3x5(0x50) & 0xF7);*/ /* Turn off Video Hardware Cursor */
+		/* OUT3X5B(0x50, IN3X5B(0x50) & 0xF7);*/ /* Turn off Video Hardware Cursor */
 
 	/* Jong 09/26/2006; test */
 	/* return; */
 
 	/* Jong 09/26/2006; Use X11 Compatible; will make second view black */
-    /* bOut3x5(0x50, bIn3x5(0x50) | 0x40); */
+    /* OUT3X5B(0x50, IN3X5B(0x50) | 0x40); */
 }
 
 void enableMonoCursor(XGIPtr pXGI, Bool visible)
 {
     CARD8 data;
 
-	data = bIn3x5(0x65);
+	data = IN3X5B(0x65);
 	if (visible)
 	{
-		bOut3x5(0x65, (data & 0xC7) | 0xc0);
+		OUT3X5B(0x65, (data & 0xC7) | 0xc0);
 	}
 	else
 	{
-		bOut3x5(0x65, (data & 0xC7) & 0x7f);
+		OUT3X5B(0x65, (data & 0xC7) & 0x7f);
 	}
 
 	/* Jong 07/12/2006; check register for cursor */
@@ -676,23 +676,23 @@ void enableMonoCursor(XGIPtr pXGI, Bool visible)
 /* Jong 09/27/2006; support dual view */
 void setMonoCursorColorOfSecondView(XGIPtr pXGI, int bg, int fg)
 {
-    bOut3x5(0x48, (fg & 0x000000ff));
-    bOut3x5(0x49, (fg & 0x0000ff00) >> 8);
-    bOut3x5(0x4A, (fg & 0x00ff0000) >> 16);
-    bOut3x5(0x4C, (bg & 0x000000ff));
-    bOut3x5(0x4D, (bg & 0x0000ff00) >> 8);
-    bOut3x5(0x4E, (bg & 0x00ff0000) >> 16);
+    OUT3X5B(0x48, (fg & 0x000000ff));
+    OUT3X5B(0x49, (fg & 0x0000ff00) >> 8);
+    OUT3X5B(0x4A, (fg & 0x00ff0000) >> 16);
+    OUT3X5B(0x4C, (bg & 0x000000ff));
+    OUT3X5B(0x4D, (bg & 0x0000ff00) >> 8);
+    OUT3X5B(0x4E, (bg & 0x00ff0000) >> 16);
 }
 
 void setMonoCursorColor(XGIPtr pXGI, int bg, int fg)
 {
     /* set HC2 foreground and background color for mono */
-    bOut3x5(0x6a, (fg & 0x000000ff));
-    bOut3x5(0x6b, (fg & 0x0000ff00) >> 8);
-    bOut3x5(0x6c, (fg & 0x00ff0000) >> 16);
-    bOut3x5(0x6d, (bg & 0x000000ff));
-    bOut3x5(0x6e, (bg & 0x0000ff00) >> 8);
-    bOut3x5(0x6f, (bg & 0x00ff0000) >> 16);
+    OUT3X5B(0x6a, (fg & 0x000000ff));
+    OUT3X5B(0x6b, (fg & 0x0000ff00) >> 8);
+    OUT3X5B(0x6c, (fg & 0x00ff0000) >> 16);
+    OUT3X5B(0x6d, (bg & 0x000000ff));
+    OUT3X5B(0x6e, (bg & 0x0000ff00) >> 8);
+    OUT3X5B(0x6f, (bg & 0x00ff0000) >> 16);
 }
 
 /* Jong 09/25/2006; support dual view */
@@ -710,21 +710,21 @@ void setMonoCursorPositionOfSecondView(XGIPtr pXGI, int x, int y)
 
 
         CARD8 X = (CARD8)(x & 0xFF);
-        bOut3cf(0x64, X);
+        OUT3CFB(0x64, X);
 
         CARD8 Y = (CARD8)(y & 0xFF);
-        bOut3cf(0x66, Y);
+        OUT3CFB(0x66, Y);
 
         CARD8 XY = (CARD8)((((y >> 8) << 4) & 0xf0) + ((x >> 8) & 0x0f));
-        bOut3cf(0x65, XY);
+        OUT3CFB(0x65, XY);
 
 		/* Offset */
-        bOut3x5(0x46, (CARD8)(X >> 16));
-        bOut3x5(0x47, (CARD8)(Y >> 16));
+        OUT3X5B(0x46, (CARD8)(X >> 16));
+        OUT3X5B(0x47, (CARD8)(Y >> 16));
 
         /* Let the position setting take effect ??? Yes, spec says that ... */
-        /* bOut3x5(0x43, bIn3x5(0x43)); */
-        bOut3x5(0x43, 0x00);
+        /* OUT3X5B(0x43, IN3X5B(0x43)); */
+        OUT3X5B(0x43, 0x00);
 }
 
 void setMonoCursorPosition(XGIPtr pXGI, int x, int y)
@@ -735,17 +735,17 @@ void setMonoCursorPosition(XGIPtr pXGI, int x, int y)
     CARD32 yCursor = y < 0 ? ((-y) << 16) : y;
 
     data = (CARD16)xCursor;
-    wOut3x5(0x66, data);
+    OUT3X5W(0x66, data);
 
     data8 = (CARD8)(xCursor >> 16);
-    bOut3x5(0x73, data8);
+    OUT3X5B(0x73, data8);
 
     data8 = (CARD8)(yCursor >> 16);
-    bOut3x5(0x77, data8);
+    OUT3X5B(0x77, data8);
 
     /* 3x5.69 should be set lastly. */
     data =  (CARD16)yCursor;
-    wOut3x5(0x68, data);
+    OUT3X5W(0x68, data);
 }
 
 /* Jong 09/25/2006; support dual view */
@@ -764,11 +764,11 @@ void setMonoCursorSizeOfSecondView(XGIPtr pXGI, int cursorSize)
 
     if(cursorSize == 64)
     {
-        bOut3x5(0x50, (bIn3x5(0x50) & 0xFC) | 0x01);
+        OUT3X5B(0x50, (IN3X5B(0x50) & 0xFC) | 0x01);
 	}
 	else
 	{
-        bOut3x5(0x50, (bIn3x5(0x50) & 0xFC) | 0x02);
+        OUT3X5B(0x50, (IN3X5B(0x50) & 0xFC) | 0x02);
 	} 
 }
 
@@ -778,16 +778,16 @@ void setMonoCursorSize(XGIPtr pXGI, CARD32 cursorSize)
 	/* bits[0:1] = 1 -> 64x64 */
 	/* bits[0:1] = 2 -> 128x128 */
     CARD8 sizeReg = 0x65;
-    CARD8 data = bIn3x5(sizeReg);
+    CARD8 data = IN3X5B(sizeReg);
 
 
     if(cursorSize == 128)
     {
-        bOut3x5(sizeReg, (data & 0xFC) | 0x02);
+        OUT3X5B(sizeReg, (data & 0xFC) | 0x02);
     }
     else if(cursorSize == 64 || cursorSize == 32)
     {
-        bOut3x5(sizeReg, (data & 0xFC) | 0x01);
+        OUT3X5B(sizeReg, (data & 0xFC) | 0x01);
     }
 }
 
@@ -796,11 +796,11 @@ void setAlphaCursorPosition(XGIPtr pXGI, int x, int y)
     CARD32 xCursor = x < 0 ? ((-x) << 16) : x;
     CARD32 yCursor = y < 0 ? ((-y) << 16) : y;
 
-    wOut3x5(0x66, (CARD16)xCursor);
-    wOut3x5(0x73, (CARD8)(xCursor >> 16));
-    wOut3x5(0x77, (CARD8)(yCursor >> 16));
+    OUT3X5W(0x66, (CARD16)xCursor);
+    OUT3X5W(0x73, (CARD8)(xCursor >> 16));
+    OUT3X5W(0x77, (CARD8)(yCursor >> 16));
     /* 3x5.69 should be set lastly. */
-    wOut3x5(0x68, (CARD16)yCursor);
+    OUT3X5W(0x68, (CARD16)yCursor);
 }
 
 void enableAlphaCursor(XGIPtr pXGI, Bool visible)
@@ -808,12 +808,12 @@ void enableAlphaCursor(XGIPtr pXGI, Bool visible)
     if (visible)
     {
         /* Set window key, touch bit4-5 only */
-        bOut3cf(0x77, (bIn3cf(0x77) & 0xCF) | 0x20);
-        bOut3x5(0x65, (bIn3x5(0x65) & 0xBF) | 0x98);
+        OUT3CFB(0x77, (IN3CFB(0x77) & 0xCF) | 0x20);
+        OUT3X5B(0x65, (IN3X5B(0x65) & 0xBF) | 0x98);
     }
     else
     {
-        bOut3x5(0x65, (bIn3x5(0x65) & 0xBF) & 0x7f);
+        OUT3X5B(0x65, (IN3X5B(0x65) & 0xBF) & 0x7f);
     }
 }
 
@@ -822,15 +822,15 @@ void setAlphaCursorPattern(XGIPtr pXGI, CARD32 patternAddr)
     patternAddr >>= 10;
     /* 3D5.79 and 3D5.78 define starting address bit15 - bit0. */
     /* The 2nd Hardware starting address 3D4/3D5.3D bit18 - bit16 */
-    wOut3x5(0x78, (CARD16)patternAddr);
+    OUT3X5W(0x78, (CARD16)patternAddr);
     patternAddr >>= 16;
     patternAddr  &= 0x7;
-    bOut3x5(0x3D, (bIn3x5(0x3D) & 0xF8) | (CARD8)patternAddr);
+    OUT3X5B(0x3D, (IN3X5B(0x3D) & 0xF8) | (CARD8)patternAddr);
 }
 
 /* under linux, only support a8r8b8g8 @ 64x64 */
 void setAlphaCursorSize(XGIPtr pXGI)
 {
-    bOut3x5(0x65, (bIn3x5(0x65) & 0xCC) | 0x31);
+    OUT3X5B(0x65, (IN3X5B(0x65) & 0xCC) | 0x31);
 }
 

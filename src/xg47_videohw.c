@@ -114,7 +114,7 @@ void XG47ResetVideo(ScrnInfoPtr pScrn)
      *                                  Maximum allowed length (1 ~ 256 DQWORD)
      *                                  for each read request from WIN1.
      */
-    bOut3x5(0xb1, 0x00);
+    OUT3X5B(0xb1, 0x00);
     /*
      * 3CE/3CF 82  R/W              Video BIST Error Output 1
      *                  <5:0>:          Reserved
@@ -125,7 +125,7 @@ void XG47ResetVideo(ScrnInfoPtr pScrn)
      *                                      1: window1 line buffer bits-on enable
      *                                      0: window1 line buffer bits-on disable
      */
-    Out3cf(0x82, In3cf(0x82) & ~0x01);
+    OUT3CFB(0x82, IN3CFB(0x82) & ~0x01);
 
     /*
      * frame buffer less mode enable
@@ -172,7 +172,7 @@ void XG47ResetVideo(ScrnInfoPtr pScrn)
      *                  <0>:         ENVIDEO
      *                                  1: Window1 enable 0: Window1 disable
      */
-    bOut3cf(0x80, bIn3cf(0x80) | 0x80);
+    OUT3CFB(0x80, IN3CFB(0x80) | 0x80);
 
     /*
      * 24xx    29  R/W  <7:5>:      Reserved
@@ -242,7 +242,7 @@ void XG47HwSetToggle(ScrnInfoPtr pScrn)
      */
 
     CARD8  indexToggle = pXGIPort->id > 0 ? 0x81 : 0x80; /* index of the reg 0x3cf */
-    bOut3cf(indexToggle, bIn3cf(indexToggle) | 0x81);
+    OUT3CFB(indexToggle, IN3CFB(indexToggle) | 0x81);
 }
 
 void XG47HwDisableDeinterlace(ScrnInfoPtr pScrn)
@@ -719,35 +719,35 @@ int XG47HwGetHStart(ScrnInfoPtr pScrn)
     /*
      * Horizon Retrace Delay(CRTC1): 3d4.5.5..6: have effect at both CRTC1 and CRTC2.
      */
-    temp = bIn3cf(0x30);
-    bOut3cf(0x30, temp & ~0x40);
-    hRetraceDelay = (bIn3x5(0x05) >> 5 ) & 0x03 ;
-    bOut3cf(0x30, (CARD8)temp);
+    temp = IN3CFB(0x30);
+    OUT3CFB(0x30, temp & ~0x40);
+    hRetraceDelay = (IN3X5B(0x05) >> 5 ) & 0x03 ;
+    OUT3CFB(0x30, (CARD8)temp);
 
-    if ((pXGI->displayDevice & ST_DISP_LCD) || (bIn3cf(0x5B) & ST_DISP_LCD))
+    if ((pXGI->displayDevice & ST_DISP_LCD) || (IN3CFB(0x5B) & ST_DISP_LCD))
     {
         if (temp & 0x81)    /* Enable CRTC Shadow. */
-            bOut3cf(0x30, temp | 0x40);
+            OUT3CFB(0x30, temp | 0x40);
         else                /* Enable CRTC. */
-            bOut3cf(0x30, temp & ~0x40);
+            OUT3CFB(0x30, temp & ~0x40);
     }
 
     {
-        hTotal = In3x5(0x00) + ((In3x5(0x2B) & 1) << 8);
-        hRetraceStart = In3x5(0x04) + ((In3x5(0x2B) & 8) << 5);
+        hTotal = IN3X5B(0x00) + ((IN3X5B(0x2B) & 1) << 8);
+        hRetraceStart = IN3X5B(0x04) + ((IN3X5B(0x2B) & 8) << 5);
     }
 
-    if  ((pXGI->displayDevice & ST_DISP_TV) || (In3cf(0x5B) & ST_DISP_TV)) /* TV */
+    if  ((pXGI->displayDevice & ST_DISP_TV) || (IN3CFB(0x5B) & ST_DISP_TV)) /* TV */
     {
         /* TV don't have Horizon Retrace Delay. */
         hRetraceDelay  = 0;
-        hTotal = In3x5(0xe0);
-        hRetraceStart = In3x5(0xe4);
+        hTotal = IN3X5B(0xe0);
+        hRetraceStart = IN3X5B(0xe4);
     }
     else    /* CRTC or CRTC Shadow */
     {
         /* 3cf.2f.5 == 0 : HSYNC skew, 1 skew at graphic mode */
-        if (bIn3cf(0x2f) & 0x20)
+        if (IN3CFB(0x2f) & 0x20)
             hTotal++;
     }
 
@@ -758,9 +758,9 @@ int XG47HwGetHStart(ScrnInfoPtr pScrn)
     hStart -= 5;   /* seems that CRTC HStart starts from 5 */
 
     /* shadow restore */
-    if ((pXGI->displayDevice & ST_DISP_LCD) || (bIn3cf(0x5B) & ST_DISP_LCD))
+    if ((pXGI->displayDevice & ST_DISP_LCD) || (IN3CFB(0x5B) & ST_DISP_LCD))
     {
-        Out3cf(0x30, (CARD8)temp);
+        OUT3CFB(0x30, (CARD8)temp);
     }
 
     return hStart;
@@ -789,40 +789,40 @@ int XG47HwGetVStart(ScrnInfoPtr pScrn)
     /*
      *  For other cases,
      */
-    if ((pXGI->displayDevice & ST_DISP_LCD) || (In3cf(0x5B) & ST_DISP_LCD))
+    if ((pXGI->displayDevice & ST_DISP_LCD) || (IN3CFB(0x5B) & ST_DISP_LCD))
     {
-        temp = In3cf (0x30);
+        temp = IN3CFB (0x30);
         if (temp & 0x81)    /* Enable CRTC Shadow. */
-            Out3cf(0x30, temp | 0x40);
+            OUT3CFB(0x30, temp | 0x40);
         else                /* Enable CRTC. */
-            Out3cf(0x30, temp & ~0x40);
+            OUT3CFB(0x30, temp & ~0x40);
     }
 
     /* CRTC or CRTC shadow */
-    if (!((pXGI->displayDevice & ST_DISP_TV) || (In3cf(0x5B) & ST_DISP_TV)))
+    if (!((pXGI->displayDevice & ST_DISP_TV) || (IN3CFB(0x5B) & ST_DISP_TV)))
     {
         /* Vertical total.   0..7 */
-        data3X5_06 = In3x5 (0x06);
+        data3X5_06 = IN3X5B (0x06);
 
         /* Overflow. Bit 2, 7: Vertical Retrace[8..9]; Bit 0, 5: Vertical Total[8..9] */
-        data3X5_07 = In3x5 (0x07);
+        data3X5_07 = IN3X5B (0x07);
 
         /* Vertical Retrace[0..7] */
-        data3X5_10 = In3x5 (0x10);
+        data3X5_10 = IN3X5B (0x10);
 
         /* High Order. Bit 5: Vertical Retrace[10]; Bit 7: Vertical Total[10] */
-        data3X5_27  = In3x5 (0x27);
+        data3X5_27  = IN3X5B (0x27);
     }
     else /* TV */
     {
         /* Vertical Total */
-        data3X5_06 = In3x5 (0xE6);
+        data3X5_06 = IN3X5B (0xE6);
 
         /* Overflow. Bit 2, 7: Vertical Retrace 8, 9; Bit 0, 5: Vertical Total 8, 9 */
-        data3X5_07 = In3x5 (0xE7);
+        data3X5_07 = IN3X5B (0xE7);
 
         /* Vertical Retrace[0..7] */
-        data3X5_10 = In3x5 (0xF0);
+        data3X5_10 = IN3X5B (0xF0);
 
         /* TV only have 10 bit for Vertical Total & Retrace. */
         data3X5_27  = 0;
@@ -843,15 +843,15 @@ int XG47HwGetVStart(ScrnInfoPtr pScrn)
     vStart = vTotal - vRetraceStart;
 
     /* Horizon retrace select. 3c5.17.2 == 1: Divided by 2. */
-    if (In3x5 (0x17) & 0x4)
+    if (IN3X5B (0x17) & 0x4)
         vStart <<= 1;
 
     vStart -= 4; /* Seems that CRTC VStart starts from 4 */
 
     /* shadow restore */
-    if ((pXGI->displayDevice & ST_DISP_LCD) || (bIn3cf(0x5B) & ST_DISP_LCD))
+    if ((pXGI->displayDevice & ST_DISP_LCD) || (IN3CFB(0x5B) & ST_DISP_LCD))
     {
-        Out3cf(0x30, (CARD8)temp);
+        OUT3CFB(0x30, (CARD8)temp);
     }
 
     return vStart;
@@ -1181,7 +1181,7 @@ void XG47HwEnableVideo(ScrnInfoPtr pScrn)
      *                                  1: Window1 enable
      *                                  0: Window1 disable
      */
-    b3cf80 = bIn3cf(0x80);
+    b3cf80 = IN3CFB(0x80);
     /*
      * 3CE/3CF 81  R/W  <7>:        Window2 STADD latch
      *                                  1: enable
@@ -1193,7 +1193,7 @@ void XG47HwEnableVideo(ScrnInfoPtr pScrn)
      *                                  1: Window2 enable
      *                                  *0: Window2 disable
      */
-    b3cf81 = bIn3cf(0x81);
+    b3cf81 = IN3CFB(0x81);
 
     /*
      * 3CE/3CF DA  R/W Surface 0 Band Mode Control
@@ -1215,7 +1215,7 @@ void XG47HwEnableVideo(ScrnInfoPtr pScrn)
      *                              Surface 0 Band Mode Pitch (Total 10 bits) PITCH<7:0> is located at 3CF.D9
      *                              The default value is 0H
      */
-    b3cfda = bIn3cf(0xda);
+    b3cfda = IN3CFB(0xda);
     b3cfda &= 0xef;     /* MClK enable */
     /*
      * 3D4/3D5 BE  RO
@@ -1226,29 +1226,29 @@ void XG47HwEnableVideo(ScrnInfoPtr pScrn)
      *                                  0: PCLK disable
      *                  <1:0>:      Reserved
      */
-    b3x5be = bIn3x5(0xbe);
+    b3x5be = IN3X5B(0xbe);
     b3x5be |= 0x04;     /* PCLK enable */
 
     if (pXGIPort->id)
     {
         b3cf81 |= 0x01;
-        bOut3c5(0xbd, (CARD8)(bIn3c5(0xbd)) & ~0x80);       /* Set W2 use CRTC1 */
+        OUT3C5B(0xbd, (CARD8)(IN3C5B(0xbd)) & ~0x80);       /* Set W2 use CRTC1 */
     }
     else
     {
         b3cf80 |= 0x01;
         if (pXGI->ovlAttr & OVLST_VIDEO_ON_W2)
         {
-            bOut3c5(0xbd, (CARD8)(bIn3c5(0xbd)) | 0x40);    /* Set W1 use CRTC2 */
+            OUT3C5B(0xbd, (CARD8)(IN3C5B(0xbd)) | 0x40);    /* Set W1 use CRTC2 */
         }
         else
         {
-            bOut3c5(0xbd, (CARD8)(bIn3c5(0xbd)) & ~0x40);   /* Set W1 use CRTC1 */
+            OUT3C5B(0xbd, (CARD8)(IN3C5B(0xbd)) & ~0x40);   /* Set W1 use CRTC1 */
         }
     }
 
     /* DUMA mode support */
-    if (bIn3x5(0x20) & 0x01)
+    if (IN3X5B(0x20) & 0x01)
     {
         OUTB(frameBufLess, INB(frameBufLess) | 0x80);
     }
@@ -1258,14 +1258,14 @@ void XG47HwEnableVideo(ScrnInfoPtr pScrn)
     }
 
     /* Turn on video mem clock */
-    bOut3cf(0xda, b3cfda);
+    OUT3CFB(0xda, b3cfda);
 
     /* Turn on PCLK */
-    if (b3x5be != bIn3x5(0xbe))
+    if (b3x5be != IN3X5B(0xbe))
     {
         /*WaitVRetrace(pXGI, VGA_RETRACE);*/
         XG47WaitForSync(pScrn);
-        bOut3x5(0xbe, b3x5be);
+        OUT3X5B(0xbe, b3x5be);
     }
     /*
      * There are two new clock need to be turn on for Video playback
@@ -1290,20 +1290,20 @@ void XG47HwEnableVideo(ScrnInfoPtr pScrn)
      *              <0>:            PIPCKENB
      *                                  0: enable   1: disable
      */
-    bOut3c5(0x52, bIn3c5(0x52) | 0x50);
+    OUT3C5B(0x52, IN3C5B(0x52) | 0x50);
 
     /* Turn on video overlay */
-    if (pXGIPort->id && (b3cf81 != bIn3cf(0x81)))
+    if (pXGIPort->id && (b3cf81 != IN3CFB(0x81)))
     {
         /*WaitVRetrace(pXGI, VGA_RETRACE);*/
         XG47WaitForSync(pScrn);
-        bOut3cf(0x81, b3cf81);
+        OUT3CFB(0x81, b3cf81);
     }
-    else if (b3cf80 != bIn3cf(0x80))
+    else if (b3cf80 != IN3CFB(0x80))
     {
         /*WaitVRetrace(pXGI, VGA_RETRACE);*/
         XG47WaitForSync(pScrn);
-        bOut3cf(0x80, b3cf80);
+        OUT3CFB(0x80, b3cf80);
     }
 }
 
@@ -1317,18 +1317,18 @@ void XG47HwDisableVideo(ScrnInfoPtr pScrn)
     if (pXGIPort->id)
     {
         OUTB(0x24ef, INB(0x24ef) & 0x7f);
-        bOut3cf(0x81, bIn3cf(0x81) & 0x7f);
+        OUT3CFB(0x81, IN3CFB(0x81) & 0x7f);
     }
     else
     {
         OUTB(0x246f, INB(0x246f) & 0x7f);
-        bOut3cf(0x80, bIn3cf(0x80) & 0x7f);
+        OUT3CFB(0x80, IN3CFB(0x80) & 0x7f);
     }
 
-    b3cf80 = bIn3cf(0x80);
-    b3cf81 = bIn3cf(0x81);
-    b3cfda = bIn3cf(0xda);
-    b3x5be = bIn3x5(0xbe);
+    b3cf80 = IN3CFB(0x80);
+    b3cf81 = IN3CFB(0x81);
+    b3cfda = IN3CFB(0xda);
+    b3x5be = IN3X5B(0xbe);
 
     if (!isDualView)
     {
@@ -1346,29 +1346,29 @@ void XG47HwDisableVideo(ScrnInfoPtr pScrn)
     }
 
     /* Turn off video overlay */
-    if (pXGIPort->id && (b3cf81 != bIn3cf(0x81)))
+    if (pXGIPort->id && (b3cf81 != IN3CFB(0x81)))
     {
         /*WaitVRetrace(pXGI, VGA_RETRACE);*/
         XG47WaitForSync(pScrn);
-        bOut3cf(0x81, b3cf81);
+        OUT3CFB(0x81, b3cf81);
     }
-    else if (b3cf80 != bIn3cf(0x80))
+    else if (b3cf80 != IN3CFB(0x80))
     {
         /*WaitVRetrace(pXGI, VGA_RETRACE);*/
         XG47WaitForSync(pScrn);
-        bOut3cf(0x80, b3cf80);
+        OUT3CFB(0x80, b3cf80);
     }
 
     /* Turn off PCLK */
-    if (b3x5be != bIn3x5(0xbe))
+    if (b3x5be != bIN3X5B(0xbe))
     {
         /*WaitVRetrace(pXGI, VGA_RETRACE);*/
         XG47WaitForSync(pScrn);
-        bOut3x5(0xbe, b3x5be);
+        OUT3X5B(0xbe, b3x5be);
     }
 
     /* Turn off video mem clock */
-    bOut3cf(0xda, b3cfda);
+    OUT3CFB(0xda, b3cfda);
 }
 
 void XG47HwTurnOffColorKey(ScrnInfoPtr pScrn, CARD32 flag)
@@ -1378,21 +1378,21 @@ void XG47HwTurnOffColorKey(ScrnInfoPtr pScrn, CARD32 flag)
 
     if (flag & (1 << 0))
     {
-        wOut(0x3C4, 0x0054);
-        wOut(0x3C4, 0x0055);
-        wOut(0x3C4, 0x0056);
+        OUTW(0x3C4, 0x0054);
+        OUTW(0x3C4, 0x0055);
+        OUTW(0x3C4, 0x0056);
 
         /* disable color key */
-        bOut3cf(0x62, (CARD8)((bIn3cf(0x62) & ~0x04)));
+        OUT3CFB(0x62, (CARD8)((IN3CFB(0x62) & ~0x04)));
     }
     if (flag & (1 << 1))
     {
-        wOut(0x3C4, 0x0064);
-        wOut(0x3C4, 0x0065);
-        wOut(0x3C4, 0x0066);
+        OUTW(0x3C4, 0x0064);
+        OUTW(0x3C4, 0x0065);
+        OUTW(0x3C4, 0x0066);
 
         /* Disable color key */
-        bOut3cf(0x62, (CARD8)((bIn3cf(0x62) & ~0x08)));
+        OUT3CFB(0x62, (CARD8)((IN3CFB(0x62) & ~0x08)));
     }
 }
 
@@ -1785,7 +1785,7 @@ Bool XG47IsExpansionMode(ScrnInfoPtr pScrn)
             }
             else
             {
-                isPanelExpension = (bIn3cf(0x5d) & 0x1) ? TRUE : FALSE; /* Expension/Centering */
+                isPanelExpension = (IN3CFB(0x5d) & 0x1) ? TRUE : FALSE; /* Expension/Centering */
             }
         }
     }

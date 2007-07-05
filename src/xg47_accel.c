@@ -232,24 +232,24 @@ void XG47EngineInit(ScrnInfoPtr pScrn)
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47EngineInit()\n");
 
     /* unprotect all register except which protected by 3c5.0e.7 */
-    bOut3c5(0x11,0x92);
+    OUT3C5B(0x11,0x92);
 
     /* -------> copy from OT2D
      * PCI Retry Control Register.
      * disable PCI read retry & enable write retry in mem. (10xx xxxx)b
      */
-    temp = bIn3x5(0x55);
-    bOut3x5(0x55, (temp & 0xbf) | 0x80);
+    temp = IN3X5B(0x55);
+    OUT3X5B(0x55, (temp & 0xbf) | 0x80);
 
     XG47EnableGE(pXGI);
 
     /* Enable linear addressing of the card. */
-    temp = bIn3x5(0x21);
-    bOut3x5(0x21, temp | 0x20);
+    temp = IN3X5B(0x21);
+    OUT3X5B(0x21, temp | 0x20);
 
     /* Enable 32-bit internal data path */
-    temp = bIn3x5(0x2A);
-    bOut3x5(0x2A, temp | 0x40);
+    temp = IN3X5B(0x2A);
+    OUT3X5B(0x2A, temp | 0x40);
 
     /* Enable PCI burst write ,disable burst read and enable MMIO. */
     /*
@@ -260,12 +260,12 @@ void XG47EngineInit(ScrnInfoPtr pScrn)
      * 1 ---- PCI Burst Read Enable
      * 0 ---- MMIO Control
      */
-    temp = bIn3x5(0x39);
-    bOut3x5(0x39, (temp | 0x05) & 0xfd);
+    temp = IN3X5B(0x39);
+    OUT3X5B(0x39, (temp | 0x05) & 0xfd);
 
     /* enable GEIO decode */
     /*
-        bOut3x5(0x29,bIn3x5(0x29)|0x08);
+        OUT3X5B(0x29,IN3X5B(0x29)|0x08);
     */
 
     /*Init MEMORY again*/
@@ -274,13 +274,13 @@ void XG47EngineInit(ScrnInfoPtr pScrn)
 
     /* Enable graphic engine I/O PCI retry function*/
     /*
-        temp = bIn3x5(0x62);
-        bOut3x5(0x62, temp | 0x50);
+        temp = IN3X5B(0x62);
+        OUT3X5B(0x62, temp | 0x50);
     */
 
     /* protect all register except which protected by 3c5.0e.7 */
     /*
-        bOut3c5(0x11,0x87);
+        OUT3C5B(0x11,0x87);
     */
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47EngineInit()\n");
 }
@@ -424,40 +424,40 @@ void XG47EnableGE(XGIPtr pXGI)
     CARD32 iWait;
     /* this->vAcquireRegIOProctect();*/
     /* Save and close dynamic gating */
-    CARD8 bOld3cf2a = bIn3cf(0x2a);
+    CARD8 bOld3cf2a = IN3CFB(0x2a);
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47EnableGE\n");
 
-    bOut3cf(0x2a, bOld3cf2a & 0xfe);
+    OUT3CFB(0x2a, bOld3cf2a & 0xfe);
 
     /* Reset both 3D and 2D engine */
-    bOut3x5(0x36, 0x84);
+    OUT3X5B(0x36, 0x84);
     iWait = 10;
     while (iWait--)
     {
         INB(0x36);
     }
 
-    bOut3x5(0x36, 0x94);
+    OUT3X5B(0x36, 0x94);
     iWait = 10;
     while (iWait--)
     {
         INB(0x36);
     }
-    bOut3x5(0x36, 0x84);
+    OUT3X5B(0x36, 0x84);
     iWait = 10;
     while (iWait--)
     {
         INB(0x36);
     }
     /* Enable 2D engine only */
-    bOut3x5(0x36, 0x80);
+    OUT3X5B(0x36, 0x80);
 
     /* Enable 2D+3D engine */
-    bOut3x5(0x36, 0x84);
+    OUT3X5B(0x36, 0x84);
 
     /* Restore dynamic gating */
-    bOut3cf(0x2a, bOld3cf2a);
+    OUT3CFB(0x2a, bOld3cf2a);
 
     /* this->vReleaseRegIOProctect();
     m_b3DGEOn = FALSE;*/
@@ -472,26 +472,26 @@ void XG47DisableGE(XGIPtr pXGI)
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47DisableGE\n");
     /* this->vAcquireRegIOProctect();*/
     /* Reset both 3D and 2D engine */
-    bOut3x5(0x36, 0x84);
+    OUT3X5B(0x36, 0x84);
     iWait = 10;
     while (iWait--)
     {
         INB(0x36);
     }
-    bOut3x5(0x36, 0x94);
+    OUT3X5B(0x36, 0x94);
     iWait = 10;
     while (iWait--)
     {
         INB(0x36);
     }
-    bOut3x5(0x36, 0x84);
+    OUT3X5B(0x36, 0x84);
     iWait = 10;
     while (iWait--)
     {
         INB(0x36);
     }
     /* Disable 2D engine only */
-    bOut3x5(0x36, 0);
+    OUT3X5B(0x36, 0);
     /* this->vReleaseRegIOProctect();
      m_b3DGEOn = FALSE;*/
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47DisableGE\n");

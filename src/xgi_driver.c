@@ -1333,7 +1333,7 @@ static Bool XGIPreInitLcdSize(ScrnInfoPtr pScrn)
 
     /* get LCD size if display on LCD */
     if ((pXGI->displayDevice & ST_DISP_LCD)
-        || (bIn3cf(0x5B) & ST_DISP_LCD))
+        || (IN3CFB(0x5B) & ST_DISP_LCD))
     {
         XGIGetLcdSize(pScrn, &lcdWidth, &lcdHeight);
         pXGI->lcdActive = TRUE;
