@@ -1553,7 +1553,6 @@ static Bool XGIPreInitMemory(ScrnInfoPtr pScrn)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
     char            *chipset = NULL;
-    double          real;
     MessageType     from;
 
 
@@ -1610,18 +1609,9 @@ static Bool XGIPreInitMemory(ScrnInfoPtr pScrn)
                pScrn->videoRam);
 
     /* memory clock */
-    pXGI->overrideMemClock = 0;
     pXGI->memClock = XGICalculateMemoryClock(pScrn);
     xf86DrvMsg(pScrn->scrnIndex, X_PROBED, "Memory Clock is %3.2f MHz\n",
                pXGI->memClock);
-
-    if (xf86GetOptValFreq(pXGI->pOptionInfo, OPTION_SETMCLK, OPTUNITS_MHZ,
-                          &real)) {
-        pXGI->overrideMemClock = (int)(real * 1000.0);
-
-        xf86DrvMsg(pScrn->scrnIndex, X_CONFIG,
-                   "Setting new Memory Clock to %3.2f MHz\n", real);
-    }
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);

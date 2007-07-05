@@ -562,7 +562,6 @@ typedef struct {
     float               memClock;
     int                 minClock;
     int                 maxClock;
-    int                 overrideMemClock;
 
     XGIFBLayout         currentLayout;
     XGIDigitalTVInfoPtr pDtvInfo;

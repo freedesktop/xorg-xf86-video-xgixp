@@ -43,7 +43,6 @@ const OptionInfoRec XGIOptions[] = {
     { OPTION_VIDEO_KEY,         "VideoKey",         OPTV_INTEGER,   {0}, FALSE },
     { OPTION_NOMMIO,            "NoMMIO",           OPTV_BOOLEAN,   {0}, FALSE },
     { OPTION_MMIO_ONLY,         "MMIOonly",         OPTV_BOOLEAN,   {0}, FALSE },
-    { OPTION_SETMCLK,           "SetMClk",          OPTV_FREQ,      {0}, FALSE },
     { OPTION_DAC_8BIT,          "8Bit Dac",         OPTV_BOOLEAN,   {0}, FALSE },
     { OPTION_NEED_SHADOW,       "shadow",           OPTV_BOOLEAN,   {0}, FALSE },
     { OPTION_NEED_STRETCH,      "stretch",          OPTV_BOOLEAN,   {0}, FALSE },
