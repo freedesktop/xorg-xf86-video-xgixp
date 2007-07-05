@@ -655,51 +655,36 @@ static void XGIUnmapMMIO(ScrnInfoPtr pScrn)
 #endif
 }
 
-/*
+/**
  * Memory map the frame buffer.  Used by pre-init.
  */
 static Bool XGIMapFB(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
-    MessageType from;
-	unsigned char*  VirtualAddr;
-	int				i;
+
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    if (!pXGI->fbBase)
-    {
-        if (pXGI->isFBDev)
-        {
+    if (!pXGI->fbBase) {
+        if (pXGI->isFBDev) {
             pXGI->fbBase = fbdevHWMapVidmem(pScrn);
         }
-        else
-        {
-			/* Jong 07/07/2006; why pXGI->fbSize=0 ????? */
-            if (pXGI->fbSize != 0)
-            {
-				/* Jong 07/14/2006; test */
-
+        else {
+            /* Make sure that the fbSize has been set (after
+             * XGIPreInitMemory has been called) before attempting the
+             * mapping.
+             */
+            if (pXGI->fbSize != 0) {
                 pXGI->fbBase = xf86MapPciMem(pScrn->scrnIndex,
-                                             VIDMEM_FRAMEBUFFER , 
+                                             VIDMEM_FRAMEBUFFER,
                                              pXGI->pciTag,
                                              pXGI->fbAddr,
                                              pXGI->fbSize); 
 
-				/* Jong 07/14/2006; will cause segmentation fault on memcpy() in XG47LoadCursorImage() */
-		        /* pXGI->fbBase = (unsigned char *)mmap(0, pXGI->fbSize, PROT_READ|PROT_WRITE,
-                                            MAP_SHARED, pXGI->fd, pXGI->fbAddr); */
-
-				/* Jong 07/12/2006; will cause system hang */
-				/* VirtualAddr=__va(pXGI->fbAddr); */
-
-                from = X_INFO;
-                xf86DrvMsg(pScrn->scrnIndex, from, "Frame Buffer Map at 0x%lX\n",
-                           pXGI->fbBase);
-
-                if (!pXGI->fbBase) return FALSE;
+                xf86DrvMsg(pScrn->scrnIndex, X_INFO,
+                           "Frame Buffer Map at 0x%p\n", pXGI->fbBase);
             }
         }
     }
@@ -708,7 +693,7 @@ static Bool XGIMapFB(ScrnInfoPtr pScrn)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    return TRUE;
+    return pXGI->fbBase != NULL;
 }
 
 
