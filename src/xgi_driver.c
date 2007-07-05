@@ -1551,47 +1551,29 @@ static Bool XGIPreInitAccel(ScrnInfoPtr pScrn)
 
 static Bool XGIPreInitMemory(ScrnInfoPtr pScrn)
 {
-    XGIPtr          pXGI = XGIPTR(pScrn);
-    char            *ramType = NULL;
+    XGIPtr pXGI = XGIPTR(pScrn);
     char            *chipset = NULL;
     double          real;
     MessageType     from;
 
-	/* Jong 09/11/2006; support dual view */
+
 #ifdef XGIDUALVIEW
-	/* FB base of first view starts right from base address */
-	/* got from PCI config space or config file				*/
-	/* its FB size is set pXGI->freeFbSize / 2				*/
+    /* FB base of first view starts right from base address */
+    /* got from PCI config space or config file */
+    /* its FB size is set pXGI->freeFbSize / 2 */
 
-	/* Second view need aan offset; first view keep pXGI->fbAddr */
-	/* Jong 09/20/2006; only dual view takes effect */
-	/* if(!pXGI->FirstView) */
-	if(g_DualViewMode && !pXGI->FirstView) 
-	{
-		/* Jong 09/21/2006; 32MB: offset of second view starting address is  0x2000000 (0x4000000=64MB is total size) */
-		/* but starting address of W2 is limited to 25 bits long */
-		pXGI->freeFbSize /= 2;
-		/* Jong 09/26/2006; try 32MB */
-		/* pXGI->fbAddr += pXGI->freeFbSize - 4096;*/ /* 0x1FFF000 */
-		/* pXGI->freeFbSize += 4096; */
-
-		/* Jong 10/02/2006; use pXGI->freeFbSize /= 2 instead */
-		/* Jong 11/09/2006; pXGI->fbAddr must be less than 0x4000000 (64MB) */
-		if(pXGI->freeFbSize >= 0x4000000)
-			pXGI->fbAddr += pXGI->freeFbSize - 1024; 
-		else
-			pXGI->fbAddr += pXGI->freeFbSize; 
-
-		/* pXGI->fbAddr += pXGI->freeFbSize; */ /* 32MB ; but need to be calculated with freeFbSize */
-		/* pXGI->fbAddr += 0x2000000; */ /* 32MB ; but need to be calculated with freeFbSize */
+    /* Second view need an offset; first view keep pXGI->fbAddr */
+    /* Jong 09/20/2006; only dual view takes effect */
+    if (g_DualViewMode) {
+        /* Use half of the memory available for each view */
+        pXGI->freeFbSize /= 2;
+ 
+        if (!pXGI->FirstView) {
+            /* pXGI->fbAddr must be less than 0x4000000 (64MB) */
+            pXGI->fbAddr += (pXGI->freeFbSize >= 0x4000000)
+                ? (pXGI->freeFbSize - 1024) : pXGI->freeFbSize; 
+        }
     }
-	else
-	{
-		/* Use half of the memory available for each view */
-		pXGI->freeFbSize /= 2;
-		/* Jong 09/21/2006; starting address of W2 is limited to 25 bits long */
-		/* pXGI->freeFbSize -= 4096; */
-	}
 #endif
 
 #if DBG_FLOW
@@ -1599,59 +1581,46 @@ static Bool XGIPreInitMemory(ScrnInfoPtr pScrn)
 #endif
 
     /* Determine RAM Type */
-    switch (pXGI->chipset)
-    {
+    switch (pXGI->chipset) {
     case XG47:
         pXGI->isDDRAM = TRUE;
         pXGI->frequency = NTSC;
         chipset = "XG47";
         break;
     default:
-        if (!chipset)
-        {
-            xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "No support for \"%s\"\n", pScrn->chipset);
-            return FALSE;
-        }
-        break;
+        xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "No support for \"%s\"\n", pScrn->chipset);
+        return FALSE;
     }
 
     xf86DrvMsg(pScrn->scrnIndex, X_PROBED, "Found %s chip\n", chipset);
 
-    if (ramType)
-    {
-        xf86DrvMsg(pScrn->scrnIndex, X_PROBED, "RAM type is %s\n", ramType);
-    }
 
-    /* Determine video memory */
-    from = X_PROBED;
-
-	/* Jong 09/11/2006; got from config file */
-    if (pXGI->pEnt->device->videoRam != 0)
-    {
+    /* Determine video memory
+     */
+    if (pXGI->pEnt->device->videoRam != 0) {
         pScrn->videoRam = pXGI->pEnt->device->videoRam;
-
         from = X_CONFIG;
     }
-    else if (pXGI->chipset == XG47)
-    {
-		/* Jong 09/11/2006; FB size from VBIOS */
-        pScrn->videoRam = (pXGI->biosFbSize/1024); /* get from bios */
+    else if (pXGI->chipset == XG47) {
+        pScrn->videoRam = (pXGI->biosFbSize / 1024);
+        from = X_PROBED;
     }
 
     xf86DrvMsg(pScrn->scrnIndex, from, "VideoRAM: %x KByte\n",
                pScrn->videoRam);
 
     /* memory clock */
-    pXGI->memClock = 0;
     pXGI->overrideMemClock = 0;
     pXGI->memClock = XGICalculateMemoryClock(pScrn);
-    xf86DrvMsg(pScrn->scrnIndex, X_PROBED, "Memory Clock is %3.2f MHz\n", pXGI->memClock);
-    if (xf86GetOptValFreq(pXGI->pOptionInfo, OPTION_SETMCLK, OPTUNITS_MHZ, &real))
-    {
+    xf86DrvMsg(pScrn->scrnIndex, X_PROBED, "Memory Clock is %3.2f MHz\n",
+               pXGI->memClock);
+
+    if (xf86GetOptValFreq(pXGI->pOptionInfo, OPTION_SETMCLK, OPTUNITS_MHZ,
+                          &real)) {
         pXGI->overrideMemClock = (int)(real * 1000.0);
+
         xf86DrvMsg(pScrn->scrnIndex, X_CONFIG,
-                   "Setting new Memory Clock to %3.2f MHz\n",
-                   (float)(pXGI->overrideMemClock / 1000));
+                   "Setting new Memory Clock to %3.2f MHz\n", real);
     }
 
 #if DBG_FLOW
