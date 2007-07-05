@@ -589,42 +589,41 @@ static void XGIDPMSSet(ScrnInfoPtr pScrn, int PowerManagementMode, int flags)
 
 }
 
-/*
+/**
  * Memory map the MMIO region.  Used during pre-init.
  */
 static Bool XGIMapMMIO(ScrnInfoPtr pScrn)
 {
-    XGIPtr      pXGI = XGIPTR(pScrn);
-    MessageType from;
+    XGIPtr pXGI = XGIPTR(pScrn);
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    if (!pXGI->IOBase)
-    {
-        if (pXGI->isFBDev)
-        {
-            pXGI->IOBase= fbdevHWMapMMIO(pScrn);
+    if (!pXGI->IOBase) {
+        if (pXGI->isFBDev) {
+            pXGI->IOBase = fbdevHWMapMMIO(pScrn);
         }
-        else
-        {
-			/* Jong 07/07/2006; map a virtual address IOBase from physical address IOAddr for MMIO */
+        else {
+            /* Map a virtual address IOBase from physical address IOAddr
+             * for MMIO
+             */
             pXGI->IOBase = xf86MapPciMem(pScrn->scrnIndex, VIDMEM_MMIO,
-                                         pXGI->pciTag, pXGI->IOAddr, XGI_MMIO_SIZE);
+                                         pXGI->pciTag, pXGI->IOAddr, 
+                                         XGI_MMIO_SIZE);
         }
     }
-    from = X_INFO;
-    xf86DrvMsg(pScrn->scrnIndex, from, "IO Map at 0x%lX\n",
-               (CARD8*)pXGI->IOBase);
+
+
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "IO Map at 0x%p\n", pXGI->IOBase);
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    if (!pXGI->IOBase) return FALSE;
-    return TRUE;
+    return pXGI->IOBase != NULL;
 }
+
 
 /**
  * Unmap the MMIO region.
