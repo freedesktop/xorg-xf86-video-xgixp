@@ -183,18 +183,12 @@ static const char *fbSymbols[] = {
 };
 
 static const char *xaaSymbols[] = {
-/* Jong 07/05/2006; fail when using .so */
-#ifndef _SO_
-    "XAACopyROP", 
-#endif
     "XAACreateInfoRec",
     "XAADestroyInfoRec",
     "XAAFillSolidRects",
+    "XAAGetCopyROP",
+    "XAAGetPatternROP", 
     "XAAInit",
-/* Jong 07/05/2006; fail when using .so */
-#ifndef _SO_
-    "XAAPatternROP", 
-#endif
     "XAAScreenIndex",
     "XAAStippleScanlineFuncLSBFirst",
     "XAAOverlayFBfuncs",

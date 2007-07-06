@@ -104,9 +104,6 @@
 #define XGI_DEBUG
 #endif*/
 
-/* Jong 07/05/2006; for .so */
-#define _SO_
-
 /* Jong 11/28/2006; enable XvExtension */
 /* #define XvExtension */
 

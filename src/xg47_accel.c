@@ -52,50 +52,6 @@
 #define CMDBUF_SIZE      0x100000
 #define CMDBATCH_SIZE    0x2000
 
-/* Jong 07/05/2006; copied from XG40 for .so */
-#ifdef _SO_
-static const int xgiG2_ALUConv[] =
-{
-    0x00,       /* dest = 0;            0,      GXclear,        0 */
-    0x88,       /* dest &= src;         DSa,    GXand,          0x1 */
-    0x44,       /* dest = src & ~dest;  SDna,   GXandReverse,   0x2 */
-    0xCC,       /* dest = src;          S,      GXcopy,         0x3 */
-    0x22,       /* dest &= ~src;        DSna,   GXandInverted,  0x4 */
-    0xAA,       /* dest = dest;         D,      GXnoop,         0x5 */
-    0x66,       /* dest = ^src;         DSx,    GXxor,          0x6 */
-    0xEE,       /* dest |= src;         DSo,    GXor,           0x7 */
-    0x11,       /* dest = ~src & ~dest; DSon,   GXnor,          0x8 */
-    0x99,       /* dest ^= ~src ;       DSxn,   GXequiv,        0x9 */
-    0x55,       /* dest = ~dest;        Dn,     GXInvert,       0xA */
-    0xDD,       /* dest = src|~dest ;   SDno,   GXorReverse,    0xB */
-    0x33,       /* dest = ~src;         Sn,     GXcopyInverted, 0xC */
-    0xBB,       /* dest |= ~src;        DSno,   GXorInverted,   0xD */
-    0x77,       /* dest = ~src|~dest;   DSan,   GXnand,         0xE */
-    0xFF,       /* dest = 0xFF;         1,      GXset,          0xF */
-};
-
-/* same ROP but with Pattern as Source */
-static const int xgiG2_PatALUConv[] =
-{
-    0x00,       /* dest = 0;            0,      GXclear,        0 */
-    0xA0,       /* dest &= src;         DPa,    GXand,          0x1 */
-    0x50,       /* dest = src & ~dest;  PDna,   GXandReverse,   0x2 */
-    0xF0,       /* dest = src;          P,      GXcopy,         0x3 */
-    0x0A,       /* dest &= ~src;        DPna,   GXandInverted,  0x4 */
-    0xAA,       /* dest = dest;         D,      GXnoop,         0x5 */
-    0x5A,       /* dest = ^src;         DPx,    GXxor,          0x6 */
-    0xFA,       /* dest |= src;         DPo,    GXor,           0x7 */
-    0x05,       /* dest = ~src & ~dest; DPon,   GXnor,          0x8 */
-    0xA5,       /* dest ^= ~src ;       DPxn,   GXequiv,        0x9 */
-    0x55,       /* dest = ~dest;        Dn,     GXInvert,       0xA */
-    0xF5,       /* dest = src|~dest ;   PDno,   GXorReverse,    0xB */
-    0x0F,       /* dest = ~src;         Pn,     GXcopyInverted, 0xC */
-    0xAF,       /* dest |= ~src;        DPno,   GXorInverted,   0xD */
-    0x5F,       /* dest = ~src|~dest;   DPan,   GXnand,         0xE */
-    0xFF,       /* dest = 0xFF;         1,      GXset,          0xF */
-};
-#endif 
-
 
 /* Jong 09/16/2006; support dual view */
 extern int		g_DualViewMode;
@@ -642,12 +598,8 @@ static void XG47SetupForScreenToScreenCopy(ScrnInfoPtr pScrn,
     accel_info.planemask = planemask;
     accel_info.trans_color = trans_color;
 
-/* Jong 07/05/2006 */
-#ifdef _SO_
-    accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) | ((xgiG2_ALUConv[rop] & 0xff) << 24);
-#else
-    accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) | ((XAACopyROP[rop] & 0xff) << 24);
-#endif
+    accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) 
+	| ((XAAGetCopyROP(rop) & 0xff) << 24);
 
     SetColorDepth(accel_info.color_depth);
 
@@ -736,14 +688,8 @@ void XG47SetupForSolidFill(ScrnInfoPtr pScrn,
     accel_info.planemask = planemask;
     accel_info.fg_color = color;
 
-/* Jong 07/05/2006 */
-#ifdef _SO_
     accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) |
-                           ((xgiG2_PatALUConv[rop] & 0xff) << 24);
-#else
-    accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) |
-                           ((XAAPatternROP[rop] & 0xff) << 24);
-#endif
+	((XAAGetPatternROP(rop) & 0xff) << 24);
 
     SetColorDepth(accel_info.color_depth);
 
@@ -828,14 +774,8 @@ static void XG47SetupForMono8x8PatternFill(ScrnInfoPtr pScrn,
     accel_info.fg_color = fg;
     accel_info.bg_color = bg;
 
-/* Jong 07/05/2006 */
-#ifdef _SO_
     accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) |
-                           ((xgiG2_PatALUConv[rop] & 0xff) << 24);
-#else
-    accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) |
-                           ((XAAPatternROP[rop] & 0xff) << 24);
-#endif
+	((XAAGetPatternROP(rop) & 0xff) << 24);
 
     SetColorDepth(accel_info.color_depth);
 
@@ -933,14 +873,8 @@ static void XG47SetupForColor8x8PatternFill(ScrnInfoPtr pScrn,
     accel_info.planemask = planemask;
     accel_info.trans_color = transparency_color;
 
-/* Jong 07/05/2006 */
-#ifdef _SO_
     accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) |
-                           ((xgiG2_PatALUConv[rop] & 0xff) << 24);
-#else
-    accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) |
-                           ((XAAPatternROP[rop] & 0xff) << 24);
-#endif
+	((XAAGetPatternROP(rop) & 0xff) << 24);
 
     SetColorDepth(accel_info.color_depth);
 
@@ -1042,14 +976,8 @@ static void XG47SetupForSolidLine(ScrnInfoPtr pScrn,
     accel_info.fg_color = color;
     accel_info.bg_color = 0xffffffff;
  
-/* Jong 07/05/2006 */
-#ifdef _SO_
-	accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) |
-                           ((xgiG2_ALUConv[rop] & 0xff) << 24);
-#else
-	accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) |
-                           ((XAAPatternROP[rop] & 0xff) << 24);
-#endif
+    accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) |
+	((XAAGetPatternROP(rop) & 0xff) << 24);
 
     SetColorDepth(accel_info.color_depth);
 
@@ -1197,13 +1125,8 @@ static void SetColorDepth(int color)
 
 static void SetROP3(int rop)
 {
-    /* 2127[0,7] = rop */
-/* Jong 07/05/2006; for .so */
-#ifdef _SO_
-    accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) | ((xgiG2_ALUConv[rop] & 0xff) << 24);
-#else
-    accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) | ((XAACopyROP[rop] & 0xff) << 24);
-#endif
+    accel_info.engineCmd = (accel_info.engineCmd & 0xffffff) | 
+	((XAAGetCopyROP(rop) & 0xff) << 24);
 }
 
 static void SetFGColor(XGIPtr pXGI, CARD32 color)
