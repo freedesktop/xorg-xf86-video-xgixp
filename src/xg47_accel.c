@@ -1106,18 +1106,13 @@ static void XG47SubsequentSolidTwoPointLine(ScrnInfoPtr pScrn,
 static void SetColorDepth(int color)
 {
     /* 2125[0,1] = screen color depth */
-    unsigned long mode = 0;
 
-    if (color == 3)
-    {
-        color = 6;
-    }
-    /*
-        color   1   2   3   4
-        mode    0   1   3   2
-    */
-    mode = color >> 1;
-
+    /* color   1   2   3   4
+     * mode    0   1   3   2
+     *
+     * Then left shift by 8 to get into position.
+     */
+    const unsigned mode = (color == 3) ? 3 : (color >> 1);
     accel_info.engineCmd = (accel_info.engineCmd & ~0x300) | (mode << 8);
 }
 
