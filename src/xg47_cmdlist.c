@@ -137,7 +137,8 @@ void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList)
     if (s_pCmdList) {
 	if (s_pCmdList->_scratchPadHWAddr) {
 	    XGIDebug(DBG_CMDLIST, "[DBG Free]Scratch VAddr=0x%x HAddr=0x%x\n",
-		     s_pCmdList->_scratchPadLinearAddr, s_pCmdList->_scracthPadHWAddr);
+		     s_pCmdList->_scratchPadLinearAddr, 
+		     s_pCmdList->_scratchPadHWAddr);
 	
 	    XGIPcieMemFree(pScrn,
 			   4*1024,
@@ -148,7 +149,8 @@ void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList)
 	
 	if (s_pCmdList->_cmdBufLinearStartAddr) {
 	    XGIDebug(DBG_CMDLIST, "[DBG Free]cmdBuf VAddr=0x%x  HAddr=0x%x\n",
-		     s_pCmdList->_cmdBufLinearStartAddr, s_pCmdList->_cmdBufHWStartAddr);
+		     s_pCmdList->_cmdBufLinearStartAddr,
+		     s_pCmdList->_cmdBufHWStartAddr);
 
 	    XGIPcieMemFree(pScrn,
 			   s_pCmdList->_cmdBufSize * sizeof(CARD32),
