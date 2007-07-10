@@ -406,8 +406,7 @@ void xg47_SubmitData(struct xg47_CmdList *pCmdList)
     /* ASSERTDD(DATAFILL_INBATCH_BEGIN != m_DataFillMode, "Did not fill data after reserve.");*/
 
     /* Pad the data to 128 bit alignment. */
-    while(0 != ((CARD32)pCmdList->_writePtr & 0x0f))
-    {
+    while (0 != ((intptr_t)pCmdList->_writePtr & 0x0f)) {
         *pCmdList->_writePtr++ = 0;
     }
 
@@ -501,9 +500,9 @@ static void addScratchBatch(struct xg47_CmdList * pCmdList)
     pCmdList->_writePtr[6]  = 0xcc008201; 
 
 	/* Jong 06/15/2006; this value is checked at waitfor2D() */ /* 78~7B */
-    pCmdList->_writePtr[7]  = (CARD32) pCmdList->_lastBatchEnd
-                             -(CARD32) pCmdList->_cmdBufLinearStartAddr
-                             +(CARD32) pCmdList->_cmdBufHWStartAddr; /*garbage*/
+    pCmdList->_writePtr[7]  = pCmdList->_cmdBufHWStartAddr
+	+ ((intptr_t) pCmdList->_lastBatchEnd
+	   - (intptr_t) pCmdList->_cmdBufLinearStartAddr);
 
     pCmdList->_writePtr[8]  = 0xff000001;
     pCmdList->_writePtr[9]  = pCmdList->_writePtr[7];
@@ -534,9 +533,9 @@ static void linkToLastBatch(struct xg47_CmdList * pCmdList)
     /*batch end addr should be 4 Dwords alignment*/
     /*ASSERT(0 == (((CARD32)pCmdList->_writePtr) & 0x0f));*/
 
-    beginHWAddr = (CARD32) pCmdList->_cmdBufHWStartAddr
-                 +(CARD32) pCmdList->_curBatchBegin
-                 -(CARD32) pCmdList->_cmdBufLinearStartAddr;
+    beginHWAddr = pCmdList->_cmdBufHWStartAddr
+	+ ((intptr_t) pCmdList->_curBatchBegin
+	   - (intptr_t) pCmdList->_cmdBufLinearStartAddr);
 
     /* Which begin we should send.*/
     beginPort = getCurBatchBeginPort(pCmdList);
@@ -709,9 +708,9 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
     }
 
     XGIDebug(DBG_FUNCTION, "[DBG-Jong] submit2DBatch-2\n");
-    beginHWAddr = (CARD32) pCmdList->_cmdBufHWStartAddr
-                 +(CARD32) pCmdList->_curBatchBegin
-                 -(CARD32) pCmdList->_cmdBufLinearStartAddr;
+    beginHWAddr = pCmdList->_cmdBufHWStartAddr
+	+ ((intptr_t) pCmdList->_curBatchBegin
+	   - (intptr_t) pCmdList->_cmdBufLinearStartAddr);
 
     /* Which begin we should send. */
     beginPort = getCurBatchBeginPort(pCmdList);
@@ -761,9 +760,9 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
 
 static inline void waitfor2D(struct xg47_CmdList * pCmdList)
 {
-    CARD32 lastBatchEndHW = (CARD32) pCmdList->_lastBatchEnd
-                            -(CARD32) pCmdList->_cmdBufLinearStartAddr
-                            +(CARD32) pCmdList->_cmdBufHWStartAddr; /*garbage*/
+    uint32_t lastBatchEndHW = pCmdList->_cmdBufHWStartAddr
+	+ ((intptr_t) pCmdList->_lastBatchEnd
+	   - (intptr_t) pCmdList->_cmdBufLinearStartAddr);
 
 	/* Jong 05/25/2006 */
 	int WaitCount=0;
