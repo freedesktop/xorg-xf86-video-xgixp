@@ -645,18 +645,20 @@ static void waitForPCIIdleOnly(struct xg47_CmdList *s_pCmdList)
 
 void dumpCommandBuffer(struct xg47_CmdList * pCmdList)
 {
-    int i;
+    unsigned i;
 
     XGIDebug(DBG_FUNCTION,"Entering dumpCommandBuffer\n");
 
-    for (i=0; i<(pCmdList->_writePtr - pCmdList->_cmdBufLinearStartAddr); i++)
-    {
-        if (i % 4 == 0)
-        {
-            XGIDebug(DBG_CMD_BUFFER, "%08x ", (CARD32)pCmdList->_cmdBufLinearStartAddr + i*4);
+    for (i = 0; 
+	 & pCmdList->_cmdBufLinearStartAddr[i] < pCmdList->_writePtr;
+	 i++) {
+        if (i % 4 == 0) {
+            XGIDebug(DBG_CMD_BUFFER, "\n%08p ",
+		     pCmdList->_cmdBufLinearStartAddr + i);
         }
 
-            XGIDebug(DBG_CMD_BUFFER, "%08x ", *(pCmdList->_cmdBufLinearStartAddr + i));
+	XGIDebug(DBG_CMD_BUFFER, "%08x ", 
+		 *(pCmdList->_cmdBufLinearStartAddr + i));
 
         if ((i+1) % 4 == 0)
         {
