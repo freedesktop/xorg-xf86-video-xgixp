@@ -163,7 +163,7 @@ void xg47_Reset(struct xg47_CmdList *s_pCmdList)
 /* Implementation Part*/
 static inline int submit2DBatch(struct xg47_CmdList * pCmdList);
 static inline void sendRemainder2DCommand(struct xg47_CmdList * pCmdList);
-static inline void reserveData(struct xg47_CmdList * pCmdList, CARD32 size);
+static inline void reserveData(struct xg47_CmdList * pCmdList, size_t size);
 static inline void addScratchBatch(struct xg47_CmdList * pCmdList);
 static inline void linkToLastBatch(struct xg47_CmdList * pCmdList);
 
@@ -245,13 +245,14 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, CARD32 size)
 /*
     parameter: size -- length of space in bytes
 */
-static void reserveData(struct xg47_CmdList * pCmdList, CARD32 size)
+static void reserveData(struct xg47_CmdList * pCmdList, size_t size)
 {
-    /* ASSERTDD(DATAFILL_NOFILL == m_DataFillMode, "Last Data was not submited!");  */
-    /* ASSERTDD(NULL != m_pulCurBatchBegin, "What's wrong?");                       */
-    CARD32  NewBatchSize;
-    CARD32* pulNewBatchEnd;
-    /*Size should be 4 dwords alignment (0xff000000 | data length), data 0, data 1 .... */
+    unsigned int NewBatchSize;
+    uint32_t *pulNewBatchEnd;
+
+    /* Size should be 4 dwords alignment (0xff000000 | data length), data 0,
+     * data 1 .... 
+     */
     size = ((size + 0x04 + 0x0f) & ~0x0f) / 4;
 
     /* Check for enlarging this batch to accomodate Data */
@@ -269,36 +270,24 @@ static void reserveData(struct xg47_CmdList * pCmdList, CARD32 size)
         pCmdList->_curBatchRequestSize += size;
         pCmdList->_curBatchDataBegin = pCmdList->_writePtr;
     }
-    else
-    {
-        /* HW guys do NOT recommemd to use out-batch mode. */
-        if (1)
-        {
-            /* If roll over, we should use new batch from the begin of command list. */
-            CARD32* pOldBatchBegin;
-            CARD32  existCmdSize;
-            pOldBatchBegin           = pCmdList->_curBatchBegin;
-            pCmdList->_curBatchBegin = pCmdList->_cmdBufLinearStartAddr;
-            pulNewBatchEnd           = pCmdList->_curBatchBegin + NewBatchSize;
-            existCmdSize             = pCmdList->_writePtr - pOldBatchBegin;
-            /*ASSERTDD(NULL != m_pulCurBatchBegin, "NO command list buffer?");*/
-            /*ASSERTDD((pulOldBatchBegin <= m_ulBufferAddr) &&
-                     (m_ulBufferAddr - pulOldBatchBegin <= m_ulRequestSize), "Out of boundary!");*/
+    else {
+	/* If roll over, we should use new batch from the begin of
+	 * command list. 
+	 */
+	uint32_t *const pOldBatchBegin = pCmdList->_curBatchBegin;
+	const ptrdiff_t existCmdSize = pCmdList->_writePtr - pOldBatchBegin;
 
-            /* Move the midway commands to new home. */
-            waitCmdListAddrAvailable(pCmdList,
-                                     pCmdList->_curBatchBegin,
-                                     pCmdList->_curBatchBegin + existCmdSize);
-            memcpy(pCmdList->_curBatchBegin, pOldBatchBegin, existCmdSize * 4);
-            pCmdList->_writePtr = pCmdList->_curBatchBegin + existCmdSize;
-            pCmdList->_curBatchRequestSize += size;
-            pCmdList->_curBatchDataBegin = pCmdList->_writePtr;
-        }
-        else
-        {
-            /* If roll over, we should use new btach to */
+	pCmdList->_curBatchBegin = pCmdList->_cmdBufLinearStartAddr;
+	pulNewBatchEnd           = pCmdList->_curBatchBegin + NewBatchSize;
 
-        }
+	/* Move the midway commands to new home. */
+	waitCmdListAddrAvailable(pCmdList,
+				 pCmdList->_curBatchBegin,
+				 pCmdList->_curBatchBegin + existCmdSize);
+	memcpy(pCmdList->_curBatchBegin, pOldBatchBegin, existCmdSize * 4);
+	pCmdList->_writePtr = pCmdList->_curBatchBegin + existCmdSize;
+	pCmdList->_curBatchRequestSize += size;
+	pCmdList->_curBatchDataBegin = pCmdList->_writePtr;
     }
 
     /* Wait for batch available. */
