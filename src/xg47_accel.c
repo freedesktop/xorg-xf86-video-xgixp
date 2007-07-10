@@ -1233,37 +1233,22 @@ static void ResetClip(void)
 int testRWPCIE(ScrnInfoPtr pScrn)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
-
     unsigned long hd_addr;
     unsigned long *virt_addr;
-
-	/* Jong 06/01/2006; test */
     unsigned long sz_test = 0x1000;
-    /* unsigned long sz_test = 0x2000; */
-
     unsigned long res;
-    int ret = 0;
-
-	int i;
+    int ret;
 
     PDEBUG(ErrorF("\n\t[2D]begin test rw in kernel\n"));
     XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl-05292006][2D]begin test rw in kernel\n");
 
-    if (!XGIPcieMemAllocate(pScrn,
-                            sz_test, /* 20 byte */
-                            0,
-                            &hd_addr,
-                            (unsigned long *)(&virt_addr)))
-    {
+    if (!XGIPcieMemAllocate(pScrn, sz_test, 0,&hd_addr,
+                            (unsigned long *)(&virt_addr))) {
         ErrorF("alloc memory for test kd write error\n");
     }
-    else
-    {
+    else {
         ErrorF("alloc memory for test kd write correctly\n");
     }
-
-	/* Jong 05/30/2006 */
-	/* sleep(3); */
 
     PDEBUG(ErrorF("[Jong-2d] Initial value is [0x%8x]=0x%8x\n", hd_addr, *virt_addr));
     PDEBUG(ErrorF("[Jong-2d] virt_addr=0x%8x\n", virt_addr));
@@ -1274,49 +1259,19 @@ int testRWPCIE(ScrnInfoPtr pScrn)
     PDEBUG(ErrorF("[Jong-2d] Initial value is [0x%8x]=0x%8x\n", hd_addr, *virt_addr));
     PDEBUG(ErrorF("[Jong-2d] virt_addr=0x%8x\n", virt_addr));
 
-	/*
-	for(i=0; i<16 ; i++)
-		PDEBUG(ErrorF("[Jong06012006-2d] virt_addr[%d]=%x\n", i, *(virt_addr+i)));
-
-	for(i=16; i<32 ; i++)
-	{
-	    *(virt_addr+i) = 0x123456;
-		PDEBUG(ErrorF("[Jong06012006-2d] virt_addr[%d]=%x\n", i, *(virt_addr+i)));
-	}
-	*/
-
-	/* Jong 05/30/2006 */
-	/* sleep(3); */
-
     XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] testRWPCIE()-1\n");
     ret = ioctl(pXGI->fd, XGI_IOCTL_TEST_RWINKERNEL, &hd_addr);
     XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] testRWPCIE()-2\n");
 
-	/* Jong 05/30/2006 */
-	/* sleep(3); */
-
-    if ( ret == -1)
-    {
-        ErrorF("[2D] ioctl XGI_IOCTL_TEST_RWINKERNEL error \n");
-    }
-    else
-    {
-        ErrorF("[2D] call ioctl XGI_IOCTL_TEST_RWINKERNEL = %d. \n", ret);
-    }
+    ErrorF("[2D] ioctl XGI_IOCTL_TEST_RWINKERNEL = %d. %s\n", ret,
+           (ret == -1) ? "error" : "success");
 
     res = *virt_addr;
 
-	/*
-	for(i=0; i<32 ; i++)
-		PDEBUG(ErrorF("[Jong06012006-2d] virt_addr[%d]=%x\n", i, *(virt_addr+i)));
-	*/
-
-    if( *virt_addr == 0x00f00fff)
-    {
+    if (*virt_addr == 0x00f00fff) {
         ErrorF("[2D] kd write right: %x\n", *virt_addr);
     }
-    else
-    {
+    else {
         ErrorF("[2D] kd write error: %x\n", *virt_addr);
     }
 
