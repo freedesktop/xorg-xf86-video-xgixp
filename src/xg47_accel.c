@@ -1233,17 +1233,18 @@ static void ResetClip(void)
 int testRWPCIE(ScrnInfoPtr pScrn)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
-    unsigned long hd_addr;
-    unsigned long *virt_addr;
-    unsigned long sz_test = 0x1000;
-    unsigned long res;
+    unsigned long bus_addr;
+    uint32_t hd_addr;
+    volatile uint32_t *virt_addr;
+    const unsigned int sz_test = 0x1000;
+    uint32_t res;
     int ret;
 
     PDEBUG(ErrorF("\n\t[2D]begin test rw in kernel\n"));
     XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl-05292006][2D]begin test rw in kernel\n");
 
-    if (!XGIPcieMemAllocate(pScrn, sz_test, 0,&hd_addr,
-                            (unsigned long *)(&virt_addr))) {
+    if (!XGIPcieMemAllocate(pScrn, sz_test, & bus_addr, & hd_addr,
+                            (void **) & virt_addr)) {
         ErrorF("alloc memory for test kd write error\n");
     }
     else {
@@ -1275,7 +1276,7 @@ int testRWPCIE(ScrnInfoPtr pScrn)
         ErrorF("[2D] kd write error: %x\n", *virt_addr);
     }
 
-    XGIPcieMemFree(pScrn, sz_test, 0, hd_addr, virt_addr);
+    XGIPcieMemFree(pScrn, sz_test, bus_addr, virt_addr);
 
     ErrorF("\n\t[2D]End test rw in kernel.\n");
 

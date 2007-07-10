@@ -36,16 +36,12 @@ extern void XGIDumpRegisterValue(ScrnInfoPtr pScrn);
 /* Jong 07/12/2006 */
 extern void XGIDumpMemory(CARD8 *addr, unsigned long size);
 
-extern Bool XGIPcieMemAllocate(ScrnInfoPtr pScrn,
-                               unsigned long size,
-                               unsigned long *pBufBusAddr,
-                               unsigned long *pBufHWAddr,
-                               unsigned long *pBufVirtAddr);
-extern Bool XGIPcieMemFree(ScrnInfoPtr pScrn,
-                           unsigned long size,
-                           unsigned long bufBusAddr,
-                           unsigned long bufHWAddr,
-                           void          *pBufVirtAddr);
+extern Bool XGIPcieMemAllocate(ScrnInfoPtr pScrn, size_t size,
+    unsigned long *pBufBusAddr, uint32_t *pBufHWAddr, void **pBufVirtAddr);
+
+extern Bool XGIPcieMemFree(ScrnInfoPtr pScrn, size_t size,
+    unsigned long bufBusAddr, void *pBufVirtAddr);
+
 extern Bool  XGIShareAreaInfo(ScrnInfoPtr pScrn,
                              unsigned long busAddr,
                              unsigned long size);

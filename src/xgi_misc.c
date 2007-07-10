@@ -336,155 +336,82 @@ void XGIDumpRegisterValue(ScrnInfoPtr pScrn)
     }
 }
 
-Bool XGIPcieMemAllocate(ScrnInfoPtr pScrn,
-                        unsigned long size,
+Bool XGIPcieMemAllocate(ScrnInfoPtr pScrn, size_t size,
                         unsigned long *pBufBusAddr,
-                        unsigned long *pBufHWAddr,
-                        unsigned long *pBufVirtAddr)
+                        uint32_t *pBufHWAddr, void **pBufVirtAddr)
 {
     XGIPtr          pXGI = XGIPTR(pScrn);
-    XGIMemReqRec    req;
     XGIMemAllocRec  alloc;
     int             ret = 0;
-    Bool            isAllocated = FALSE;
 
-    req.size = size;
+    alloc.size = size;
 
-    ret = ioctl(pXGI->fd, XGI_IOCTL_PCIE_ALLOC, &req);
+    ret = ioctl(pXGI->fd, XGI_IOCTL_PCIE_ALLOC, &alloc);
     XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIPcieMemAllocate()-1\n");
 
-    if (ret < 0)
-    {
-        isAllocated = FALSE;
+    if ((ret < 0) || (alloc.busAddr == 0)) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "PCIE memory allocate ioctl failed !\n");
-    }
-    else
-    {
-        isAllocated = TRUE;
-        alloc.location = req.location;
-        alloc.size     = req.size;
-        alloc.busAddr  = req.isFront;
-        alloc.hwAddr   = req.pad;
-        xf86DrvMsg(pScrn->scrnIndex, X_INFO, "alloc.size: 0x%x alloc.busAddr: 0x%x alloc.hwAddr: 0x%x\n",
-                           alloc.size, alloc.busAddr, alloc.hwAddr);
+        return FALSE;
     }
 
-    if (alloc.busAddr == 0)
-    {
-        isAllocated = FALSE;
-        xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "PCIE memory allocate failed !\n");
-    }
-    else
-    {
-        if (pBufBusAddr != NULL)
-        {
-            *pBufBusAddr  = alloc.busAddr;
-		    XGIDebug(DBG_FUNCTION, "[DBG-Jong-XGIPcieMemAllocate] pBufBusAddr != NULL\n");
-        }
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "alloc.size: 0x%x "
+               "alloc.busAddr: 0x%lx alloc.hwAddr: 0x%x\n",
+               alloc.size, alloc.busAddr, alloc.hwAddr);
 
-        *pBufHWAddr   = alloc.hwAddr;
+    *pBufBusAddr = alloc.busAddr;
+    *pBufHWAddr = alloc.hwAddr;
 
-	    XGIDebug(DBG_FUNCTION, "[DBG-Jong 06022006] XGIPcieMemAllocate()-alloc.hwAddr=0x%lx\n", alloc.hwAddr);
-	    XGIDebug(DBG_FUNCTION, "[DBG-Jong 06022006] XGIPcieMemAllocate()-alloc.busAddr=0x%lx\n", alloc.busAddr);
+    /* Jong 06/06/2006; why alloc.busAddr located in Frame Buffer adress space on Gateway platform */
+    /* Jong 06/14/2006; this virtual address seems not correct */
+    *pBufVirtAddr = mmap(0, alloc.size, PROT_READ|PROT_WRITE,
+                         MAP_SHARED, pXGI->fd, alloc.busAddr);
 
-		/* Jong 06/06/2006; why alloc.busAddr located in Frame Buffer adress space on Gateway platform */
-		/* Jong 06/14/2006; this virtual address seems not correct */
-        *pBufVirtAddr = (unsigned long)mmap(0, alloc.size, PROT_READ|PROT_WRITE,
-                                            MAP_SHARED, pXGI->fd, alloc.busAddr);
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "pBufVirtAddr: 0x%p\n",
+               *pBufVirtAddr);
 
-	    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIPcieMemAllocate()-*pBufHWAddr=0x%lx\n", *pBufHWAddr);
-	    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIPcieMemAllocate()-*pBufVirtAddr=0x%lx\n", *pBufVirtAddr);
-
-        if (*pBufVirtAddr == (unsigned long)(-1))
-        {
-            isAllocated = FALSE;
-            xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "PCIE memory mmap failed !\n");
-        }
-        else
-        {
-            isAllocated = TRUE;
-            if (pBufBusAddr != NULL)
-            {
-                xf86DrvMsg(pScrn->scrnIndex, X_INFO, "pBufVirtAddr: 0x%x pBufBusAddr: 0x%x pBufHWAddr: 0x%x\n",
-                           *pBufVirtAddr, *pBufBusAddr, *pBufHWAddr);
-	 		    XGIDebug(DBG_FUNCTION, "[DBG-Jong-XGIPcieMemAllocate] pBufBusAddr != NULL\n");
-           }
-            else
-            {
-                xf86DrvMsg(pScrn->scrnIndex, X_INFO, "pBufVirtAddr: 0x%x pBufBusAddr: 0x%x pBufHWAddr: 0x%x\n",
-                           *pBufVirtAddr, NULL, *pBufHWAddr);
-			    XGIDebug(DBG_FUNCTION, "[DBG-Jong-XGIPcieMemAllocate] pBufBusAddr == NULL\n");
-            }
-        }
+    if (*pBufVirtAddr == MAP_FAILED) {
+        xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "PCIE memory mmap failed!\n");
     }
 
-    return isAllocated;
+    return *pBufVirtAddr != MAP_FAILED;
 }
 
-Bool XGIPcieMemFree(ScrnInfoPtr pScrn,
-                    unsigned long size,
-                    unsigned long bufBusAddr,
-                    unsigned long bufHWAddr,
-                    void          *pBufVirtAddr)
+Bool XGIPcieMemFree(ScrnInfoPtr pScrn, size_t size,
+                    unsigned long bufBusAddr, void *pBufVirtAddr)
 {
-    XGIPtr          pXGI = XGIPTR(pScrn);
-    XGIMemAllocRec  alloc;
-    int             ret = 0;
-    Bool            isFreed = FALSE;
+    XGIPtr pXGI = XGIPTR(pScrn);
+    int ret;
+    int mode;
 
-    if (!bufBusAddr)
-    {
-        bufBusAddr = bufHWAddr;
-    }
 
     if ((size <= 0) || ((size & 0xFFF) != 0)
          || (bufBusAddr < pXGI->fbSize)
-         || (bufBusAddr != bufHWAddr)
-         || ((bufBusAddr & 0xFFF) != 0))
-    {
-        isFreed = FALSE;
-        xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-                   "Wrong PCIE memory size: 0x%x bufBusAddr: 0x%x bufHWAddr: 0x%x to free \n",
-                   size, bufBusAddr, bufHWAddr);
-    }
-    alloc.size    = size;
-    alloc.busAddr = bufBusAddr;
-    ret = munmap((void *)pBufVirtAddr, alloc.size);
-
-    if (ret < 0)
-    {
-        isFreed = FALSE;
-        xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "PCIE memory munmap failed !\n");
-        xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-                   "PCIE memory free size: 0x%x pBufVirtAddr: 0x%x bufBusAddr: 0x%x bufHWAddr: 0x%x \n",
-                   size, (unsigned long *)pBufVirtAddr, bufBusAddr, bufHWAddr);
-    }
-    else
-    {
-        isFreed = TRUE;
-        ret = ioctl(pXGI->fd, XGI_IOCTL_PCIE_FREE, &(alloc.busAddr));
-	    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIPcieMemFree()-1\n");
-
-        if (ret < 0)
-        {
-            isFreed = FALSE;
-            xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "PCIE memory IOCTL free failed !\n");
-            xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-                       "PCIE memory free size: 0x%x pBufVirtAddr: 0x%x bufBusAddr: 0x%x bufHWAddr: 0x%x \n",
-                       size, (unsigned long *)pBufVirtAddr, bufBusAddr, bufHWAddr);
-        }
-        else
-        {
-            isFreed = TRUE;
-            xf86DrvMsg(pScrn->scrnIndex, X_INFO, "PCIE memory munmap successfully !\n");
-            xf86DrvMsg(pScrn->scrnIndex, X_INFO, "PCIE memory IOCTL free successfully !\n");
-            xf86DrvMsg(pScrn->scrnIndex, X_INFO,
-                       "PCIE memory free size: 0x%x pBufVirtAddr: 0x%x bufBusAddr: 0x%x bufHWAddr: 0x%x \n",
-                       size, (unsigned long *)pBufVirtAddr, bufBusAddr, bufHWAddr);
-        }
+         || ((bufBusAddr & 0xFFF) != 0)) {
+        xf86DrvMsg(pScrn->scrnIndex, X_WARNING,
+                   "Wrong PCIE memory size: 0x%x bufBusAddr: 0x%lx to free\n",
+                   (unsigned int) size, bufBusAddr);
     }
 
-    return isFreed;
+    ret = munmap(pBufVirtAddr, size);
+    if (ret < 0) {
+        xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "PCIE memory munmap failed!\n");
+        mode = X_ERROR;
+    }
+    else {
+        ret = ioctl(pXGI->fd, XGI_IOCTL_PCIE_FREE, & bufBusAddr);
+        XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIPcieMemFree()-1\n");
+
+        mode = (ret < 0) ? X_ERROR : X_INFO;
+        xf86DrvMsg(pScrn->scrnIndex, mode, "PCIE memory IOCTL free %s\n",
+                   (ret < 0) ? "failed!" : "successful.");
+    }
+
+    xf86DrvMsg(pScrn->scrnIndex, mode,
+               "PCIE memory free size: 0x%x pBufVirtAddr: 0x%p "
+               "bufBusAddr: 0x%lx\n",
+               (unsigned int) size, pBufVirtAddr, bufBusAddr);
+
+    return ret == 0;
 }
 
 Bool XGIShareAreaInfo(ScrnInfoPtr pScrn,

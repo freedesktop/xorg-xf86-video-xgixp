@@ -34,6 +34,7 @@
 #include "xg47_regs.h"
 #include "xgi_driver.h"
 #include "xg47_cmdlist.h"
+#include "xgi_misc.h"
 #include "xgi_debug.h"
 
 struct xg47_CmdList
@@ -47,9 +48,10 @@ struct xg47_CmdList
     CARD32*     _writePtr;                  /* current writing ptr */
     CARD32      _sendDataLength;            /* record the filled data size */
 
-    CARD32*     _cmdBufLinearStartAddr;
-    CARD32*     _cmdBufHWStartAddr;
-    CARD32      _cmdBufSize;            /* DWORDs */
+    uint32_t *    _cmdBufLinearStartAddr;
+    uint32_t      _cmdBufHWStartAddr;
+    unsigned long _cmdBufBusStartAddr;
+    unsigned int  _cmdBufSize;            /* DWORDs */
 
     CARD32*     _lastBatchBegin;        /* The begin of last batch. */
     CARD32*     _lastBatchEnd;          /* The end of last batch. */
@@ -60,8 +62,9 @@ struct xg47_CmdList
     CARD32      _bunch[4];
 
     /* scratch pad addr, allocate at outside, pass these two parameter in */
-    CARD32*     _scratchPadLinearAddr;
-    CARD32*     _scratchPadHWAddr;
+    uint32_t *    _scratchPadLinearAddr;
+    uint32_t      _scratchPadHWAddr;
+    unsigned long _scratchPadBusAddr;
 
     /* MMIO base */
     CARD32*     _mmioBase;
@@ -86,9 +89,9 @@ xg47_Initialize(ScrnInfoPtr pScrn, CARD32 cmdBufSize, CARD32 *mmioBase, int fd)
 
     if (!XGIPcieMemAllocate(pScrn,
                             list->_cmdBufSize * sizeof(CARD32),
-                            0,
-			    (CARD32 *) & list->_cmdBufHWStartAddr,
-			    (CARD32 *) & list->_cmdBufLinearStartAddr)) {
+			    & list->_cmdBufBusStartAddr,
+			    & list->_cmdBufHWStartAddr,
+			    (void **) & list->_cmdBufLinearStartAddr)) {
         XGIDebug(DBG_ERROR, "[DBG Error]Allocate CmdList buffer error!\n");
 	goto err;
     }
@@ -97,33 +100,22 @@ xg47_Initialize(ScrnInfoPtr pScrn, CARD32 cmdBufSize, CARD32 *mmioBase, int fd)
 	     list->_cmdBufLinearStartAddr, list->_cmdBufHWStartAddr, list->_cmdBufSize);
 
     if (!XGIPcieMemAllocate(pScrn,
-                            4*1024,
-                            0,
-                            (CARD32 *) & list->_scratchPadHWAddr,
-                            (CARD32 *) & list->_scratchPadLinearAddr)) {
+                            4 * 1024,
+                            & list->_scratchPadBusAddr,
+                            & list->_scratchPadHWAddr,
+                            (void **) & list->_scratchPadLinearAddr)) {
         XGIDebug(DBG_ERROR, "[DBG ERROR]Allocate Scratch Pad error!\n");
 
 	goto err;
     }
 
 
-    XGIDebug(DBG_CMDLIST, "[Malloc]Scratch VAddr=0x%x HAddr=0x%x\n",
+    XGIDebug(DBG_CMDLIST, "[Malloc]Scratch VAddr=0x%p HAddr=0x%x\n",
            list->_scratchPadLinearAddr, list->_scratchPadHWAddr);
 
     xg47_Reset(list);
 
-    XGIDebug(DBG_CMDLIST, "cmdBufLinearStartAddr = %x\n"
-       "cmdBufHWStartAddr = %x\n"
-       "cmdBufSize = %x \n"
-       "scratchPadLinearAddr = %x\n"
-       "scracthPadHWAddr = %x\n"
-       "mmioBase = %x\n",
-       list->_cmdBufLinearStartAddr,
-       list->_cmdBufHWStartAddr,
-       list->_cmdBufSize,
-       list->_scratchPadLinearAddr,
-       list->_scratchPadHWAddr,
-       list->_mmioBase);
+    XGIDebug(DBG_CMDLIST, "mmioBase = %x\n", list->_mmioBase);
     
     return list;
 
@@ -135,27 +127,23 @@ err:
 void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList)
 {
     if (s_pCmdList) {
-	if (s_pCmdList->_scratchPadHWAddr) {
+	if (s_pCmdList->_scratchPadBusAddr) {
 	    XGIDebug(DBG_CMDLIST, "[DBG Free]Scratch VAddr=0x%x HAddr=0x%x\n",
 		     s_pCmdList->_scratchPadLinearAddr, 
 		     s_pCmdList->_scratchPadHWAddr);
 	
-	    XGIPcieMemFree(pScrn,
-			   4*1024,
-			   0,
-			   (CARD32)(s_pCmdList->_scratchPadHWAddr),
+	    XGIPcieMemFree(pScrn, 4 * 1024,
+			   s_pCmdList->_scratchPadBusAddr,
 			   s_pCmdList->_scratchPadLinearAddr);
 	}
 	
-	if (s_pCmdList->_cmdBufLinearStartAddr) {
+	if (s_pCmdList->_cmdBufBusStartAddr) {
 	    XGIDebug(DBG_CMDLIST, "[DBG Free]cmdBuf VAddr=0x%x  HAddr=0x%x\n",
 		     s_pCmdList->_cmdBufLinearStartAddr,
 		     s_pCmdList->_cmdBufHWStartAddr);
 
-	    XGIPcieMemFree(pScrn,
-			   s_pCmdList->_cmdBufSize * sizeof(CARD32),
-			   0,
-			   (CARD32)(s_pCmdList->_cmdBufHWStartAddr),
+	    XGIPcieMemFree(pScrn, s_pCmdList->_cmdBufSize * sizeof(CARD32),
+			   s_pCmdList->_cmdBufBusStartAddr,
 			   s_pCmdList->_cmdBufLinearStartAddr);
 	}
 
@@ -184,7 +172,7 @@ static inline void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList);
 static CARD32 getCurBatchBeginPort(struct xg47_CmdList * pCmdList);
 static inline void triggerHWCommandList(struct xg47_CmdList * pCmdList, CARD32 triggerCounter);
 static inline void waitForPCIIdleOnly(struct xg47_CmdList *);
-static inline CARD32* getGEWorkedCmdHWAddr(struct xg47_CmdList * pCmdList);
+static inline uint32_t getGEWorkedCmdHWAddr(const struct xg47_CmdList *);
 static void dumpCommandBuffer(struct xg47_CmdList * pCmdList);
 
 CARD32 s_emptyBegin[AGPCMDLIST_BEGIN_SIZE] =
@@ -440,15 +428,18 @@ void xg47_SubmitData(struct xg47_CmdList *pCmdList)
 }
 
 
-static void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList, CARD32* addrStart, CARD32* addrEnd)
+static void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList,
+				     CARD32* addrStart, CARD32* addrEnd)
 {
-	/* The loop of waiting for enough command list buffer */
-    while(1)
-    {
+    /* The loop of waiting for enough command list buffer */
+    while (1) {
         /* Get the current runing batch address. */
 
-        CARD32* curGEWorkedCmdAddr = pCmdList->_cmdBufLinearStartAddr
-            + (getGEWorkedCmdHWAddr(pCmdList) - pCmdList->_cmdBufHWStartAddr);
+	const uint32_t cmd_offset = getGEWorkedCmdHWAddr(pCmdList)
+	    - pCmdList->_cmdBufHWStartAddr;
+        const CARD32 *curGEWorkedCmdAddr =
+	    (CARD32 *)(((uint8_t *) pCmdList->_cmdBufLinearStartAddr)
+		       + cmd_offset);
 
         if(NULL != curGEWorkedCmdAddr)
         {
@@ -475,9 +466,9 @@ static void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList, CARD32* add
     }
 }
 
-static CARD32* getGEWorkedCmdHWAddr(struct xg47_CmdList * pCmdList)
+static uint32_t getGEWorkedCmdHWAddr(const struct xg47_CmdList * pCmdList)
 {
-	return (CARD32*)(*(pCmdList->_scratchPadLinearAddr));
+    return *pCmdList->_scratchPadLinearAddr;
 }
 
 
