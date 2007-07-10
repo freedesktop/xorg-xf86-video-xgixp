@@ -680,18 +680,19 @@ void dumpCommandBuffer(struct xg47_CmdList * pCmdList)
 */
 static void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList)
 {
-    CARD32* curGEWorkedCmdAddr = 0;
-    while (1)
-    {
-        curGEWorkedCmdAddr = pCmdList->_cmdBufLinearStartAddr
-                            +( getGEWorkedCmdHWAddr(pCmdList)
-                              -pCmdList->_cmdBufHWStartAddr);
+    /* Calculate the offset of the end of the last batch in the command
+     * buffer.  This is "L" in the diagram above.
+     */
+    const intptr_t L = (intptr_t) pCmdList->_cmdBufLinearStartAddr 
+	- (intptr_t) pCmdList->_lastBatchEnd;
+    intptr_t G;
 
-        if (curGEWorkedCmdAddr <= pCmdList->_lastBatchEnd)
-        {
-            break;
-        }
-    }
+    do {
+	/* Calculate the offset of the command that is currently being
+	 * processed by the GE.  This is "G" in the diagram
+	 */
+	G = getGEWorkedCmdHWAddr(pCmdList) - pCmdList->_cmdBufHWStartAddr;
+    } while (G > L);
 }
 
 static int submit2DBatch(struct xg47_CmdList * pCmdList)
