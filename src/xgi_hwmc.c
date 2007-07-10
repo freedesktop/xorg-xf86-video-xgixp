@@ -255,8 +255,7 @@ int XGIXvMCCreateSurface(ScrnInfoPtr pScrn,
     XGIPtr                  pXGI = XGIPTR(pScrn);
     XGIXvMCCreateSurfacePtr pXGISurface = NULL;
     XvMCContextPtr          pContext = pSurface->context;
-    XGIMemReqRec            req;
-    XGIMemAllocRec          alloc;
+    struct xgi_mem_alloc    alloc;
     int                     surfSize, surfPitch, pitchAlign;
     int                     i, ret = 0;
 
@@ -288,9 +287,9 @@ int XGIXvMCCreateSurface(ScrnInfoPtr pScrn,
     {
         if (!pXGI->surfID[i])
         {
-            req.isFront = 0;
-            req.size = surfSize;
-            ret = ioctl(pXGI->fd, XGI_IOCTL_FB_ALLOC, &req);
+            alloc.is_front = 0;
+            alloc.size = surfSize;
+            ret = ioctl(pXGI->fd, XGI_IOCTL_FB_ALLOC, &alloc);
 		    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIXvMCCreateSurface()-1\n");
             if (ret < 0)
             {
@@ -299,15 +298,10 @@ int XGIXvMCCreateSurface(ScrnInfoPtr pScrn,
             }
             else
             {
-                alloc.location = req.location;
-                alloc.size     = req.size;
-                alloc.busAddr  = req.isFront;
-                alloc.hwAddr   = req.pad;
-
                 pXGISurface->index = i;
                 pXGISurface->pitch  = surfPitch;
                 pXGISurface->size   = surfSize;
-                pXGISurface->hwAddr = alloc.hwAddr;
+                pXGISurface->hwAddr = alloc.hw_addr;
 
                 pXGISurface->offsetY = pXGISurface->hwAddr;
                 pXGISurface->offsetV = pXGISurface->offsetY
@@ -319,7 +313,7 @@ int XGIXvMCCreateSurface(ScrnInfoPtr pScrn,
                 pXGI->xvmcSurface[i] = *pXGISurface;
 
                 xf86DrvMsg(pScrn->scrnIndex, X_CONFIG," index: %d surfPitch: %d surfHwAddr %lx\n",
-                           i, surfPitch, alloc.hwAddr);
+                           i, surfPitch, alloc.hw_addr);
                 return Success;
             }
         }
@@ -336,8 +330,7 @@ int XGIXvMCCreateSubpicture(ScrnInfoPtr pScrn,
     XGIPortPtr              pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
     XvMCContextPtr          pContext = pSubpicture->context;
     XGIXvMCSubpicturePtr    pXGISubpicture = NULL;
-    XGIMemReqRec            req;
-    XGIMemAllocRec          alloc;
+    struct xgi_mem_alloc    alloc;
     int                     surfSize, surfPitch, pitchAlign;
     int                     i = 0, ret = 0;
 
@@ -365,9 +358,9 @@ int XGIXvMCCreateSubpicture(ScrnInfoPtr pScrn,
 
     if (!pXGI->spID)
     {
-        req.isFront = 0;
-        req.size = surfSize;
-        ret = ioctl(pXGI->fd, XGI_IOCTL_FB_ALLOC, &req);
+        alloc.is_front = 0;
+        alloc.size = surfSize;
+        ret = ioctl(pXGI->fd, XGI_IOCTL_FB_ALLOC, &alloc);
 	    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIXvMCCreateSubpicture()-1\n");
         if (ret < 0)
         {
@@ -377,14 +370,9 @@ int XGIXvMCCreateSubpicture(ScrnInfoPtr pScrn,
         }
         else
         {
-            alloc.location = req.location;
-            alloc.size     = req.size;
-            alloc.busAddr  = req.isFront;
-            alloc.hwAddr   = req.pad;
-
             pXGISubpicture->pitch  = surfPitch;
             pXGISubpicture->size   = alloc.size;
-            pXGISubpicture->hwAddr = alloc.hwAddr;
+            pXGISubpicture->hwAddr = alloc.hw_addr;
 
             pXGI->spID = pSubpicture->subpicture_id;
             pXGI->xvmcSubpic = *pXGISubpicture;

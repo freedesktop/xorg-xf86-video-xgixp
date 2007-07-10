@@ -2121,19 +2121,18 @@ static void XGIRestore(ScrnInfoPtr pScrn)
 Bool XGIPutScreenInfo(ScrnInfoPtr pScrn)
 {
     XGIPtr              pXGI = XGIPTR(pScrn);
-    XGIScreenInfoRec    scrnInfo;
+    struct xgi_screen_info    scrnInfo;
     int                 ret;
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    scrnInfo.scrnStart  = 0;
-    scrnInfo.scrnWidth  = pXGI->currentLayout.mode->HDisplay;
-    scrnInfo.scrnHeight = pXGI->currentLayout.mode->VDisplay;
-    scrnInfo.scrnBpp    = pScrn->bitsPerPixel >> 3;
-    scrnInfo.scrnPitch  = scrnInfo.scrnWidth * scrnInfo.scrnBpp;
-    /*scrnInfo.scrnPitch  = pScrn->displayWidth * scrnInfo.scrnBpp;*/
+    scrnInfo.scrn_start = 0;
+    scrnInfo.scrn_xres  = pXGI->currentLayout.mode->HDisplay;
+    scrnInfo.scrn_yres  = pXGI->currentLayout.mode->VDisplay;
+    scrnInfo.scrn_bpp   = pScrn->bitsPerPixel >> 3;
+    scrnInfo.scrn_pitch = scrnInfo.scrn_xres * scrnInfo.scrn_bpp;
 
     ret = ioctl(pXGI->fd, XGI_IOCTL_PUT_SCREEN_INFO, &scrnInfo);
     XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIPutScreenInfo()-1\n");
@@ -2820,7 +2819,7 @@ static Bool XGIEnterVT(int scrnIndex, int flags)
         if(pXGI->chipset == XG47)
         {
             int retIoctl;
-            XGIStateInfoRec stateInfo;
+            struct xgi_state_info stateInfo;
 
             stateInfo._fromState    = 0;    /* console */
             stateInfo._toState      = 1;    /* graphic */
@@ -2903,7 +2902,7 @@ static void XGILeaveVT(int scrnIndex, int flags)
         if(pXGI->chipset == XG47)
         {
             int retIoctl;
-            XGIStateInfoRec stateInfo;
+            struct xgi_state_info stateInfo;
 
             stateInfo._fromState    = 1;    /* console */
             stateInfo._toState      = 0;    /* graphic */

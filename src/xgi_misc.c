@@ -341,7 +341,7 @@ Bool XGIPcieMemAllocate(ScrnInfoPtr pScrn, size_t size,
                         uint32_t *pBufHWAddr, void **pBufVirtAddr)
 {
     XGIPtr          pXGI = XGIPTR(pScrn);
-    XGIMemAllocRec  alloc;
+    struct xgi_mem_alloc  alloc;
     int             ret = 0;
 
     alloc.size = size;
@@ -349,22 +349,22 @@ Bool XGIPcieMemAllocate(ScrnInfoPtr pScrn, size_t size,
     ret = ioctl(pXGI->fd, XGI_IOCTL_PCIE_ALLOC, &alloc);
     XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIPcieMemAllocate()-1\n");
 
-    if ((ret < 0) || (alloc.busAddr == 0)) {
+    if ((ret < 0) || (alloc.bus_addr == 0)) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "PCIE memory allocate ioctl failed !\n");
         return FALSE;
     }
 
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "alloc.size: 0x%x "
                "alloc.busAddr: 0x%lx alloc.hwAddr: 0x%x\n",
-               alloc.size, alloc.busAddr, alloc.hwAddr);
+               alloc.size, alloc.bus_addr, alloc.hw_addr);
 
-    *pBufBusAddr = alloc.busAddr;
-    *pBufHWAddr = alloc.hwAddr;
+    *pBufBusAddr = alloc.bus_addr;
+    *pBufHWAddr = alloc.hw_addr;
 
     /* Jong 06/06/2006; why alloc.busAddr located in Frame Buffer adress space on Gateway platform */
     /* Jong 06/14/2006; this virtual address seems not correct */
     *pBufVirtAddr = mmap(0, alloc.size, PROT_READ|PROT_WRITE,
-                         MAP_SHARED, pXGI->fd, alloc.busAddr);
+                         MAP_SHARED, pXGI->fd, alloc.bus_addr);
 
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "pBufVirtAddr: 0x%p\n",
                *pBufVirtAddr);
@@ -414,23 +414,17 @@ Bool XGIPcieMemFree(ScrnInfoPtr pScrn, size_t size,
     return ret == 0;
 }
 
-Bool XGIShareAreaInfo(ScrnInfoPtr pScrn,
-                     unsigned long busAddr,
-                     unsigned long size)
+Bool XGIShareAreaInfo(ScrnInfoPtr pScrn, unsigned long busAddr,
+                     unsigned int size)
 {
     int retVal;
-    XGIPtr          pXGI = XGIPTR(pScrn);
-    XGIShareAreaRec sarea;
+    XGIPtr pXGI = XGIPTR(pScrn);
+    struct xgi_sarea_info sarea;
 
-    sarea.busAddr = busAddr;
-    sarea.size    = size;
-    retVal    = ioctl(pXGI->fd, XGI_IOCTL_SAREA_INFO, &sarea);
+    sarea.bus_addr = busAddr;
+    sarea.size = size;
+    retVal = ioctl(pXGI->fd, XGI_IOCTL_SAREA_INFO, &sarea);
     XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIShareAreaInfo()-1\n");
 
-    if (retVal < 0)
-    {
-        return FALSE;
-    }
-
-    return TRUE;
+    return (retVal >= 0);
 }

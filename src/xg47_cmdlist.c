@@ -39,7 +39,7 @@
 
 struct xg47_CmdList
 {
-    BATCH_TYPE  _curBatchType;
+    enum xgi_batch_type _curBatchType;
     CARD32      _curBatchDataCount;         /* DWORDs */
     CARD32      _curBatchRequestSize;       /* DWORDs */
     CARD32*     _curBatchBegin;             /* The begin of current batch. */
@@ -55,7 +55,7 @@ struct xg47_CmdList
 
     CARD32*     _lastBatchBegin;        /* The begin of last batch. */
     CARD32*     _lastBatchEnd;          /* The end of last batch. */
-    BATCH_TYPE  _lastBatchType;         /* The type of the last workload batch. */
+    enum xgi_batch_type _lastBatchType;         /* The type of the last workload batch. */
     CARD32      _debugBeginID;          /* write it at begin header as debug ID */
 
     /* 2d cmd holder */
@@ -699,7 +699,7 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
 {
     CARD32 beginHWAddr;
     CARD32 beginPort;
-	XGICmdInfoRec submitInfo;
+    struct xgi_cmd_info submitInfo;
 	int retval = -1;
 
     XGIDebug(DBG_FUNCTION, "[DBG-Jong] submit2DBatch-1\n");
