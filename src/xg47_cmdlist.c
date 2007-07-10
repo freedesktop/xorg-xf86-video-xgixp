@@ -42,10 +42,10 @@ struct xg47_CmdList
     enum xgi_batch_type _curBatchType;
     CARD32      _curBatchDataCount;         /* DWORDs */
     CARD32      _curBatchRequestSize;       /* DWORDs */
-    CARD32*     _curBatchBegin;             /* The begin of current batch. */
-    CARD32*     _curBatchDataBegin;         /* The begin of data */
+    uint32_t *  _curBatchBegin;             /* The begin of current batch. */
+    uint32_t *  _curBatchDataBegin;         /* The begin of data */
 
-    CARD32*     _writePtr;                  /* current writing ptr */
+    uint32_t *  _writePtr;                  /* current writing ptr */
     CARD32      _sendDataLength;            /* record the filled data size */
 
     uint32_t *    _cmdBufLinearStartAddr;
@@ -53,8 +53,8 @@ struct xg47_CmdList
     unsigned long _cmdBufBusStartAddr;
     unsigned int  _cmdBufSize;            /* DWORDs */
 
-    CARD32*     _lastBatchBegin;        /* The begin of last batch. */
-    CARD32*     _lastBatchEnd;          /* The end of last batch. */
+    uint32_t *  _lastBatchBegin;        /* The begin of last batch. */
+    uint32_t *  _lastBatchEnd;          /* The end of last batch. */
     enum xgi_batch_type _lastBatchType;         /* The type of the last workload batch. */
     CARD32      _debugBeginID;          /* write it at begin header as debug ID */
 
@@ -67,7 +67,7 @@ struct xg47_CmdList
     unsigned long _scratchPadBusAddr;
 
     /* MMIO base */
-    CARD32*     _mmioBase;
+    uint32_t *  _mmioBase;
 
     /* fd number */
     int		_fd;
