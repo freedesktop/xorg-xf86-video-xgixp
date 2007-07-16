@@ -700,24 +700,21 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
     CARD32 beginHWAddr;
     CARD32 beginPort;
     struct xgi_cmd_info submitInfo;
-	int retval = -1;
+    int retval = -1;
 
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong] submit2DBatch-1\n");
+    XGIDebug(DBG_FUNCTION, "%s: enter\n", __func__);
 
-    if (0 == pCmdList->_curBatchDataCount)
-    {
+    if (0 == pCmdList->_curBatchDataCount) {
         /*is it reasonable? */
         return retval;
     }
 
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong] submit2DBatch-2\n");
     beginHWAddr = pCmdList->_cmdBufHWStartAddr
 	+ ((intptr_t) pCmdList->_curBatchBegin
 	   - (intptr_t) pCmdList->_cmdBufLinearStartAddr);
 
     /* Which begin we should send. */
     beginPort = getCurBatchBeginPort(pCmdList);
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong] submit2DBatch-3\n");
 
     submitInfo._firstBeginType = pCmdList->_curBatchType;
     submitInfo._firstBeginAddr = beginHWAddr;
@@ -726,38 +723,32 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
     submitInfo._curDebugID = pCmdList->_debugBeginID;
     submitInfo._beginCount = 1;
 
-    if (NULL == pCmdList->_lastBatchBegin)
-    {
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong] submit2DBatch-4\n");
+    if (NULL == pCmdList->_lastBatchBegin) {
+	XGIDebug(DBG_FUNCTION, "%s: calling waitForPCIIdleOnly\n", __func__);
         waitForPCIIdleOnly(pCmdList);
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong] submit2DBatch-5\n");
     }
 
-	XGIDebug(DBG_FUNCTION, "[DBG-Jong] submit2DBatch-5-1-pCmdList->_fd=%d\n",pCmdList->_fd);
-    /* return; */
+    XGIDebug(DBG_FUNCTION, "%s: calling ioctl XGI_IOCTL_SUBMIT_CMDLIST\n", 
+	     __func__);
 
-	/* Jong 05/24/2006; cause system hang on Gateway platform but works on others */
+    /* Jong 05/24/2006; cause system hang on Gateway platform but works on others */
     retval = ioctl(pCmdList->_fd, XGI_IOCTL_SUBMIT_CMDLIST, &submitInfo);
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] submit2DBatch-6\n");
 
-	/* Jong 05/25/2006 */
-    /* return; */
+
+    XGIDebug(DBG_FUNCTION, "%s: calling waitFor2D\n", __func__);
     waitfor2D(pCmdList); 
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong] submit2DBatch-7\n");
 
-    if (retval != -1)
-    {
+    if (retval != -1) {
         pCmdList->_lastBatchType  = pCmdList->_curBatchType;
         pCmdList->_lastBatchBegin = pCmdList->_curBatchBegin;
         pCmdList->_lastBatchEnd   = pCmdList->_writePtr;
         pCmdList->_debugBeginID   = (pCmdList->_debugBeginID + 1) & 0xFFFF;
     }
-    else
-    {
+    else {
         ErrorF("[2D] ioctl -- cmdList error!\n");
     }
 
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong] Leave submit2DBatch()\n");
+    XGIDebug(DBG_FUNCTION, "%s: exit\n", __func__);
     return retval;
 }
 
