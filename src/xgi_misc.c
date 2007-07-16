@@ -413,18 +413,3 @@ Bool XGIPcieMemFree(ScrnInfoPtr pScrn, size_t size,
 
     return ret == 0;
 }
-
-Bool XGIShareAreaInfo(ScrnInfoPtr pScrn, unsigned long busAddr,
-                     unsigned int size)
-{
-    int retVal;
-    XGIPtr pXGI = XGIPTR(pScrn);
-    struct xgi_sarea_info sarea;
-
-    sarea.bus_addr = busAddr;
-    sarea.size = size;
-    retVal = ioctl(pXGI->fd, XGI_IOCTL_SAREA_INFO, &sarea);
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIShareAreaInfo()-1\n");
-
-    return (retVal >= 0);
-}

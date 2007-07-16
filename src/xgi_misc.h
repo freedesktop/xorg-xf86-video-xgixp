@@ -42,7 +42,4 @@ extern Bool XGIPcieMemAllocate(ScrnInfoPtr pScrn, size_t size,
 extern Bool XGIPcieMemFree(ScrnInfoPtr pScrn, size_t size,
     unsigned long bufBusAddr, void *pBufVirtAddr);
 
-extern Bool  XGIShareAreaInfo(ScrnInfoPtr pScrn, unsigned long busAddr,
-    unsigned int size);
-
 #endif
