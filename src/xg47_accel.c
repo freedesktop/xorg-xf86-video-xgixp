@@ -1251,18 +1251,16 @@ int testRWPCIE(ScrnInfoPtr pScrn)
         ErrorF("alloc memory for test kd write correctly\n");
     }
 
-    PDEBUG(ErrorF("[Jong-2d] Initial value is [0x%8x]=0x%8x\n", hd_addr, *virt_addr));
-    PDEBUG(ErrorF("[Jong-2d] virt_addr=0x%8x\n", virt_addr));
+    PDEBUG(ErrorF("va = 0x%p, 1st value is [0x%8x]=0x%08x\n", 
+                  virt_addr, hd_addr, *virt_addr));
 
     res = 0xff0ff000;
     *virt_addr = res;
 
-    PDEBUG(ErrorF("[Jong-2d] Initial value is [0x%8x]=0x%8x\n", hd_addr, *virt_addr));
-    PDEBUG(ErrorF("[Jong-2d] virt_addr=0x%8x\n", virt_addr));
+    PDEBUG(ErrorF("va = 0x%p, 2nd value is [0x%8x]=0x%08x\n", 
+                  virt_addr, hd_addr, *virt_addr));
 
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] testRWPCIE()-1\n");
     ret = ioctl(pXGI->fd, XGI_IOCTL_TEST_RWINKERNEL, &hd_addr);
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] testRWPCIE()-2\n");
 
     ErrorF("[2D] ioctl XGI_IOCTL_TEST_RWINKERNEL = %d. %s\n", ret,
            (ret == -1) ? "error" : "success");
