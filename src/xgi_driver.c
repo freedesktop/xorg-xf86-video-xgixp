@@ -143,9 +143,6 @@ static void     XGIDisableMMIO(ScrnInfoPtr pScrn);
 /* Jong 07/03/2006 */
 ScreenPtr g_pScreen=NULL;
 
-/*
-static Bool     XGIPreInitDRI(ScrnInfoPtr pScrn);
-*/
 static const char *vgahwSymbols[] = {
     "vgaHWBlankScreen",
     "vgaHWFreeHWRec",
@@ -201,6 +198,38 @@ static const char *ramdacSymbols[] = {
     "xf86CreateCursorInfoRec",
     "xf86DestroyCursorInfoRec",
     "xf86InitCursor",
+    NULL
+};
+
+static const char *drmSymbols[] = {
+    "drmGetInterruptFromBusID",
+    "drmCtlInstHandler",
+    "drmCtlUninstHandler",
+    "drmCommandNone",
+    "drmCommandRead",
+    "drmCommandWrite",
+    "drmCommandWriteRead",
+    "drmFreeVersion",
+    "drmGetLibVersion",
+    "drmGetVersion",
+    "drmMap",
+    "drmUnmap",
+    NULL
+};
+
+static const char *driSymbols[] = {
+    "DRICloseScreen",
+    "DRICreateInfoRec",
+    "DRIDestroyInfoRec",
+    "DRIFinishScreenInit",
+    "DRIGetContext",
+    "DRIGetDeviceInfo",
+    "DRIGetSAREAPrivate",
+    "DRILock",
+    "DRIQueryVersion",
+    "DRIScreenInit",
+    "DRIUnlock",
+    "DRICreatePCIBusID",
     NULL
 };
 
@@ -305,6 +334,8 @@ static void XGILoaderRefSymLists(void)
                           fbSymbols,
                           xaaSymbols,
                           ramdacSymbols,
+                          drmSymbols,
+                          driSymbols,
                           vbeSymbols,
                           int10Symbols,
                           shadowSymbols,
@@ -1895,7 +1926,7 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
         pScrn->AdjustFrame  = fbdevHWAdjustFrame;
         pScrn->ValidMode    = fbdevHWValidMode;*/
     }
-    if (!XGIPreInitFD(pScrn))               goto fail;
+//    if (!XGIPreInitFD(pScrn))               goto fail;
 
     /* Enable MMIO */
     if (!pXGI->noMMIO)
@@ -1942,11 +1973,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
                    "shadow initialization failed!\n");
     }
 
-/*
-#ifdef XF86DRI
-    if (!XGIPreInitDRI(pScrn))                goto fail;
-#endif
-*/
 
     /* Free the video bios (if applicable) */
     if (pXGI->biosBase)
@@ -2120,13 +2146,10 @@ static void XGIRestore(ScrnInfoPtr pScrn)
 
 Bool XGIPutScreenInfo(ScrnInfoPtr pScrn)
 {
+#if 0
     XGIPtr              pXGI = XGIPTR(pScrn);
     struct xgi_screen_info    scrnInfo;
     int                 ret;
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
 
     scrnInfo.scrn_start = 0;
     scrnInfo.scrn_xres  = pXGI->currentLayout.mode->HDisplay;
@@ -2135,16 +2158,12 @@ Bool XGIPutScreenInfo(ScrnInfoPtr pScrn)
     scrnInfo.scrn_pitch = scrnInfo.scrn_xres * scrnInfo.scrn_bpp;
 
     ret = ioctl(pXGI->fd, XGI_IOCTL_PUT_SCREEN_INFO, &scrnInfo);
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIPutScreenInfo()-1\n");
 
     if (ret < 0)
     {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "failed to get screen info !\n");
         return FALSE;
     }
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
     return TRUE;
@@ -2248,6 +2267,10 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 #endif
 
     pScrn->memPhysBase = pXGI->fbAddr;
+
+    if (!XGIPreInitFD(pScrn))               goto fail;
+
+    pXGI->directRenderingEnabled = XGIDRIScreenInit(pScreen);
 
 	/* Jong 09/22/2006; to save offset of frame buffer for */
 	/* setting Des and Src base in acceleration function */
@@ -2527,6 +2550,10 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
         return FALSE;
     }
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After xf86HandleColormaps()\n");
+
+    if (pXGI->directRenderingEnabled) {
+        pXGI->directRenderingEnabled = XGIDRIFinishScreenInit(pScreen);
+    }
 
     /* shadow frame buffer */
     if (pXGI->isShadowFB)

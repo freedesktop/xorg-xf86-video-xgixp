@@ -55,12 +55,23 @@ XORG_DRIVER_CHECK_EXT(DPMSExtension, xextproto)
 
 # Checks for pkg-config packages
 PKG_CHECK_MODULES(XORG, [xorg-server >= 1.0.99.901 xproto fontsproto $REQUIRED_MODULES])
+PKG_CHECK_MODULES(DRI, [libdrm >= 2.2 xf86driproto])
 sdkdir=$(pkg-config --variable=sdkdir xorg-server)
 
 # Checks for libraries.
 
 # Checks for header files.
 AC_HEADER_STDC
+
+AC_CHECK_FILE([${sdkdir}/dri.h],
+              [have_dri_h="yes"], [have_dri_h="no"])
+AC_CHECK_FILE([${sdkdir}/sarea.h],
+              [have_sarea_h="yes"], [have_sarea_h="no"])
+AC_CHECK_FILE([${sdkdir}/dristruct.h],
+              [have_dristruct_h="yes"], [have_dristruct_h="no"])
+
+AC_DEFINE(XF86DRI,1,[Enable DRI driver support])
+AC_DEFINE(XF86DRI_DEVEL,1,[Enable developmental DRI driver support])
 
 AC_SUBST([XORG_CFLAGS])
 AC_SUBST([moduledir])

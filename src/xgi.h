@@ -50,6 +50,10 @@
 #include "vgaHW.h"          /* VGAHWPTR */
 #include "xf86.h"           /* xf86Screens */
 
+#define _XF86DRI_SERVER_
+#include <GL/glxint.h>
+#include "dri.h"
+
 /* Jong 09/06/2006; support dual view */
 #define	XGIDUALVIEW
 
@@ -478,6 +482,20 @@ typedef struct {
     unsigned long       fbSize;
     unsigned long       PIOBase;
 
+    int                 drm_fd;
+    DRIInfoPtr          dri_info;
+
+    drm_handle_t        fb_handle;
+    drm_handle_t        gart_handle;
+    drm_handle_t        mmio_handle;
+
+    uint8_t           * gart_vaddr;
+
+    Bool                (*DRICloseScreen)(int, ScreenPtr);
+    Bool                directRenderingEnabled;
+    Bool                dri_screen_open;
+
+
     Bool                isVGAMode;
     CARD16              textModeNo;
 
@@ -582,7 +600,6 @@ typedef struct {
 
     struct xg47_CmdList *cmdList;
 
-    Bool                directRenderingEnabled; /* DRI enabled this generation. */
     unsigned int        (*ddcRead)(ScrnInfoPtr);
     void                (*InitializeAccelerator)(ScrnInfoPtr);
 
@@ -617,6 +634,17 @@ typedef struct {
 #endif
 } XGIRec, *XGIPtr;
 
+struct XGIDRIPrivate {
+    int    dummy;
+};
+
+struct XGIDRIContext {
+    int    dummy;
+};
+
 #define XGIPTR(p)   ((XGIPtr)((p)->driverPrivate))
+
+extern Bool XGIDRIScreenInit(ScreenPtr pScreen);
+extern Bool XGIDRIFinishScreenInit(ScreenPtr pScreen);
 
 #endif
