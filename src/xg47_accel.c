@@ -1260,7 +1260,8 @@ int testRWPCIE(ScrnInfoPtr pScrn)
     PDEBUG(ErrorF("va = 0x%p, 2nd value is [0x%8x]=0x%08x\n", 
                   virt_addr, hd_addr, *virt_addr));
 
-    ret = ioctl(pXGI->fd, XGI_IOCTL_TEST_RWINKERNEL, &hd_addr);
+    ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_TEST_RWINKERNEL, & hd_addr,
+                          sizeof(hd_addr));
 
     ErrorF("[2D] ioctl XGI_IOCTL_TEST_RWINKERNEL = %d. %s\n", ret,
            (ret == -1) ? "error" : "success");
@@ -1291,7 +1292,7 @@ static Bool XG47InitCmdList(ScrnInfoPtr pScrn)
     testRWPCIE(pScrn); 
 
     pXGI->cmdList = xg47_Initialize(pScrn, CMDBUF_SIZE, 
-				    (CARD32 *) pXGI->IOBase, pXGI->fd);
+				    (CARD32 *) pXGI->IOBase, pXGI->drm_fd);
     if (pXGI->cmdList == NULL) {
         XAADestroyInfoRec(pXGI->pXaaInfo);
         pXGI->pXaaInfo = NULL;

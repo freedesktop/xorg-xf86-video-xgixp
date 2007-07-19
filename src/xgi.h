@@ -471,8 +471,6 @@ typedef struct {
     int                 pix24bpp;       /* Depth of pixmap for 24bpp framebuffer */
     Bool                isDac8bits;     /* Use 8 bit DAC? */
 
-    int                 fd;
-
     unsigned long       IOAddr;
     unsigned long       fbAddr;
     unsigned long       BIOSAddr;
@@ -490,6 +488,7 @@ typedef struct {
     drm_handle_t        mmio_handle;
 
     uint8_t           * gart_vaddr;
+    drmSize             gart_size;
 
     Bool                (*DRICloseScreen)(int, ScreenPtr);
     Bool                directRenderingEnabled;

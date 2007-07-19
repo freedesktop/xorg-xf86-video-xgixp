@@ -289,15 +289,14 @@ int XGIXvMCCreateSurface(ScrnInfoPtr pScrn,
         {
             alloc.is_front = 0;
             alloc.size = surfSize;
-            ret = ioctl(pXGI->fd, XGI_IOCTL_FB_ALLOC, &alloc);
-		    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIXvMCCreateSurface()-1\n");
-            if (ret < 0)
-            {
+
+	    ret = drmCommandWriteRead(pXGI->drm_fd, DRM_XGI_FB_ALLOC, &alloc,
+				      sizeof(alloc));
+            if (ret < 0) {
                 xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "FB memory allocate ioctl failed !\n");
                 return BadAlloc;
             }
-            else
-            {
+            else {
                 pXGISurface->index = i;
                 pXGISurface->pitch  = surfPitch;
                 pXGISurface->size   = surfSize;
@@ -360,16 +359,14 @@ int XGIXvMCCreateSubpicture(ScrnInfoPtr pScrn,
     {
         alloc.is_front = 0;
         alloc.size = surfSize;
-        ret = ioctl(pXGI->fd, XGI_IOCTL_FB_ALLOC, &alloc);
-	    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIXvMCCreateSubpicture()-1\n");
-        if (ret < 0)
-        {
+        ret = drmCommandReadWrite(pXGI->drm_fd, DRM_XGI_FB_ALLOC, &alloc,
+				  sizeof(alloc));
+        if (ret < 0) {
             memset(*priv, 0, sizeof(XGIXvMCSubpictureRec));
             xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "FB memory allocate ioctl failed !\n");
             return BadAlloc;
         }
-        else
-        {
+        else {
             pXGISubpicture->pitch  = surfPitch;
             pXGISubpicture->size   = alloc.size;
             pXGISubpicture->hwAddr = alloc.hw_addr;
@@ -416,12 +413,12 @@ void XGIXvMCDestroySurface (ScrnInfoPtr pScrn, XvMCSurfacePtr pSurface)
 
             if (pXGISurface != NULL)
             {
-                surfBusAddr = pXGISurface->hwAddr + pXGI->fbAddr;
-                ret = ioctl(pXGI->fd, XGI_IOCTL_FB_FREE, &surfBusAddr);
-			    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIXvMCDestroySurface()-1\n");
-                if (ret < 0)
-                {
-                    xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "FB memory allocate ioctl failed !\n");
+                surfBusAddr = pXGISurface->hwAddr;
+                ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_FB_FREE, 
+				      &surfBusAddr, sizeof(surfBusAddr));
+                if (ret < 0) {
+                    xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
+			       "FB memory allocate failed!\n");
                     return;
                 }
                 memset(pXGISurface, 0, sizeof(XGIXvMCCreateSurfaceRec));
@@ -441,21 +438,18 @@ void XGIXvMCDestroySubpicture (ScrnInfoPtr pScrn, XvMCSubpicturePtr pSubpicture)
 
     XGITRACE(("XGIXvMCDestroySurface \n"));
 
-    if(pXGI->spID == pSubpicture->subpicture_id)
-    {
+    if (pXGI->spID == pSubpicture->subpicture_id) {
         pXGI->spID = 0;
         pXGISubpicture = &(pXGI->xvmcSubpic);
-        surfBusAddr = pXGISubpicture->hwAddr + pXGI->fbAddr;
+        surfBusAddr = pXGISubpicture->hwAddr;
 
         memset(pXGISubpicture, 0, sizeof(XGIXvMCSubpictureRec));
-        ret = ioctl(pXGI->fd, XGI_IOCTL_FB_FREE, &surfBusAddr);
-	    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIXvMCDestroySubpicture()-1\n");
-        if (ret < 0)
-        {
-            xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "FB memory allocate ioctl failed !\n");
-            return;
+
+        ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_FB_FREE, &surfBusAddr,
+			      sizeof(surfBusAddr));
+        if (ret < 0) {
+            xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "FB memory free failed!\n");
         }
-        return;
     }
 
     return;

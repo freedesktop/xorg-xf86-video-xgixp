@@ -732,7 +732,8 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
 	     __func__);
 
     /* Jong 05/24/2006; cause system hang on Gateway platform but works on others */
-    retval = ioctl(pCmdList->_fd, XGI_IOCTL_SUBMIT_CMDLIST, &submitInfo);
+    retval = drmCommandWrite(pCmdList->_fd, DRM_XGI_SUBMIT_CMDLIST,
+			     &submitInfo, sizeof(submitInfo));
 
 
     XGIDebug(DBG_FUNCTION, "%s: calling waitFor2D\n", __func__);

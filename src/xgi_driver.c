@@ -1738,29 +1738,6 @@ static Bool XGIPreInitShadow(ScrnInfoPtr pScrn)
     return TRUE;
 }
 
-static Bool XGIPreInitFD(ScrnInfoPtr pScrn)
-{
-    XGIPtr          pXGI = XGIPTR(pScrn);
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-    pXGI->fd = open("/dev/xgi", O_RDWR); 
-
-    if (pXGI->fd < 0)
-    {
-        xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Open /dev/xgi failed !\n");
-        return FALSE;
-    }
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-    return TRUE;
-}
-
 static void XGIProbeDDC(ScrnInfoPtr pScrn, int index)
 {
     vbeInfoPtr pVbe;
@@ -2268,9 +2245,10 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 
     pScrn->memPhysBase = pXGI->fbAddr;
 
-    if (!XGIPreInitFD(pScrn))               goto fail;
-
     pXGI->directRenderingEnabled = XGIDRIScreenInit(pScreen);
+    if (!pXGI->directRenderingEnabled) {
+	goto fail;
+    }
 
 	/* Jong 09/22/2006; to save offset of frame buffer for */
 	/* setting Des and Src base in acceleration function */
@@ -2338,8 +2316,6 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
     {
         if (!XGIModeInit(pScrn, pScrn->currentMode))        goto fail;
     }
-
-    if (!XGIPutScreenInfo(pScrn))                           goto fail;
 
     XGISaveScreen(pScreen, SCREEN_SAVER_ON);
     pScrn->AdjustFrame(scrnIndex, pScrn->frameX0, pScrn->frameY0, 0);
@@ -2448,11 +2424,26 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
         xf86DrvMsg(scrnIndex, X_ERROR, "FB Manager init failed \n");
     }
 
+    /* If backing store is to be supported (as is usually the case), initialise it. */
+    miInitializeBackingStore(pScreen);
+    XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After miInitializeBackingStore()\n");
+
+    xf86SetBackingStore(pScreen);
+    XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After xf86SetBackingStore()\n");
+
     if (!pXGI->isShadowFB)
     {
         XGIDGAInit(pScreen);
     }
 
+    if (pXGI->directRenderingEnabled) {
+        pXGI->directRenderingEnabled = XGIDRIFinishScreenInit(pScreen);
+	if (!pXGI->directRenderingEnabled) {
+	    goto fail;
+	}
+    }
+
+    XGIPutScreenInfo(pScrn);
     /* 2D accel Initialize */
     if (!pXGI->noAccel)
     {
@@ -2483,13 +2474,6 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
                              pScrn->displayWidth, pBankInfo))
         return FALSE;
      */
-
-    /* If backing store is to be supported (as is usually the case), initialise it. */
-    miInitializeBackingStore(pScreen);
-    XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After miInitializeBackingStore()\n");
-
-    xf86SetBackingStore(pScreen);
-    XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After xf86SetBackingStore()\n");
 
     /* Set Silken Mouse */
     xf86SetSilkenMouse(pScreen);
@@ -2550,10 +2534,6 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
         return FALSE;
     }
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After xf86HandleColormaps()\n");
-
-    if (pXGI->directRenderingEnabled) {
-        pXGI->directRenderingEnabled = XGIDRIFinishScreenInit(pScreen);
-    }
 
     /* shadow frame buffer */
     if (pXGI->isShadowFB)
@@ -2737,18 +2717,6 @@ Bool XGISwitchMode(int scrnIndex, DisplayModePtr mode, int flags)
         else
             retVal = TRUE;
     }
-/*
-    if (!XGIPutScreenInfo(pScrn))
-    {
-        retVal = FALSE;
-        xf86DrvMsg(scrnIndex, X_ERROR, "XGIPutScreenInfo failed\n");
-    }
-    else
-    {
-        retVal = TRUE;
-        xf86DrvMsg(scrnIndex, X_INFO, "XGIPutScreenInfo Successfully\n");
-    }
-*/
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -2845,17 +2813,16 @@ static Bool XGIEnterVT(int scrnIndex, int flags)
     {
         if(pXGI->chipset == XG47)
         {
-            int retIoctl;
+            int ret;
             struct xgi_state_info stateInfo;
 
             stateInfo._fromState    = 0;    /* console */
             stateInfo._toState      = 1;    /* graphic */
 
-           /* reset KD cmdlist status */
-            retIoctl = ioctl(pXGI->fd, XGI_IOCTL_STATE_CHANGE, &stateInfo);
-		    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIEnterVT()-1\n");
-            if (retIoctl == -1)
-            {
+	    /* reset KD cmdlist status */
+            ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE, &stateInfo,
+				  sizeof(stateInfo));
+            if (ret < 0) {
                 return FALSE;
             }
 
@@ -2928,7 +2895,7 @@ static void XGILeaveVT(int scrnIndex, int flags)
     {
         if(pXGI->chipset == XG47)
         {
-            int retIoctl;
+            int ret;
             struct xgi_state_info stateInfo;
 
             stateInfo._fromState    = 1;    /* console */
@@ -2958,10 +2925,9 @@ static void XGILeaveVT(int scrnIndex, int flags)
 
             /* no use, just for kernel test */
             /* reset KD cmdlist status */
-            retIoctl = ioctl(pXGI->fd, XGI_IOCTL_STATE_CHANGE, &stateInfo);
-		    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGILeaveVT()-1\n");
-            if (retIoctl == -1)
-            {
+            ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE, &stateInfo,
+				  sizeof(stateInfo));
+            if (ret < 0) {
                 xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Notify kernel to change state (G==>C)\n");
                 return;
             }
@@ -3101,11 +3067,6 @@ static Bool XGICloseScreen(int scrnIndex, ScreenPtr pScreen)
          xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Close OHA failed !\n");
     }
 #endif
-
-    if (close(pXGI->fd) < 0)
-    {
-         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Close /dev/xgi failed !\n");
-    }
 
     /* Before freeing the per-screen driver data the saved CloseScreen
      * value should be restored to pScreen->CloseScreen, and that function
