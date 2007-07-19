@@ -37,6 +37,13 @@
 #include "xgi_misc.h"
 #include "xgi_debug.h"
 
+struct xg47_buffer {
+    uint32_t *    ptr;
+    uint32_t      hw_addr;
+    unsigned long bus_addr;
+    unsigned int  size;            /* DWORDs */
+};
+
 struct xg47_CmdList
 {
     enum xgi_batch_type _curBatchType;
@@ -48,10 +55,8 @@ struct xg47_CmdList
     uint32_t *  _writePtr;                  /* current writing ptr */
     CARD32      _sendDataLength;            /* record the filled data size */
 
-    uint32_t *    _cmdBufLinearStartAddr;
-    uint32_t      _cmdBufHWStartAddr;
-    unsigned long _cmdBufBusStartAddr;
-    unsigned int  _cmdBufSize;            /* DWORDs */
+    struct xg47_buffer command;
+    struct xg47_buffer scratch;
 
     uint32_t *  _lastBatchBegin;        /* The begin of last batch. */
     uint32_t *  _lastBatchEnd;          /* The end of last batch. */
@@ -60,11 +65,6 @@ struct xg47_CmdList
 
     /* 2d cmd holder */
     CARD32      _bunch[4];
-
-    /* scratch pad addr, allocate at outside, pass these two parameter in */
-    uint32_t *    _scratchPadLinearAddr;
-    uint32_t      _scratchPadHWAddr;
-    unsigned long _scratchPadBusAddr;
 
     /* MMIO base */
     uint32_t *  _mmioBase;
@@ -84,26 +84,28 @@ xg47_Initialize(ScrnInfoPtr pScrn, CARD32 cmdBufSize, CARD32 *mmioBase, int fd)
     struct xg47_CmdList *list = xnfcalloc(sizeof(struct xg47_CmdList), 1);
 
     list->_mmioBase = mmioBase;
-    list->_cmdBufSize = cmdBufSize;
+    list->command.size = cmdBufSize;
     list->_fd = fd;
 
     if (!XGIPcieMemAllocate(pScrn,
-                            list->_cmdBufSize * sizeof(CARD32),
-			    & list->_cmdBufBusStartAddr,
-			    & list->_cmdBufHWStartAddr,
-			    (void **) & list->_cmdBufLinearStartAddr)) {
+                            list->command.size * sizeof(CARD32),
+			    & list->command.bus_addr,
+			    & list->command.hw_addr,
+			    (void **) & list->command.ptr)) {
         XGIDebug(DBG_ERROR, "[DBG Error]Allocate CmdList buffer error!\n");
 	goto err;
     }
 
     XGIDebug(DBG_CMDLIST, "cmdBuf VAddr=0x%p  HAddr=0x%p buffsize=0x%x\n",
-	     list->_cmdBufLinearStartAddr, list->_cmdBufHWStartAddr, list->_cmdBufSize);
+	     list->command.ptr, list->command.hw_addr, list->command.size);
+
+    list->scratch.size = 1024;
 
     if (!XGIPcieMemAllocate(pScrn,
-                            4 * 1024,
-                            & list->_scratchPadBusAddr,
-                            & list->_scratchPadHWAddr,
-                            (void **) & list->_scratchPadLinearAddr)) {
+                            list->scratch.size * sizeof(uint32_t),
+                            & list->scratch.bus_addr,
+                            & list->scratch.hw_addr,
+                            (void **) & list->scratch.ptr)) {
         XGIDebug(DBG_ERROR, "[DBG ERROR]Allocate Scratch Pad error!\n");
 
 	goto err;
@@ -111,7 +113,7 @@ xg47_Initialize(ScrnInfoPtr pScrn, CARD32 cmdBufSize, CARD32 *mmioBase, int fd)
 
 
     XGIDebug(DBG_CMDLIST, "[Malloc]Scratch VAddr=0x%p HAddr=0x%x\n",
-           list->_scratchPadLinearAddr, list->_scratchPadHWAddr);
+           list->scratch.ptr, list->scratch.hw_addr);
 
     xg47_Reset(list);
 
@@ -127,24 +129,24 @@ err:
 void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList)
 {
     if (s_pCmdList) {
-	if (s_pCmdList->_scratchPadBusAddr) {
+	if (s_pCmdList->scratch.bus_addr) {
 	    XGIDebug(DBG_CMDLIST, "[DBG Free]Scratch VAddr=0x%x HAddr=0x%x\n",
-		     s_pCmdList->_scratchPadLinearAddr, 
-		     s_pCmdList->_scratchPadHWAddr);
+		     s_pCmdList->scratch.ptr, 
+		     s_pCmdList->scratch.hw_addr);
 	
-	    XGIPcieMemFree(pScrn, 4 * 1024,
-			   s_pCmdList->_scratchPadBusAddr,
-			   s_pCmdList->_scratchPadLinearAddr);
+	    XGIPcieMemFree(pScrn, s_pCmdList->scratch.size * sizeof(uint32_t),
+			   s_pCmdList->scratch.bus_addr,
+			   s_pCmdList->scratch.ptr);
 	}
 	
-	if (s_pCmdList->_cmdBufBusStartAddr) {
+	if (s_pCmdList->command.bus_addr) {
 	    XGIDebug(DBG_CMDLIST, "[DBG Free]cmdBuf VAddr=0x%x  HAddr=0x%x\n",
-		     s_pCmdList->_cmdBufLinearStartAddr,
-		     s_pCmdList->_cmdBufHWStartAddr);
+		     s_pCmdList->command.ptr,
+		     s_pCmdList->command.hw_addr);
 
-	    XGIPcieMemFree(pScrn, s_pCmdList->_cmdBufSize * sizeof(CARD32),
-			   s_pCmdList->_cmdBufBusStartAddr,
-			   s_pCmdList->_cmdBufLinearStartAddr);
+	    XGIPcieMemFree(pScrn, s_pCmdList->command.size * sizeof(uint32_t),
+			   s_pCmdList->command.bus_addr,
+			   s_pCmdList->command.ptr);
 	}
 
 	xfree(s_pCmdList);
@@ -153,7 +155,7 @@ void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList)
 
 void xg47_Reset(struct xg47_CmdList *s_pCmdList)
 {
-    *(s_pCmdList->_scratchPadLinearAddr) = 0;
+    *(s_pCmdList->scratch.ptr) = 0;
     s_pCmdList->_lastBatchBegin         = 0;
     s_pCmdList->_lastBatchEnd           = 0;
     s_pCmdList->_sendDataLength         = 0;
@@ -196,7 +198,7 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, CARD32 size)
     /* Add  begin head + scratch batch. */
     size += AGPCMDLIST_BEGIN_SIZE + AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
 
-    if (size >= pCmdList->_cmdBufSize)
+    if (size >= pCmdList->command.size)
     {
         return 0;
     }
@@ -205,7 +207,7 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, CARD32 size)
     {
          /* We have spare buffer after last command list. */
         if ((pCmdList->_lastBatchEnd + size) <=
-            (pCmdList->_cmdBufLinearStartAddr + pCmdList->_cmdBufSize))
+            (pCmdList->command.ptr + pCmdList->command.size))
         {
             /* ASSERT_MSG(0 == (((CARD32*)pCmdList->_lastBatchEnd) & 0x0f),  */
             /*                 "Command List should be 4 Dwords alignment"); */
@@ -214,12 +216,12 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, CARD32 size)
         else /* no spare space, must roll over */
         {
             preventOverwriteCmdbuf(pCmdList);
-            pCmdList->_curBatchBegin = pCmdList->_cmdBufLinearStartAddr;
+            pCmdList->_curBatchBegin = pCmdList->command.ptr;
         }
     }
     else /* fresh */
     {
-        pCmdList->_curBatchBegin = pCmdList->_cmdBufLinearStartAddr;
+        pCmdList->_curBatchBegin = pCmdList->command.ptr;
     }
 
     /* Prepare the begin address of next batch. */
@@ -263,7 +265,7 @@ static void reserveData(struct xg47_CmdList * pCmdList, size_t size)
 
     pulNewBatchEnd = pCmdList->_curBatchBegin + NewBatchSize;
 
-    if (pulNewBatchEnd <= (pCmdList->_cmdBufLinearStartAddr + pCmdList->_cmdBufSize))
+    if (pulNewBatchEnd <= (pCmdList->command.ptr + pCmdList->command.size))
     {
         /* There is enought space after this batch    */
         /* Enlarge the batch size.                    */
@@ -277,7 +279,7 @@ static void reserveData(struct xg47_CmdList * pCmdList, size_t size)
 	uint32_t *const pOldBatchBegin = pCmdList->_curBatchBegin;
 	const ptrdiff_t existCmdSize = pCmdList->_writePtr - pOldBatchBegin;
 
-	pCmdList->_curBatchBegin = pCmdList->_cmdBufLinearStartAddr;
+	pCmdList->_curBatchBegin = pCmdList->command.ptr;
 	pulNewBatchEnd           = pCmdList->_curBatchBegin + NewBatchSize;
 
 	/* Move the midway commands to new home. */
@@ -424,9 +426,9 @@ static void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList,
         /* Get the current runing batch address. */
 
 	const uint32_t cmd_offset = getGEWorkedCmdHWAddr(pCmdList)
-	    - pCmdList->_cmdBufHWStartAddr;
+	    - pCmdList->command.hw_addr;
         const CARD32 *curGEWorkedCmdAddr =
-	    (CARD32 *)(((uint8_t *) pCmdList->_cmdBufLinearStartAddr)
+	    (CARD32 *)(((uint8_t *) pCmdList->command.ptr)
 		       + cmd_offset);
 
         if(NULL != curGEWorkedCmdAddr)
@@ -456,7 +458,7 @@ static void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList,
 
 static uint32_t getGEWorkedCmdHWAddr(const struct xg47_CmdList * pCmdList)
 {
-    return *pCmdList->_scratchPadLinearAddr;
+    return *pCmdList->scratch.ptr;
 }
 
 
@@ -485,10 +487,10 @@ static void addScratchBatch(struct xg47_CmdList * pCmdList)
 	/* Jong 11/08/2006; seems have a bug for base=64MB=0x4000000 */
 	/* base >> 4 = 0x400000; 0x400000 & 0x3fffff = 0x0 */
 	/* Thus, base address must be less than 64MB=0x4000000 */
-    pCmdList->_writePtr[1]  = (0x1 << 0x18) + (((CARD32)pCmdList->_scratchPadHWAddr >> 4) & 0x3fffff);
+    pCmdList->_writePtr[1]  = (0x1 << 0x18) + (((CARD32)pCmdList->scratch.hw_addr >> 4) & 0x3fffff);
 
-    pCmdList->_writePtr[2]  = (((CARD32)pCmdList->_scratchPadHWAddr & 0x1c000000) >> 13)
-                             +((CARD32)pCmdList->_scratchPadHWAddr & 0xe0000000);
+    pCmdList->_writePtr[2]  = (((CARD32)pCmdList->scratch.hw_addr & 0x1c000000) >> 13)
+                             +((CARD32)pCmdList->scratch.hw_addr & 0xe0000000);
     pCmdList->_writePtr[3]  = 0x00010001;
 
     pCmdList->_writePtr[4]  = 0x7f792529;
@@ -500,9 +502,9 @@ static void addScratchBatch(struct xg47_CmdList * pCmdList)
     pCmdList->_writePtr[6]  = 0xcc008201; 
 
 	/* Jong 06/15/2006; this value is checked at waitfor2D() */ /* 78~7B */
-    pCmdList->_writePtr[7]  = pCmdList->_cmdBufHWStartAddr
+    pCmdList->_writePtr[7]  = pCmdList->command.hw_addr
 	+ ((intptr_t) pCmdList->_lastBatchEnd
-	   - (intptr_t) pCmdList->_cmdBufLinearStartAddr);
+	   - (intptr_t) pCmdList->command.ptr);
 
     pCmdList->_writePtr[8]  = 0xff000001;
     pCmdList->_writePtr[9]  = pCmdList->_writePtr[7];
@@ -533,9 +535,9 @@ static void linkToLastBatch(struct xg47_CmdList * pCmdList)
     /*batch end addr should be 4 Dwords alignment*/
     /*ASSERT(0 == (((CARD32)pCmdList->_writePtr) & 0x0f));*/
 
-    beginHWAddr = pCmdList->_cmdBufHWStartAddr
+    beginHWAddr = pCmdList->command.hw_addr
 	+ ((intptr_t) pCmdList->_curBatchBegin
-	   - (intptr_t) pCmdList->_cmdBufLinearStartAddr);
+	   - (intptr_t) pCmdList->command.ptr);
 
     /* Which begin we should send.*/
     beginPort = getCurBatchBeginPort(pCmdList);
@@ -650,15 +652,15 @@ void dumpCommandBuffer(struct xg47_CmdList * pCmdList)
     XGIDebug(DBG_FUNCTION,"Entering dumpCommandBuffer\n");
 
     for (i = 0; 
-	 & pCmdList->_cmdBufLinearStartAddr[i] < pCmdList->_writePtr;
+	 & pCmdList->command.ptr[i] < pCmdList->_writePtr;
 	 i++) {
         if (i % 4 == 0) {
             XGIDebug(DBG_CMD_BUFFER, "\n%08p ",
-		     pCmdList->_cmdBufLinearStartAddr + i);
+		     pCmdList->command.ptr + i);
         }
 
 	XGIDebug(DBG_CMD_BUFFER, "%08x ", 
-		 *(pCmdList->_cmdBufLinearStartAddr + i));
+		 *(pCmdList->command.ptr + i));
 
         if ((i+1) % 4 == 0)
         {
@@ -683,7 +685,7 @@ static void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList)
     /* Calculate the offset of the end of the last batch in the command
      * buffer.  This is "L" in the diagram above.
      */
-    const intptr_t L = (intptr_t) pCmdList->_cmdBufLinearStartAddr 
+    const intptr_t L = (intptr_t) pCmdList->command.ptr 
 	- (intptr_t) pCmdList->_lastBatchEnd;
     intptr_t G;
 
@@ -691,7 +693,7 @@ static void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList)
 	/* Calculate the offset of the command that is currently being
 	 * processed by the GE.  This is "G" in the diagram
 	 */
-	G = getGEWorkedCmdHWAddr(pCmdList) - pCmdList->_cmdBufHWStartAddr;
+	G = getGEWorkedCmdHWAddr(pCmdList) - pCmdList->command.hw_addr;
     } while (G > L);
 }
 
@@ -709,9 +711,9 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
         return retval;
     }
 
-    beginHWAddr = pCmdList->_cmdBufHWStartAddr
+    beginHWAddr = pCmdList->command.hw_addr
 	+ ((intptr_t) pCmdList->_curBatchBegin
-	   - (intptr_t) pCmdList->_cmdBufLinearStartAddr);
+	   - (intptr_t) pCmdList->command.ptr);
 
     /* Which begin we should send. */
     beginPort = getCurBatchBeginPort(pCmdList);
@@ -755,9 +757,9 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
 
 static inline void waitfor2D(struct xg47_CmdList * pCmdList)
 {
-    uint32_t lastBatchEndHW = pCmdList->_cmdBufHWStartAddr
+    uint32_t lastBatchEndHW = pCmdList->command.hw_addr
 	+ ((intptr_t) pCmdList->_lastBatchEnd
-	   - (intptr_t) pCmdList->_cmdBufLinearStartAddr);
+	   - (intptr_t) pCmdList->command.ptr);
 
 	/* Jong 05/25/2006 */
 	int WaitCount=0;
