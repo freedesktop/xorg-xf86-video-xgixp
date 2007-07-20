@@ -763,51 +763,21 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
 
 static inline void waitfor2D(struct xg47_CmdList * pCmdList)
 {
-    uint32_t lastBatchEndHW = pCmdList->command.hw_addr
+    const uint32_t lastBatchEndHW = pCmdList->command.hw_addr
 	+ ((intptr_t) pCmdList->previous.end
 	   - (intptr_t) pCmdList->command.ptr);
 
-	/* Jong 05/25/2006 */
-	int WaitCount=0;
-	/* if(g_bFirst == 1)
-	{
-		ErrorF("Jong-07032006-waitfor2D()-Begin loop\n");
-		XGIDumpRegisterValue(g_pScreen);
-	} */
-
-    if (lastBatchEndHW >=0)
-    {
-	    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] waitfor2D()-Begin loop\n");
-        while(lastBatchEndHW != (CARD32) getGEWorkedCmdHWAddr(pCmdList))
-        {
-            /*loop*/
-			/* Jong 07/03/2006
-			   Why just need one time to output message and get working ?*/
-			/*if(g_bFirst==1)
-			{
-				ErrorF("[DBG-Jong-07032006] waitfor2D()-in loop\n");
-				XGIDumpRegisterValue(g_pScreen);
-			}*/
-
-			if(g_bFirst==1)
-				usleep(1); 
-
-			/* Jong 05/25/2006 */
-			/* if(WaitCount >= 1000) break;
-			else
-				WaitCount++; */
+    if (lastBatchEndHW >=0) {
+	XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] waitfor2D()-Begin loop\n");
+        while (lastBatchEndHW != (CARD32) getGEWorkedCmdHWAddr(pCmdList)) {
+	    if(g_bFirst==1)
+		usleep(1);
         }
 
-		/* Jong 05/25/2006 */
-		/*g_bFirst++;
-		if(g_bFirst <= 10)*/
-		if(g_bFirst == 1)
-		{
-			g_bFirst=0;
-			/*ErrorF("Jong-07032006-waitfor2D()-End loop\n");
-			XGIDumpRegisterValue(g_pScreen);*/
-		} 
+	if (g_bFirst == 1) {
+	    g_bFirst = 0;
+	} 
 
-	    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] waitfor2D()-End loop\n");
+	XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] waitfor2D()-End loop\n");
     }
 }
