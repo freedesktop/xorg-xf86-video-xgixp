@@ -314,6 +314,17 @@ void xg47_EndCmdList(struct xg47_CmdList *pCmdList)
     submit2DBatch(pCmdList);
 }
 
+void emit_bunch(struct xg47_CmdList *pCmdList)
+{
+    pCmdList->_writePtr[0] = pCmdList->_bunch[0];
+    pCmdList->_writePtr[1] = pCmdList->_bunch[1];
+    pCmdList->_writePtr[2] = pCmdList->_bunch[2];
+    pCmdList->_writePtr[3] = pCmdList->_bunch[3];
+    pCmdList->_bunch[0] = 0x7f000000;
+    pCmdList->_writePtr += 4;
+}
+
+
 void xg47_SendGECommand(struct xg47_CmdList *pCmdList, CARD32 addr, CARD32 cmd)
 {
     /* Encrypt the command for AGP. */
@@ -322,15 +333,9 @@ void xg47_SendGECommand(struct xg47_CmdList *pCmdList, CARD32 addr, CARD32 cmd)
     pCmdList->_bunch[shift + 1]  = cmd;
 
     /* Bunch finished, Send to HW. */
-    if(2 == shift)
-    {
-    	pCmdList->_writePtr[0] = pCmdList->_bunch[0];
-    	pCmdList->_writePtr[1] = pCmdList->_bunch[1];
-    	pCmdList->_writePtr[2] = pCmdList->_bunch[2];
-    	pCmdList->_writePtr[3] = pCmdList->_bunch[3];
-    	pCmdList->_bunch[0]    = 0x7f000000;
-    	pCmdList->_writePtr    += 4;
-    	pCmdList->_curBatchDataCount++;
+    if (2 == shift) {
+        emit_bunch(pCmdList);
+        pCmdList->_curBatchDataCount++;
     }
 }
 
@@ -465,14 +470,8 @@ static uint32_t getGEWorkedCmdHWAddr(const struct xg47_CmdList * pCmdList)
 static void sendRemainder2DCommand(struct xg47_CmdList * pCmdList)
 {
     /* ASSERTDD(BTYPE_2D == m_btBatchType, "Only 2D batch can use SendCommand!");*/
-    if (0x7f000000 != pCmdList->_bunch[0])
-    {
-        pCmdList->_writePtr[0]       = pCmdList->_bunch[0];
-        pCmdList->_writePtr[1]       = pCmdList->_bunch[1];
-        pCmdList->_writePtr[2]       = pCmdList->_bunch[2];
-        pCmdList->_writePtr[3]       = pCmdList->_bunch[3];
-        pCmdList->_bunch[0]          = 0x7f000000;
-        pCmdList->_writePtr          += 4;
+    if (0x7f000000 != pCmdList->_bunch[0]) {
+        emit_bunch(pCmdList);
         pCmdList->_curBatchDataCount = (pCmdList->_curBatchDataCount + 3) & ~3;
     }
 }
