@@ -130,12 +130,7 @@ Bool XG47HWCursorInit(ScreenPtr pScreen)
 
     */
 
-	/* Jong 07/12/2006 */
-	/* Jong 09/27/2006; test */
-    /* pXGI->cursorStart = 0; */ /* Apply software cursor */
     pXGI->cursorStart = ((12*1024 - 256) *1024 + 127) & 0xFFFFF80;  /* 128 bit alignment */
-    /* pXGI->cursorStart = (12*1024 - 256) *1024 ; */
-
     pXGI->cursorEnd = pXGI->cursorStart + size_bytes;
     pXGI->pCursorInfo = pCursorInfo;
 
@@ -231,24 +226,6 @@ static void XG47LoadCursorImage(ScrnInfoPtr pScrn, CARD8 *src)
     /* enableMonoCursor(pXGI, FALSE); */
 
     memcpy((CARD8*)d, src, pCursor->MaxWidth * pCursor->MaxHeight / 4);
-
-	/* Jong 07/12/2006 */
-	/*--------------------------------*/
-	/*
-	for(i=0; i< pCursor->MaxWidth * pCursor->MaxHeight / 4; i++)
-		*(((CARD8*)d)+i)=0xCC; 
-
-	ErrorF("Jong-07122006-dump memory of cursor\n");
-	XGIDumpMemory(src,  pCursor->MaxWidth * pCursor->MaxHeight / 4);
-	XGIDumpMemory(d,  pCursor->MaxWidth * pCursor->MaxHeight / 4);
-
-	for(i=0; i< 256; i++)
-		*(((CARD8*)(pXGI->fbBase))+i)=0xAA; 
-
-	ErrorF("Jong-07122006-dump memory of FB\n");
-	XGIDumpMemory(pXGI->fbBase,  256);
-	*/
-	/*--------------------------------*/
 
 #ifdef CURSOR_DEBUG
 	ErrorF("XG47LoadCursorImage()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
@@ -535,9 +512,6 @@ void setMonoCursorPitchOfSecondView(XGIPtr pXGI, int cursorSize)
 	ErrorF("setMonoCursorPitchOfSecondView()-cursorSize=%d\n", cursorSize);
 #endif
 	
-	/* Jong 09/26/2006; test */
-	/* return; */
-
     /* Jong 09/26/2006; Unprotect registers */
     OUTW(0x3C4, 0x9211);
 
@@ -569,9 +543,6 @@ void setMonoCursorPatternOfSecondView(XGIPtr pXGI, CARD32 patternAddr)
 	ErrorF("setMonoCursorPatternOfSecondView()-patternAddr=0x%x\n", patternAddr);
 #endif
 
-	/* Jong 09/26/2006; test */
-	/* return; */
-
     /* Jong 09/26/2006; Unprotect registers */
     OUTW(0x3C4, 0x9211);
 
@@ -586,12 +557,6 @@ void setMonoCursorPatternOfSecondView(XGIPtr pXGI, CARD32 patternAddr)
     OUT3X5B(0x44, (CARD8)(patternAddr & 0xFF));
     OUT3X5B(0x45, (CARD8)((patternAddr >> 8) & 0xFF));
     OUT3X5B(0x3D, (CARD8) ((IN3X5B(0x3D) & 0xF8) | ((patternAddr >> 16) & 0x07)) ); */
-
-/* Jong 06/29/2006 */
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong09262006-XGI_DUMP-setMonoCursorPatternOfSecondView()----\n");
-    XGIDumpRegisterValue(g_pScreen);
-#endif
 
 	/* Jong 09/25/2006; 128 bits alignment */
 	/* patternAddr >>= 4;
@@ -647,9 +612,6 @@ void enableMonoCursorOfSecondView(XGIPtr pXGI, Bool visible)
 	/* else */
 		/* OUT3X5B(0x50, IN3X5B(0x50) & 0xF7);*/ /* Turn off Video Hardware Cursor */
 
-	/* Jong 09/26/2006; test */
-	/* return; */
-
 	/* Jong 09/26/2006; Use X11 Compatible; will make second view black */
     /* OUT3X5B(0x50, IN3X5B(0x50) | 0x40); */
 }
@@ -667,10 +629,6 @@ void enableMonoCursor(XGIPtr pXGI, Bool visible)
 	{
 		OUT3X5B(0x65, (data & 0xC7) & 0x7f);
 	}
-
-	/* Jong 07/12/2006; check register for cursor */
-	/* ErrorF("Jong-07122006-debug for cursor....\n");
-	XGIDumpRegisterValue(g_pScreen); */
 }
 
 /* Jong 09/27/2006; support dual view */
@@ -701,9 +659,6 @@ void setMonoCursorPositionOfSecondView(XGIPtr pXGI, int x, int y)
 #ifdef CURSOR_DEBUG
 	ErrorF("setMonoCursorPositionOfSecondView()-x=%d-y=%d\n", x,y);
 #endif
-
-	/* Jong 09/26/2006; test */
-	/* return; */
 
     /* Jong 09/26/2006; Unprotect registers */
     OUTW(0x3C4, 0x9211);
@@ -754,9 +709,6 @@ void setMonoCursorSizeOfSecondView(XGIPtr pXGI, int cursorSize)
 #ifdef CURSOR_DEBUG
 	ErrorF("setMonoCursorSizeOfSecondView()-cursorSize=%d\n", cursorSize);
 #endif
-
-	/* Jong 09/26/2006; test */
-	/* return; */
 
     /* Jong 09/26/2006; Unprotect registers */
     OUTW(0x3C4, 0x9211);

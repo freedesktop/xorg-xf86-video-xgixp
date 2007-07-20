@@ -1767,12 +1767,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-/* Jong 11/07/2006 */
-/* #ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-XGIPreInit\n");
-	XGIDumpRegisterValue(g_pScreen);
-#endif */
-
 	/* Jong 11/07/2006; test */
     /* OUTB(XGI_REG_GRX, 0x5D);
     OUTB(XGI_REG_GRX+1, 0x29); */
@@ -1903,7 +1897,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
         pScrn->AdjustFrame  = fbdevHWAdjustFrame;
         pScrn->ValidMode    = fbdevHWValidMode;*/
     }
-//    if (!XGIPreInitFD(pScrn))               goto fail;
 
     /* Enable MMIO */
     if (!pXGI->noMMIO)
@@ -2224,13 +2217,6 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 	/* Jong 07/03/2006 */
 	g_pScreen=pScrn;
 	ErrorF("XGI-XGIScreenInit()...\n");
-
-	/* Jong 11/07/2006; test */
-	/* XGIDumpRegisterValue(g_pScreen); */
-    /* OUTB(XGI_REG_GRX, 0x5D);
-    OUTB(XGI_REG_GRX+1, 0x29); */
-	/* ErrorF("XGI-XGIScreenInit()-After set 3CE-0x5D..\n");
-	XGIDumpRegisterValue(g_pScreen); */
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -2623,23 +2609,6 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 #endif
 
     PDEBUG(ErrorF("Jong-After-XGIInitMC-6\n"));
-
-	/* Jong 07/1/42006; write OK! */
-	/*----------------------------*/
-	/*
-	for(i=0; i< 256; i++)
-		*(((CARD8*)(pXGI->fbBase))+i)=0x06; 
-
-	ErrorF("Jong-07142006-dump memory of FB-(06)\n");
-	XGIDumpMemory(pXGI->fbBase,  256);
-	*/
-	/*----------------------------*/
-
-/* Jong 09/21/2006; support dual view */
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-DualView-XGIScreenInit-End-%d--\n", pXGI->FirstView);
-	XGIDumpRegisterValue(g_pScreen);
-#endif
 
     return TRUE;
 fail:

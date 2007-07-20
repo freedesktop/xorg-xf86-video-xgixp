@@ -603,14 +603,7 @@ static void XG47SetupForScreenToScreenCopy(ScrnInfoPtr pScrn,
 
     SetColorDepth(accel_info.color_depth);
 
-    XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SetupForScreenToScreenCopy-1\n");
-    /* LEAVEFUNC(XG47SetupForScreenToScreenCopy); */
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SetupForScreenToScreenCopy\n");
-
-/*#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForScreenToScreenCopy()----\n");
-    XGIDumpRegisterValue(pScrn);
-#endif*/
 }
 
 static void XG47SubsequentScreenToScreenCopy(ScrnInfoPtr pScrn,
@@ -620,28 +613,17 @@ static void XG47SubsequentScreenToScreenCopy(ScrnInfoPtr pScrn,
 {
     XGIPtr          pXGI = XGIPTR(pScrn);
 
-	/* Jong 09/22/2006; test for dual view */
-	/* if(pScrn->fbOffset == 0) return; */
-
     XGIDebug(DBG_FUNCTION, "[DBG-Jong-05292006] Enter XG47SubsequentScreenToScreenCopy\n");
-	/*return; */
 
     xg47_BeginCmdList(pXGI->cmdList, CMDBATCH_SIZE);
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentScreenToScreenCopy-0\n");
 	
-	/* Jong 09/22/2006; support dual view */
     SetDstBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
-    /* SetDstBasePitch(pXGI, accel_info.pitch, 0); */
 	
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("XG47SubsequentScreenToScreenCopy()-FirstView=%d-pScrn->fbOffset=%d\n", pXGI->FirstView, pScrn->fbOffset); 
-#endif
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentScreenToScreenCopy-1\n");
-	/* Jong 09/22/2006; support dual view */
     SetSrcBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
-    /* SetSrcBasePitch(accel_info.pitch, 0);*/ 
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentScreenToScreenCopy-2\n");
 
@@ -665,12 +647,6 @@ static void XG47SubsequentScreenToScreenCopy(ScrnInfoPtr pScrn,
     xg47_EndCmdList(pXGI->cmdList);
 
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SubsequentScreenToScreenCopy\n");
-
-/* Jong 06/29/2006 */
-/*#ifdef XGI_DUMP
-	ErrorF("Jong06292006-XGI_DUMP-XG47SubsequentScreenToScreenCopy()----\n");
-    XGIDumpRegisterValue(pScrn);
-#endif*/
 }
 
 void XG47SetupForSolidFill(ScrnInfoPtr pScrn,
@@ -680,7 +656,6 @@ void XG47SetupForSolidFill(ScrnInfoPtr pScrn,
 {
     XGIPtr pXGI = XGIPTR(pScrn);
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SetupForSolidFill\n");
-    /* return; */
 
     accel_info.color_depth = pScrn->bitsPerPixel >> 3;
     accel_info.pitch = pScrn->displayWidth * accel_info.color_depth;
@@ -694,10 +669,6 @@ void XG47SetupForSolidFill(ScrnInfoPtr pScrn,
     SetColorDepth(accel_info.color_depth);
 
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SetupForSolidFill\n");
-
-/*#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForSolidFill()----\n");    XGIDumpRegisterValue(pScrn);
-#endif*/
 }
 
 void XG47SubsequentSolidFillRect(ScrnInfoPtr pScrn,
@@ -705,20 +676,13 @@ void XG47SubsequentSolidFillRect(ScrnInfoPtr pScrn,
 {
     XGIPtr          pXGI = XGIPTR(pScrn);
 
-	/* Jong 09/22/2006; test for dual view */
-	/* if(pScrn->fbOffset == 0) return; */
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentSolidFillRect(%d,%d,%d,%d)\n", x, y, w, h);
-    /* return; */
 
     xg47_BeginCmdList(pXGI->cmdList, CMDBATCH_SIZE);
 
     SetPatFGColor(pXGI, accel_info.fg_color);
-    /* SetPatFGColor(pXGI, accel_info.fg_color); */
-
-	/* Jong 09/22/2006; support dual view */
     SetDstBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
-    /* SetDstBasePitch(pXGI, accel_info.pitch, 0); */
 
 #ifdef XGI_DUMP_DUALVIEW
 	ErrorF("XG47SubsequentSolidFillRect()-FirstView=%d-pScrn->fbOffset=%d\n", pXGI->FirstView, pScrn->fbOffset); 
@@ -765,7 +729,6 @@ static void XG47SetupForMono8x8PatternFill(ScrnInfoPtr pScrn,
                                            unsigned int planemask)
 {
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SetupForMono8x8PatternFill\n");
-    /* return; */
 
     accel_info.color_depth = pScrn->bitsPerPixel >> 3;
     accel_info.pitch = pScrn->displayWidth * accel_info.color_depth;
@@ -780,11 +743,6 @@ static void XG47SetupForMono8x8PatternFill(ScrnInfoPtr pScrn,
     SetColorDepth(accel_info.color_depth);
 
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SetupForMono8x8PatternFill\n");
-
-/*#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForMono8x8PatternFill()----\n");
-    XGIDumpRegisterValue(pScrn);
-#endif*/
 }
 
 static void XG47SubsequentMono8x8PatternFillRect(ScrnInfoPtr pScrn,
@@ -797,7 +755,6 @@ static void XG47SubsequentMono8x8PatternFillRect(ScrnInfoPtr pScrn,
     XGIPtr pXGI = XGIPTR(pScrn);
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentMono8x8PatternFillRect(%d,%d,%d,%d)\n", x, y, w, h);
-    /* return; */
 
     xg47_BeginCmdList(pXGI->cmdList, CMDBATCH_SIZE);
 
@@ -824,17 +781,8 @@ static void XG47SubsequentMono8x8PatternFillRect(ScrnInfoPtr pScrn,
     SetPatFGColor(pXGI, accel_info.fg_color);
     SetPatBKColor(pXGI, accel_info.bg_color);
 
-	/* Jong 09/22/2006; support dual view */
     SetDstBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
-    /* SetDstBasePitch(pXGI, accel_info.pitch, 0); */
-
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("XG47SubsequentMono8x8PatternFillRect()-FirstView=%d-pScrn->fbOffset=%d\n", pXGI->FirstView, pScrn->fbOffset); 
-#endif
-
-	/* Jong 09/22/2006; support dual view */
     SetSrcBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
-    /* SetSrcBasePitch(pXGI, accel_info.pitch, 0); */
 
     if (accel_info.clp_enable == TRUE)
     {
@@ -865,7 +813,6 @@ static void XG47SetupForColor8x8PatternFill(ScrnInfoPtr pScrn,
     int i;
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SetupForColor8x8PatternFill\n");
-    /* return; */
 
     accel_info.color_depth = pScrn->bitsPerPixel >> 3;
     accel_info.pitch = pScrn->displayWidth * accel_info.color_depth;
@@ -892,11 +839,6 @@ static void XG47SetupForColor8x8PatternFill(ScrnInfoPtr pScrn,
     xg47_EndCmdList(pXGI->cmdList);
 
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SetupForColor8x8PatternFill\n");
-
-/*#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForColor8x8PatternFill()----\n");
-    XGIDumpRegisterValue(pScrn);
-#endif*/
 }
 
 static void XG47SubsequentColor8x8PatternFillRect(ScrnInfoPtr pScrn,
@@ -913,7 +855,6 @@ static void XG47SubsequentColor8x8PatternFillRect(ScrnInfoPtr pScrn,
     int i;
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentColor8x8PatternFillRect(%d,%d,%d,%d)\n", x, y, w, h);
-    /* return; */
 
     xg47_BeginCmdList(pXGI->cmdList, CMDBATCH_SIZE);
 
@@ -928,17 +869,8 @@ static void XG47SubsequentColor8x8PatternFillRect(ScrnInfoPtr pScrn,
     }
 */
 
-	/* Jong 09/22/2006; support dual view */
     SetDstBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
-    /* SetDstBasePitch(pXGI, accel_info.pitch, 0); */
-
-	/* Jong 09/22/2006; support dual view */
     SetSrcBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
-    /* SetSrcBasePitch(pXGI, accel_info.pitch, 0); */
-
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("XG47SubsequentColor8x8PatternFillRect()-pScrn->fbOffset=%d\n", pScrn->fbOffset); 
-#endif
 
     if (accel_info.trans_color != -1)
     {
@@ -967,7 +899,6 @@ static void XG47SetupForSolidLine(ScrnInfoPtr pScrn,
                                   unsigned int planemask)
 {
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SetupForSolidLine\n");
-    /* return; */
 
     accel_info.color_depth = pScrn->bitsPerPixel >> 3;
     accel_info.pitch = pScrn->displayWidth * accel_info.color_depth;
@@ -982,11 +913,6 @@ static void XG47SetupForSolidLine(ScrnInfoPtr pScrn,
     SetColorDepth(accel_info.color_depth);
 
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SetupForSolidLine\n");
-
-/*#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong09272006-XGI_DUMP-XG47SetupForSolidLine()----\n");
-    XGIDumpRegisterValue(pScrn);
-#endif*/
 }
 
 static void XG47SubsequentSolidHorVertLine(ScrnInfoPtr pScrn,
@@ -994,24 +920,13 @@ static void XG47SubsequentSolidHorVertLine(ScrnInfoPtr pScrn,
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
 
-	/* Jong 09/22/2006; test for dual view */
-	/* if(pScrn->fbOffset == 0) return; */
-
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentSolidHorVertLine(%d,%d,%d,%d)\n", x, y, len, dir);
-    /* return; */
 
     xg47_BeginCmdList(pXGI->cmdList, CMDBATCH_SIZE);
 
     SetPatFGColor(pXGI, accel_info.fg_color);
     SetPatBKColor(pXGI, accel_info.bg_color);
-
-	/* Jong 09/22/2006; support dual view */
     SetDstBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
-    /* SetDstBasePitch(pXGI, accel_info.pitch, 0); */
-
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("XG47SubsequentSolidHorVertLine()-pScrn->fbOffset=%d\n", pScrn->fbOffset); 
-#endif
 
     if (accel_info.clp_enable == TRUE)
     {
@@ -1037,17 +952,12 @@ static void XG47SubsequentSolidBresenhamLine(ScrnInfoPtr pScrn,
                                              int err, int len, int octant)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
-
-	/* Jong 09/22/2006; test for dual view */
-	/* if(pScrn->fbOffset == 0) return; */
-
-    register int direction = 0;
+    int direction = 0;
     int axial, diagonal, error;
 
     XGIDebug(DBG_FUNCTION,
         "[DBG] Enter XG47SubsequentSolidBresenhamLine(%d,%d,%d,%d,%d,%d,%d)\n",
         x, y, absmaj, absmin, err, len, octant);
-    /* return; */
 
     xg47_BeginCmdList(pXGI->cmdList, CMDBATCH_SIZE);
 
@@ -1071,13 +981,7 @@ static void XG47SubsequentSolidBresenhamLine(ScrnInfoPtr pScrn,
     SetPatFGColor(pXGI, accel_info.fg_color);
     SetPatBKColor(pXGI, accel_info.bg_color);
 
-	/* Jong 09/22/2006; support dual view */
     SetDstBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
-    /* SetDstBasePitch(pXGI, accel_info.pitch, 0); */
-
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("XG47SubsequentSolidBresenhamLine()-pScrn->fbOffset=%d\n", pScrn->fbOffset); 
-#endif
 
     if (accel_info.clp_enable == TRUE)
     {

@@ -170,7 +170,6 @@ void XG47DPMSSet(ScrnInfoPtr pScrn, int PowerManagementMode, int flags)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
 	ErrorF("XGI-XG47DPMSSet()...\n");
-	/* return; */
 
 	/* Get DPMS Capability */
     pXGI->pInt10->ax = 0x4F10;
