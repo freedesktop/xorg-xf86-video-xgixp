@@ -37,6 +37,15 @@
 #include "xgi_misc.h"
 #include "xgi_debug.h"
 
+struct xg47_batch {
+    enum xgi_batch_type type;
+    unsigned int data_count;        /* DWORDs */
+    unsigned int request_size;      /* DWORDs */
+    uint32_t *  begin;              /* The begin of current batch. */
+    uint32_t *  data_begin;         /* The begin of data */
+    uint32_t *  end;                /* current writing ptr */
+};
+
 struct xg47_buffer {
     uint32_t *    ptr;
     uint32_t      hw_addr;
@@ -46,21 +55,14 @@ struct xg47_buffer {
 
 struct xg47_CmdList
 {
-    enum xgi_batch_type _curBatchType;
-    CARD32      _curBatchDataCount;         /* DWORDs */
-    CARD32      _curBatchRequestSize;       /* DWORDs */
-    uint32_t *  _curBatchBegin;             /* The begin of current batch. */
-    uint32_t *  _curBatchDataBegin;         /* The begin of data */
+    struct xg47_batch current;
+    struct xg47_batch previous;
 
-    uint32_t *  _writePtr;                  /* current writing ptr */
     CARD32      _sendDataLength;            /* record the filled data size */
 
     struct xg47_buffer command;
     struct xg47_buffer scratch;
 
-    uint32_t *  _lastBatchBegin;        /* The begin of last batch. */
-    uint32_t *  _lastBatchEnd;          /* The end of last batch. */
-    enum xgi_batch_type _lastBatchType;         /* The type of the last workload batch. */
     CARD32      _debugBeginID;          /* write it at begin header as debug ID */
 
     /* 2d cmd holder */
@@ -156,10 +158,10 @@ void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList)
 void xg47_Reset(struct xg47_CmdList *s_pCmdList)
 {
     *(s_pCmdList->scratch.ptr) = 0;
-    s_pCmdList->_lastBatchBegin         = 0;
-    s_pCmdList->_lastBatchEnd           = 0;
-    s_pCmdList->_sendDataLength         = 0;
-    s_pCmdList->_writePtr               = 0;
+    s_pCmdList->previous.begin = 0;
+    s_pCmdList->previous.end = 0;
+    s_pCmdList->_sendDataLength = 0;
+    s_pCmdList->current.end = 0;
 }
 
 /* Implementation Part*/
@@ -203,40 +205,40 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, CARD32 size)
         return 0;
     }
 
-    if (NULL != pCmdList->_lastBatchEnd)
+    if (NULL != pCmdList->previous.end)
     {
          /* We have spare buffer after last command list. */
-        if ((pCmdList->_lastBatchEnd + size) <=
+        if ((pCmdList->previous.end + size) <=
             (pCmdList->command.ptr + pCmdList->command.size))
         {
-            /* ASSERT_MSG(0 == (((CARD32*)pCmdList->_lastBatchEnd) & 0x0f),  */
+            /* ASSERT_MSG(0 == (((CARD32*)pCmdList->previous.end) & 0x0f),  */
             /*                 "Command List should be 4 Dwords alignment"); */
-            pCmdList->_curBatchBegin = pCmdList->_lastBatchEnd;
+            pCmdList->current.begin = pCmdList->previous.end;
         }
         else /* no spare space, must roll over */
         {
             preventOverwriteCmdbuf(pCmdList);
-            pCmdList->_curBatchBegin = pCmdList->command.ptr;
+            pCmdList->current.begin = pCmdList->command.ptr;
         }
     }
     else /* fresh */
     {
-        pCmdList->_curBatchBegin = pCmdList->command.ptr;
+        pCmdList->current.begin = pCmdList->command.ptr;
     }
 
     /* Prepare the begin address of next batch. */
-    waitCmdListAddrAvailable(pCmdList, pCmdList->_curBatchBegin,
-                             pCmdList->_curBatchBegin + size);
+    waitCmdListAddrAvailable(pCmdList, pCmdList->current.begin,
+                             pCmdList->current.begin + size);
 
-    pCmdList->_writePtr = pCmdList->_curBatchBegin;
-    pCmdList->_curBatchRequestSize = size;
+    pCmdList->current.end = pCmdList->current.begin;
+    pCmdList->current.request_size = size;
 
     /* Prepare next begin */
-    memcpy(pCmdList->_writePtr, s_emptyBegin,
+    memcpy(pCmdList->current.end, s_emptyBegin,
            AGPCMDLIST_BEGIN_SIZE * sizeof(CARD32));
-    pCmdList->_writePtr += AGPCMDLIST_BEGIN_SIZE;
-    pCmdList->_curBatchDataCount = AGPCMDLIST_BEGIN_SIZE;
-    pCmdList->_curBatchType = BTYPE_2D;
+    pCmdList->current.end += AGPCMDLIST_BEGIN_SIZE;
+    pCmdList->current.data_count = AGPCMDLIST_BEGIN_SIZE;
+    pCmdList->current.type = BTYPE_2D;
     pCmdList->_bunch[0]     = 0x7f000000;
 
     XGIDebug(DBG_CMDLIST, "[DEBUG] Leave beginCmdList.\n");
@@ -258,44 +260,44 @@ static void reserveData(struct xg47_CmdList * pCmdList, size_t size)
     size = ((size + 0x04 + 0x0f) & ~0x0f) / 4;
 
     /* Check for enlarging this batch to accomodate Data */
-    NewBatchSize =  pCmdList->_curBatchRequestSize       /* require command size */
+    NewBatchSize =  pCmdList->current.request_size       /* require command size */
                   + size                                 /* require data size.   */
                   + AGPCMDLIST_BEGIN_SIZE                /* We need a begin.     */
                   + AGPCMDLIST_2D_SCRATCH_CMD_SIZE;      /* 2D scratch size      */
 
-    pulNewBatchEnd = pCmdList->_curBatchBegin + NewBatchSize;
+    pulNewBatchEnd = pCmdList->current.begin + NewBatchSize;
 
     if (pulNewBatchEnd <= (pCmdList->command.ptr + pCmdList->command.size))
     {
         /* There is enought space after this batch    */
         /* Enlarge the batch size.                    */
-        pCmdList->_curBatchRequestSize += size;
-        pCmdList->_curBatchDataBegin = pCmdList->_writePtr;
+        pCmdList->current.request_size += size;
+        pCmdList->current.data_begin = pCmdList->current.end;
     }
     else {
 	/* If roll over, we should use new batch from the begin of
 	 * command list. 
 	 */
-	uint32_t *const pOldBatchBegin = pCmdList->_curBatchBegin;
-	const ptrdiff_t existCmdSize = pCmdList->_writePtr - pOldBatchBegin;
+	uint32_t *const pOldBatchBegin = pCmdList->current.begin;
+	const ptrdiff_t existCmdSize = pCmdList->current.end - pOldBatchBegin;
 
-	pCmdList->_curBatchBegin = pCmdList->command.ptr;
-	pulNewBatchEnd           = pCmdList->_curBatchBegin + NewBatchSize;
+	pCmdList->current.begin = pCmdList->command.ptr;
+	pulNewBatchEnd           = pCmdList->current.begin + NewBatchSize;
 
 	/* Move the midway commands to new home. */
 	waitCmdListAddrAvailable(pCmdList,
-				 pCmdList->_curBatchBegin,
-				 pCmdList->_curBatchBegin + existCmdSize);
-	memcpy(pCmdList->_curBatchBegin, pOldBatchBegin, existCmdSize * 4);
-	pCmdList->_writePtr = pCmdList->_curBatchBegin + existCmdSize;
-	pCmdList->_curBatchRequestSize += size;
-	pCmdList->_curBatchDataBegin = pCmdList->_writePtr;
+				 pCmdList->current.begin,
+				 pCmdList->current.begin + existCmdSize);
+	memcpy(pCmdList->current.begin, pOldBatchBegin, existCmdSize * 4);
+	pCmdList->current.end = pCmdList->current.begin + existCmdSize;
+	pCmdList->current.request_size += size;
+	pCmdList->current.data_begin = pCmdList->current.end;
     }
 
     /* Wait for batch available. */
     waitCmdListAddrAvailable(pCmdList,
-                             pCmdList->_curBatchDataBegin,
-                             pCmdList->_curBatchDataBegin + NewBatchSize);
+                             pCmdList->current.data_begin,
+                             pCmdList->current.data_begin + NewBatchSize);
 
 }
 
@@ -316,26 +318,26 @@ void xg47_EndCmdList(struct xg47_CmdList *pCmdList)
 
 void emit_bunch(struct xg47_CmdList *pCmdList)
 {
-    pCmdList->_writePtr[0] = pCmdList->_bunch[0];
-    pCmdList->_writePtr[1] = pCmdList->_bunch[1];
-    pCmdList->_writePtr[2] = pCmdList->_bunch[2];
-    pCmdList->_writePtr[3] = pCmdList->_bunch[3];
+    pCmdList->current.end[0] = pCmdList->_bunch[0];
+    pCmdList->current.end[1] = pCmdList->_bunch[1];
+    pCmdList->current.end[2] = pCmdList->_bunch[2];
+    pCmdList->current.end[3] = pCmdList->_bunch[3];
     pCmdList->_bunch[0] = 0x7f000000;
-    pCmdList->_writePtr += 4;
+    pCmdList->current.end += 4;
 }
 
 
 void xg47_SendGECommand(struct xg47_CmdList *pCmdList, CARD32 addr, CARD32 cmd)
 {
     /* Encrypt the command for AGP. */
-    CARD32 shift        = (pCmdList->_curBatchDataCount++) & 0x00000003;
+    CARD32 shift        = (pCmdList->current.data_count++) & 0x00000003;
     pCmdList->_bunch[0] |= (addr | 1) << (shift << 3);
     pCmdList->_bunch[shift + 1]  = cmd;
 
     /* Bunch finished, Send to HW. */
     if (2 == shift) {
         emit_bunch(pCmdList);
-        pCmdList->_curBatchDataCount++;
+        pCmdList->current.data_count++;
     }
 }
 
@@ -344,8 +346,8 @@ void xg47_StartFillData(struct xg47_CmdList *pCmdList, CARD32 size)
     reserveData(pCmdList, size);
     sendRemainder2DCommand(pCmdList);
 
-    pCmdList->_curBatchDataBegin = pCmdList->_writePtr;
-    pCmdList->_writePtr++;
+    pCmdList->current.data_begin = pCmdList->current.end;
+    pCmdList->current.end++;
     pCmdList->_sendDataLength = 0;
 }
 
@@ -375,10 +377,10 @@ void xg47_FillData(struct xg47_CmdList *pCmdList,
         const unsigned char *ptrNext = ptr + delta;
 
         /* ????SSEable????? */
-        memcpy(pCmdList->_writePtr, ptr, sizeAlign);
+        memcpy(pCmdList->current.end, ptr, sizeAlign);
         /* DumpArray32(ptr, ulSizeAlign / 4);*/
 
-        pCmdList->_writePtr         += sizeAlign / 4;
+        pCmdList->current.end         += sizeAlign / 4;
         pCmdList->_sendDataLength   += sizeAlign;
         ptr                         += sizeAlign;
 
@@ -394,9 +396,9 @@ void xg47_FillData(struct xg47_CmdList *pCmdList,
                 remainder += (*ptr++) << (i*8);
             }
 
-            *pCmdList->_writePtr        = remainder;
-            pCmdList->_writePtr++;
-            pCmdList->_sendDataLength   += 4;
+            *pCmdList->current.end = remainder;
+            pCmdList->current.end++;
+            pCmdList->_sendDataLength += 4;
 
             /* Dump to file for debug */
             /* DumpData32(0x10000, ulRemainder);*/
@@ -413,13 +415,13 @@ void xg47_SubmitData(struct xg47_CmdList *pCmdList)
     /* ASSERTDD(DATAFILL_INBATCH_BEGIN != m_DataFillMode, "Did not fill data after reserve.");*/
 
     /* Pad the data to 128 bit alignment. */
-    while (0 != ((intptr_t)pCmdList->_writePtr & 0x0f)) {
-        *pCmdList->_writePtr++ = 0;
+    while (0 != ((intptr_t)pCmdList->current.end & 0x0f)) {
+        *pCmdList->current.end++ = 0;
     }
 
     /* Correct the data length */
-    *pCmdList->_curBatchDataBegin = 0xff000000 | (pCmdList->_sendDataLength/4);
-    pCmdList->_curBatchDataCount += (CARD32)(pCmdList->_writePtr - pCmdList->_curBatchDataBegin);
+    *pCmdList->current.data_begin = 0xff000000 | (pCmdList->_sendDataLength/4);
+    pCmdList->current.data_count += (CARD32)(pCmdList->current.end - pCmdList->current.data_begin);
 }
 
 
@@ -448,9 +450,9 @@ static void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList,
         else
         {
             /* No running batch */
-            if ((NULL != pCmdList->_lastBatchBegin) 
-		&& (addrStart >= pCmdList->_lastBatchBegin) 
-		&& (addrEnd <= pCmdList->_lastBatchBegin)) {
+            if ((NULL != pCmdList->previous.begin) 
+		&& (addrStart >= pCmdList->previous.begin) 
+		&& (addrEnd <= pCmdList->previous.begin)) {
                 /* If current command list overlaps the last begin
                  * Force to reset
 		 */
@@ -472,46 +474,46 @@ static void sendRemainder2DCommand(struct xg47_CmdList * pCmdList)
     /* ASSERTDD(BTYPE_2D == m_btBatchType, "Only 2D batch can use SendCommand!");*/
     if (0x7f000000 != pCmdList->_bunch[0]) {
         emit_bunch(pCmdList);
-        pCmdList->_curBatchDataCount = (pCmdList->_curBatchDataCount + 3) & ~3;
+        pCmdList->current.data_count = (pCmdList->current.data_count + 3) & ~3;
     }
 }
 
 static void addScratchBatch(struct xg47_CmdList * pCmdList)
 {
     /*because we add 2D scratch directly at the end of this batch*/
-    /*ASSERT(BTYPE_2D == pCmdList->_curBatchType);*/
+    /*ASSERT(BTYPE_2D == pCmdList->current.type);*/
 
-    pCmdList->_writePtr[0]  = 0x7f413951;
+    pCmdList->current.end[0]  = 0x7f413951;
 
 	/* Jong 11/08/2006; seems have a bug for base=64MB=0x4000000 */
 	/* base >> 4 = 0x400000; 0x400000 & 0x3fffff = 0x0 */
 	/* Thus, base address must be less than 64MB=0x4000000 */
-    pCmdList->_writePtr[1]  = (0x1 << 0x18) + (((CARD32)pCmdList->scratch.hw_addr >> 4) & 0x3fffff);
+    pCmdList->current.end[1]  = (0x1 << 0x18) + (((CARD32)pCmdList->scratch.hw_addr >> 4) & 0x3fffff);
 
-    pCmdList->_writePtr[2]  = (((CARD32)pCmdList->scratch.hw_addr & 0x1c000000) >> 13)
+    pCmdList->current.end[2]  = (((CARD32)pCmdList->scratch.hw_addr & 0x1c000000) >> 13)
                              +((CARD32)pCmdList->scratch.hw_addr & 0xe0000000);
-    pCmdList->_writePtr[3]  = 0x00010001;
+    pCmdList->current.end[3]  = 0x00010001;
 
-    pCmdList->_writePtr[4]  = 0x7f792529;
+    pCmdList->current.end[4]  = 0x7f792529;
 
 	/* Drawing Flag */
-    pCmdList->_writePtr[5]  = 0x10000000; /* 28~2B */
+    pCmdList->current.end[5]  = 0x10000000; /* 28~2B */
 
 	/* 24:Command; 25~26:Op Mode; 27:ROP3 */
-    pCmdList->_writePtr[6]  = 0xcc008201; 
+    pCmdList->current.end[6]  = 0xcc008201; 
 
 	/* Jong 06/15/2006; this value is checked at waitfor2D() */ /* 78~7B */
-    pCmdList->_writePtr[7]  = pCmdList->command.hw_addr
-	+ ((intptr_t) pCmdList->_lastBatchEnd
+    pCmdList->current.end[7]  = pCmdList->command.hw_addr
+	+ ((intptr_t) pCmdList->previous.end
 	   - (intptr_t) pCmdList->command.ptr);
 
-    pCmdList->_writePtr[8]  = 0xff000001;
-    pCmdList->_writePtr[9]  = pCmdList->_writePtr[7];
-    pCmdList->_writePtr[10] = 0x00000000;
-    pCmdList->_writePtr[11] = 0x00000000;
+    pCmdList->current.end[8]  = 0xff000001;
+    pCmdList->current.end[9]  = pCmdList->current.end[7];
+    pCmdList->current.end[10] = 0x00000000;
+    pCmdList->current.end[11] = 0x00000000;
 
-    pCmdList->_writePtr += AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
-	pCmdList->_curBatchDataCount += AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
+    pCmdList->current.end += AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
+	pCmdList->current.data_count += AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
 
 	/* Jong 06/29/2006; demark */
 	dumpCommandBuffer(pCmdList);
@@ -523,25 +525,25 @@ static void linkToLastBatch(struct xg47_CmdList * pCmdList)
     CARD32 beginHWAddr;
     CARD32 beginPort;
     /*batch begin addr should be 4 Dwords alignment.*/
-    /*ASSERT(0 == (((CARD32)pCmdList->_curBatchBegin) & 0x0f);*/
+    /*ASSERT(0 == (((CARD32)pCmdList->current.begin) & 0x0f);*/
 
-    if (0 == pCmdList->_curBatchDataCount)
+    if (0 == pCmdList->current.data_count)
     {
         /*is it reasonable?*/
         return;
     }
 
     /*batch end addr should be 4 Dwords alignment*/
-    /*ASSERT(0 == (((CARD32)pCmdList->_writePtr) & 0x0f));*/
+    /*ASSERT(0 == (((CARD32)pCmdList->current.end) & 0x0f));*/
 
     beginHWAddr = pCmdList->command.hw_addr
-	+ ((intptr_t) pCmdList->_curBatchBegin
+	+ ((intptr_t) pCmdList->current.begin
 	   - (intptr_t) pCmdList->command.ptr);
 
     /* Which begin we should send.*/
     beginPort = getCurBatchBeginPort(pCmdList);
 
-    if (NULL == pCmdList->_lastBatchBegin)
+    if (NULL == pCmdList->previous.begin)
     {
         CARD32* pCmdPort;
         /* Issue PCI begin */
@@ -565,35 +567,33 @@ static void linkToLastBatch(struct xg47_CmdList * pCmdList)
 
         /* Send PCI begin command */
         pCmdPort[0] = (beginPort<<22) + (BEGIN_VALID_MASK) + pCmdList->_debugBeginID;
-        pCmdPort[1] = BEGIN_LINK_ENABLE_MASK + pCmdList->_curBatchDataCount;
+        pCmdPort[1] = BEGIN_LINK_ENABLE_MASK + pCmdList->current.data_count;
         pCmdPort[2] = (beginHWAddr >> 4);
         pCmdPort[3] = 0;
     }
     else
     {
         /* Encode BEGIN */
-        pCmdList->_lastBatchBegin[1] = BEGIN_LINK_ENABLE_MASK + pCmdList->_curBatchDataCount;
-        pCmdList->_lastBatchBegin[2] = (beginHWAddr >> 4);
-        pCmdList->_lastBatchBegin[3] = 0;
+        pCmdList->previous.begin[1] = BEGIN_LINK_ENABLE_MASK + pCmdList->current.data_count;
+        pCmdList->previous.begin[2] = (beginHWAddr >> 4);
+        pCmdList->previous.begin[3] = 0;
 
         /*Fixme, Flush cache*/
         /*_mm_mfence();*/
 
-        pCmdList->_lastBatchBegin[0] = (beginPort<<22) + (BEGIN_VALID_MASK) + pCmdList->_debugBeginID;
+        pCmdList->previous.begin[0] = (beginPort<<22) + (BEGIN_VALID_MASK) + pCmdList->_debugBeginID;
 
         triggerHWCommandList(pCmdList, 1);
     }
 
-    pCmdList->_lastBatchType  = pCmdList->_curBatchType;
-    pCmdList->_lastBatchBegin = pCmdList->_curBatchBegin;
-    pCmdList->_lastBatchEnd   = pCmdList->_writePtr;
-    pCmdList->_debugBeginID   = (pCmdList->_debugBeginID + 1) & 0xFFFF;
+    pCmdList->previous = pCmdList->current;
+    pCmdList->_debugBeginID = (pCmdList->_debugBeginID + 1) & 0xFFFF;
 }
 
 CARD32 getCurBatchBeginPort(struct xg47_CmdList * pCmdList)
 {
     /* Convert the batch type to begin port ID */
-    switch(pCmdList->_curBatchType)
+    switch(pCmdList->current.type)
     {
     case BTYPE_2D:
         return 0x30;
@@ -651,7 +651,7 @@ void dumpCommandBuffer(struct xg47_CmdList * pCmdList)
     XGIDebug(DBG_FUNCTION,"Entering dumpCommandBuffer\n");
 
     for (i = 0; 
-	 & pCmdList->command.ptr[i] < pCmdList->_writePtr;
+	 & pCmdList->command.ptr[i] < pCmdList->current.end;
 	 i++) {
         if (i % 4 == 0) {
             XGIDebug(DBG_CMD_BUFFER, "\n%08p ",
@@ -685,7 +685,7 @@ static void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList)
      * buffer.  This is "L" in the diagram above.
      */
     const intptr_t L = (intptr_t) pCmdList->command.ptr 
-	- (intptr_t) pCmdList->_lastBatchEnd;
+	- (intptr_t) pCmdList->previous.end;
     intptr_t G;
 
     do {
@@ -705,26 +705,26 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
 
     XGIDebug(DBG_FUNCTION, "%s: enter\n", __func__);
 
-    if (0 == pCmdList->_curBatchDataCount) {
+    if (0 == pCmdList->current.data_count) {
         /*is it reasonable? */
         return retval;
     }
 
     beginHWAddr = pCmdList->command.hw_addr
-	+ ((intptr_t) pCmdList->_curBatchBegin
+	+ ((intptr_t) pCmdList->current.begin
 	   - (intptr_t) pCmdList->command.ptr);
 
     /* Which begin we should send. */
     beginPort = getCurBatchBeginPort(pCmdList);
 
-    submitInfo._firstBeginType = pCmdList->_curBatchType;
+    submitInfo._firstBeginType = pCmdList->current.type;
     submitInfo._firstBeginAddr = beginHWAddr;
     submitInfo._lastBeginAddr = beginHWAddr;
-    submitInfo._firstSize = pCmdList->_curBatchDataCount;
+    submitInfo._firstSize = pCmdList->current.data_count;
     submitInfo._curDebugID = pCmdList->_debugBeginID;
     submitInfo._beginCount = 1;
 
-    if (NULL == pCmdList->_lastBatchBegin) {
+    if (NULL == pCmdList->previous.begin) {
 	XGIDebug(DBG_FUNCTION, "%s: calling waitForPCIIdleOnly\n", __func__);
         waitForPCIIdleOnly(pCmdList);
     }
@@ -741,10 +741,8 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
     waitfor2D(pCmdList); 
 
     if (retval != -1) {
-        pCmdList->_lastBatchType  = pCmdList->_curBatchType;
-        pCmdList->_lastBatchBegin = pCmdList->_curBatchBegin;
-        pCmdList->_lastBatchEnd   = pCmdList->_writePtr;
-        pCmdList->_debugBeginID   = (pCmdList->_debugBeginID + 1) & 0xFFFF;
+        pCmdList->previous = pCmdList->current;
+        pCmdList->_debugBeginID = (pCmdList->_debugBeginID + 1) & 0xFFFF;
     }
     else {
         ErrorF("[2D] ioctl -- cmdList error!\n");
@@ -757,7 +755,7 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
 static inline void waitfor2D(struct xg47_CmdList * pCmdList)
 {
     uint32_t lastBatchEndHW = pCmdList->command.hw_addr
-	+ ((intptr_t) pCmdList->_lastBatchEnd
+	+ ((intptr_t) pCmdList->previous.end
 	   - (intptr_t) pCmdList->command.ptr);
 
 	/* Jong 05/25/2006 */
