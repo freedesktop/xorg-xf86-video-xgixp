@@ -155,9 +155,9 @@ void xg47_Reset(struct xg47_CmdList *s_pCmdList)
 }
 
 /* Implementation Part*/
-static inline int submit2DBatch(struct xg47_CmdList * pCmdList);
-static inline void sendRemainder2DCommand(struct xg47_CmdList * pCmdList);
-static inline void addScratchBatch(struct xg47_CmdList * pCmdList);
+static int submit2DBatch(struct xg47_CmdList * pCmdList);
+static void sendRemainder2DCommand(struct xg47_CmdList * pCmdList);
+static void addScratchBatch(struct xg47_CmdList * pCmdList);
 
 static void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList,
     const void * addrStart, const void * addrEnd);
