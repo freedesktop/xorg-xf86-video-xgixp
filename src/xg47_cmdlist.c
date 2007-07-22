@@ -174,7 +174,6 @@ static void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList,
     const void * addrStart, const void * addrEnd);
 
 static inline void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList);
-static CARD32 getCurBatchBeginPort(struct xg47_CmdList * pCmdList);
 static inline void waitForPCIIdleOnly(struct xg47_CmdList *);
 static inline uint32_t getGEWorkedCmdHWAddr(const struct xg47_CmdList *);
 #ifdef DUMP_COMMAND_BUFFER
@@ -525,26 +524,6 @@ static void addScratchBatch(struct xg47_CmdList * pCmdList)
 }
 
 
-CARD32 getCurBatchBeginPort(struct xg47_CmdList * pCmdList)
-{
-    /* Convert the batch type to begin port ID */
-    switch(pCmdList->current.type)
-    {
-    case BTYPE_2D:
-        return 0x30;
-    case BTYPE_3D:
-        return 0x40;
-    case BTYPE_FLIP:
-        return 0x50;
-    case BTYPE_CTRL:
-        return 0x20;
-    default:
-        /*ASSERT(0);*/
-		return 0xff;
-    }
-}
-
-
 static void waitForPCIIdleOnly(struct xg47_CmdList *s_pCmdList)
 {
     volatile CARD32* v3DStatus;
@@ -614,7 +593,6 @@ static void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList)
 static int submit2DBatch(struct xg47_CmdList * pCmdList)
 {
     CARD32 beginHWAddr;
-    CARD32 beginPort;
     struct xgi_cmd_info submitInfo;
     int err;
 
@@ -627,9 +605,6 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
     beginHWAddr = pCmdList->command.hw_addr
 	+ ((intptr_t) pCmdList->current.begin
 	   - (intptr_t) pCmdList->command.ptr);
-
-    /* Which begin we should send. */
-    beginPort = getCurBatchBeginPort(pCmdList);
 
     submitInfo.type = pCmdList->current.type;
     submitInfo.hw_addr = beginHWAddr;
