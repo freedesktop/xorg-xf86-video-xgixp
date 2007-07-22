@@ -356,41 +356,52 @@ static void sendRemainder2DCommand(struct xg47_CmdList * pCmdList)
     }
 }
 
+
+/**
+ * Emit series of commands to write the batch end address to the scratch buffer.
+ *
+ * \note
+ * Wouldn't it be easier to just write the end address to the software
+ * scratch register (0x1f0, page 27 in 3D SPG)?
+ */
 static void addScratchBatch(struct xg47_CmdList * pCmdList)
 {
-    /*because we add 2D scratch directly at the end of this batch*/
-    /*ASSERT(BTYPE_2D == pCmdList->current.type);*/
-
+    /* In-line command to write to ENG_DST_BASE, ENG_DESTXY, and ENG_DIMENSION
+     */
     pCmdList->current.end[0]  = 0x7f413951;
 
-	/* Jong 11/08/2006; seems have a bug for base=64MB=0x4000000 */
-	/* base >> 4 = 0x400000; 0x400000 & 0x3fffff = 0x0 */
-	/* Thus, base address must be less than 64MB=0x4000000 */
-    pCmdList->current.end[1]  = (0x1 << 0x18) + (((CARD32)pCmdList->scratch.hw_addr >> 4) & 0x3fffff);
+    pCmdList->current.end[1]  = (0x1 << 24) 
+        | (((CARD32)pCmdList->scratch.hw_addr >> 4) & 0x3fffff);
 
     pCmdList->current.end[2]  = (((CARD32)pCmdList->scratch.hw_addr & 0x1c000000) >> 13)
                              +((CARD32)pCmdList->scratch.hw_addr & 0xe0000000);
     pCmdList->current.end[3]  = 0x00010001;
 
+
+    /* In-line command to write to ENG_DRAWINGFLAG, ENG_COMMAND, and
+     * 0x78 (?).
+     */
     pCmdList->current.end[4]  = 0x7f792529;
 
-	/* Drawing Flag */
+    /* Drawing Flag */
     pCmdList->current.end[5]  = 0x10000000; /* 28~2B */
 
-	/* 24:Command; 25~26:Op Mode; 27:ROP3 */
+    /* 24:Command; 25~26:Op Mode; 27:ROP3 */
     pCmdList->current.end[6]  = 0xcc008201; 
 
     pCmdList->current.end[7]  = pCmdList->command.hw_addr
-	+ ((intptr_t) pCmdList->previous.end
-	   - (intptr_t) pCmdList->command.ptr);
+        + ((intptr_t) pCmdList->previous.end
+           - (intptr_t) pCmdList->command.ptr);
 
+    /* In-line end command to write to FLUSH_ENGINE_ADDRESS.
+     */
     pCmdList->current.end[8]  = 0xff000001;
     pCmdList->current.end[9]  = pCmdList->current.end[7];
     pCmdList->current.end[10] = 0x00000000;
     pCmdList->current.end[11] = 0x00000000;
 
     pCmdList->current.end += AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
-	pCmdList->current.data_count += AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
+    pCmdList->current.data_count += AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
 }
 
 
