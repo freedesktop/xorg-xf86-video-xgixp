@@ -169,14 +169,12 @@ static inline int submit2DBatch(struct xg47_CmdList * pCmdList);
 static inline void sendRemainder2DCommand(struct xg47_CmdList * pCmdList);
 static inline void reserveData(struct xg47_CmdList * pCmdList, size_t size);
 static inline void addScratchBatch(struct xg47_CmdList * pCmdList);
-static inline void linkToLastBatch(struct xg47_CmdList * pCmdList);
 
 static void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList,
     const void * addrStart, const void * addrEnd);
 
 static inline void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList);
 static CARD32 getCurBatchBeginPort(struct xg47_CmdList * pCmdList);
-static inline void triggerHWCommandList(struct xg47_CmdList * pCmdList, CARD32 triggerCounter);
 static inline void waitForPCIIdleOnly(struct xg47_CmdList *);
 static inline uint32_t getGEWorkedCmdHWAddr(const struct xg47_CmdList *);
 #ifdef DUMP_COMMAND_BUFFER
@@ -316,7 +314,6 @@ void xg47_EndCmdList(struct xg47_CmdList *pCmdList)
     addScratchBatch(pCmdList);
 
     XGIDebug(DBG_FUNCTION,"[DBG-Jong] endCmdList-3\n");
-/*    linkToLastBatch(pCmdList);*/
     submit2DBatch(pCmdList);
 }
 
@@ -527,76 +524,6 @@ static void addScratchBatch(struct xg47_CmdList * pCmdList)
 	pCmdList->current.data_count += AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
 }
 
-static void linkToLastBatch(struct xg47_CmdList * pCmdList)
-{
-
-    CARD32 beginHWAddr;
-    CARD32 beginPort;
-    /*batch begin addr should be 4 Dwords alignment.*/
-    /*ASSERT(0 == (((CARD32)pCmdList->current.begin) & 0x0f);*/
-
-    if (0 == pCmdList->current.data_count)
-    {
-        /*is it reasonable?*/
-        return;
-    }
-
-    /*batch end addr should be 4 Dwords alignment*/
-    /*ASSERT(0 == (((CARD32)pCmdList->current.end) & 0x0f));*/
-
-    beginHWAddr = pCmdList->command.hw_addr
-	+ ((intptr_t) pCmdList->current.begin
-	   - (intptr_t) pCmdList->command.ptr);
-
-    /* Which begin we should send.*/
-    beginPort = getCurBatchBeginPort(pCmdList);
-
-    if (NULL == pCmdList->previous.begin)
-    {
-        CARD32* pCmdPort;
-        /* Issue PCI begin */
-
-        /* Wait for GE Idle. */
-        waitForPCIIdleOnly(pCmdList);
-
-        pCmdPort = (CARD32*)((unsigned char*)pCmdList->_mmioBase + BASE_3D_ENG + beginPort);
-
-        /* Enable PCI Trigger Mode */
-        *((CARD32*)((unsigned char*)pCmdList->_mmioBase + BASE_3D_ENG + M2REG_AUTO_LINK_SETTING_ADDRESS)) =
-                (M2REG_AUTO_LINK_SETTING_ADDRESS << 22) |
-                M2REG_CLEAR_COUNTERS_MASK |
-                0x08 |
-                M2REG_PCI_TRIGGER_MODE_MASK;
-
-        *((CARD32*)((unsigned char*)pCmdList->_mmioBase + BASE_3D_ENG + M2REG_AUTO_LINK_SETTING_ADDRESS)) =
-                (M2REG_AUTO_LINK_SETTING_ADDRESS << 22) |
-                0x08 |
-                M2REG_PCI_TRIGGER_MODE_MASK;
-
-        /* Send PCI begin command */
-        pCmdPort[0] = (beginPort<<22) + (BEGIN_VALID_MASK) + pCmdList->_debugBeginID;
-        pCmdPort[1] = BEGIN_LINK_ENABLE_MASK + pCmdList->current.data_count;
-        pCmdPort[2] = (beginHWAddr >> 4);
-        pCmdPort[3] = 0;
-    }
-    else
-    {
-        /* Encode BEGIN */
-        pCmdList->previous.begin[1] = BEGIN_LINK_ENABLE_MASK + pCmdList->current.data_count;
-        pCmdList->previous.begin[2] = (beginHWAddr >> 4);
-        pCmdList->previous.begin[3] = 0;
-
-        /*Fixme, Flush cache*/
-        /*_mm_mfence();*/
-
-        pCmdList->previous.begin[0] = (beginPort<<22) + (BEGIN_VALID_MASK) + pCmdList->_debugBeginID;
-
-        triggerHWCommandList(pCmdList, 1);
-    }
-
-    pCmdList->previous = pCmdList->current;
-    pCmdList->_debugBeginID = (pCmdList->_debugBeginID + 1) & 0xFFFF;
-}
 
 CARD32 getCurBatchBeginPort(struct xg47_CmdList * pCmdList)
 {
@@ -617,21 +544,6 @@ CARD32 getCurBatchBeginPort(struct xg47_CmdList * pCmdList)
     }
 }
 
-static void triggerHWCommandList(struct xg47_CmdList * pCmdList, CARD32 triggerCounter)
-{
-    static CARD32 s_triggerID = 1;
-
-    XGIDebug(DBG_CMD_BUFFER, "[DBG]Before trigger [2800]=%0x\n", *((CARD32*)((unsigned char*)pCmdList->_mmioBase + BASE_3D_ENG)) );
-
-    /*Fixme, currently we just trigger one time */
-    while (triggerCounter--)
-    {
-        *((CARD32*)((unsigned char*)pCmdList->_mmioBase + BASE_3D_ENG + M2REG_PCI_TRIGGER_REGISTER_ADDRESS))
-        = 0x05000000 + (0xffff & s_triggerID++);
-    }
-
-    XGIDebug(DBG_CMD_BUFFER, "[DBG]After trigger [2800]=%08x\n", *((CARD32*)((unsigned char*)pCmdList->_mmioBase + BASE_3D_ENG)) );
-}
 
 static void waitForPCIIdleOnly(struct xg47_CmdList *s_pCmdList)
 {
