@@ -710,13 +710,12 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
     CARD32 beginHWAddr;
     CARD32 beginPort;
     struct xgi_cmd_info submitInfo;
-    int retval = -1;
+    int err;
 
     XGIDebug(DBG_FUNCTION, "%s: enter\n", __func__);
 
     if (0 == pCmdList->current.data_count) {
-        /*is it reasonable? */
-        return retval;
+        return 0;
     }
 
     beginHWAddr = pCmdList->command.hw_addr
@@ -726,12 +725,10 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
     /* Which begin we should send. */
     beginPort = getCurBatchBeginPort(pCmdList);
 
-    submitInfo._firstBeginType = pCmdList->current.type;
-    submitInfo._firstBeginAddr = beginHWAddr;
-    submitInfo._lastBeginAddr = beginHWAddr;
-    submitInfo._firstSize = pCmdList->current.data_count;
-    submitInfo._curDebugID = pCmdList->_debugBeginID;
-    submitInfo._beginCount = 1;
+    submitInfo.type = pCmdList->current.type;
+    submitInfo.hw_addr = beginHWAddr;
+    submitInfo.size = pCmdList->current.data_count;
+    submitInfo.id = pCmdList->_debugBeginID;
 
     if (NULL == pCmdList->previous.begin) {
 	XGIDebug(DBG_FUNCTION, "%s: calling waitForPCIIdleOnly\n", __func__);
@@ -739,26 +736,26 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
     }
 
     XGIDebug(DBG_FUNCTION, "%s: calling ioctl XGI_IOCTL_SUBMIT_CMDLIST\n", 
-	     __func__);
+             __func__);
 
-    /* Jong 05/24/2006; cause system hang on Gateway platform but works on others */
-    retval = drmCommandWrite(pCmdList->_fd, DRM_XGI_SUBMIT_CMDLIST,
-			     &submitInfo, sizeof(submitInfo));
+    err = drmCommandWrite(pCmdList->_fd, DRM_XGI_SUBMIT_CMDLIST,
+                          &submitInfo, sizeof(submitInfo));
 
 
     XGIDebug(DBG_FUNCTION, "%s: calling waitFor2D\n", __func__);
     waitfor2D(pCmdList); 
 
-    if (retval != -1) {
+    if (!err) {
         pCmdList->previous = pCmdList->current;
-        pCmdList->_debugBeginID = (pCmdList->_debugBeginID + 1) & 0xFFFF;
+        pCmdList->_debugBeginID++;
     }
     else {
-        ErrorF("[2D] ioctl -- cmdList error!\n");
+        ErrorF("[2D] ioctl -- cmdList error (%d, %s)!\n",
+               -err, strerror(-err));
     }
 
     XGIDebug(DBG_FUNCTION, "%s: exit\n", __func__);
-    return retval;
+    return err;
 }
 
 static inline void waitfor2D(struct xg47_CmdList * pCmdList)
