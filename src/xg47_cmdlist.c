@@ -306,10 +306,11 @@ void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList,
     /* Offsets, in bytes, from the start of the command buffer to the start
      * and end of the proposed range.
      */
-    const intptr_t offset_start = (intptr_t) pCmdList->command.ptr -
-        (intptr_t) addrStart;
-    const intptr_t offset_end = (intptr_t) pCmdList->command.ptr -
-        (intptr_t) addrEnd;
+    const intptr_t offset_start = (intptr_t) addrStart 
+        - (intptr_t) pCmdList->command.ptr;
+    const intptr_t offset_end = (intptr_t) addrEnd 
+        - (intptr_t)pCmdList->command.ptr;
+
 
     /* The loop of waiting for enough command list buffer */
     while (1) {
@@ -322,19 +323,25 @@ void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList,
             /* If cmdlist is fresh or cmdlist already rolled over, current
              * batch does not overlay the buffer. 
              */
-            if ((cmd_offset < offset_start) || (cmd_offset > offset_end))
-            {
+            if ((cmd_offset < offset_start) || (cmd_offset > offset_end)) {
                 /* There is enough memory at the begin of command list. */
                 break;
             }
         }
         else {
+            const intptr_t previous_begin = 
+                (intptr_t) pCmdList->previous.begin
+                - (intptr_t) pCmdList->command.ptr;
+            const intptr_t previous_end = 
+                (intptr_t) pCmdList->previous.end
+                - (intptr_t) pCmdList->command.ptr;
+
             /* No running batch */
-            if ((NULL != pCmdList->previous.begin) 
-                && (((addrStart >= pCmdList->previous.begin) 
-                     && (addrStart <= pCmdList->previous.end))
-                    || ((addrEnd >= pCmdList->previous.begin) 
-                        && (addrEnd <= pCmdList->previous.end)))) {
+            if ((NULL != pCmdList->previous.begin)
+                && (((offset_start >= previous_begin) 
+                     && (offset_start <= previous_end))
+                    || ((offset_end >= previous_begin) 
+                        && (offset_end <= previous_end)))) {
                 /* If current command list overlaps the last begin
                  * Force to reset
                  */
