@@ -58,15 +58,15 @@ struct xg47_CmdList
     struct xg47_batch current;
     struct xg47_batch previous;
 
-    CARD32      _sendDataLength;            /* record the filled data size */
+    unsigned int _sendDataLength;            /* record the filled data size */
 
     struct xg47_buffer command;
     struct xg47_buffer scratch;
 
-    CARD32      _debugBeginID;          /* write it at begin header as debug ID */
+    unsigned int id;          /* write it at begin header as debug ID */
 
     /* 2d cmd holder */
-    CARD32      _bunch[4];
+    uint32_t _bunch[4];
 
     /* fd number */
     int		_fd;
@@ -74,7 +74,7 @@ struct xg47_CmdList
 
 
 struct xg47_CmdList *
-xg47_Initialize(ScrnInfoPtr pScrn, CARD32 cmdBufSize, int fd)
+xg47_Initialize(ScrnInfoPtr pScrn, unsigned int cmdBufSize, int fd)
 {
     struct xg47_CmdList *list = xnfcalloc(sizeof(struct xg47_CmdList), 1);
 
@@ -82,16 +82,16 @@ xg47_Initialize(ScrnInfoPtr pScrn, CARD32 cmdBufSize, int fd)
     list->_fd = fd;
 
     if (!XGIPcieMemAllocate(pScrn,
-                            list->command.size * sizeof(CARD32),
-			    & list->command.bus_addr,
-			    & list->command.hw_addr,
-			    (void **) & list->command.ptr)) {
+                            list->command.size * sizeof(uint32_t),
+                            & list->command.bus_addr,
+                            & list->command.hw_addr,
+                            (void **) & list->command.ptr)) {
         XGIDebug(DBG_ERROR, "[DBG Error]Allocate CmdList buffer error!\n");
-	goto err;
+        goto err;
     }
 
     XGIDebug(DBG_CMDLIST, "cmdBuf VAddr=0x%p  HAddr=0x%p buffsize=0x%x\n",
-	     list->command.ptr, list->command.hw_addr, list->command.size);
+             list->command.ptr, list->command.hw_addr, list->command.size);
 
     list->scratch.size = 1024;
 
@@ -102,7 +102,7 @@ xg47_Initialize(ScrnInfoPtr pScrn, CARD32 cmdBufSize, int fd)
                             (void **) & list->scratch.ptr)) {
         XGIDebug(DBG_ERROR, "[DBG ERROR]Allocate Scratch Pad error!\n");
 
-	goto err;
+        goto err;
     }
 
 
@@ -168,7 +168,7 @@ static inline uint32_t getGEWorkedCmdHWAddr(const struct xg47_CmdList *);
 static void dumpCommandBuffer(struct xg47_CmdList * pCmdList);
 #endif
 
-CARD32 s_emptyBegin[AGPCMDLIST_BEGIN_SIZE] =
+uint32_t s_emptyBegin[AGPCMDLIST_BEGIN_SIZE] =
 {
     0x10000000,     /* 3D Type Begin, Invalid */
     0x80000004,     /* Length = 4;  */
@@ -186,7 +186,7 @@ CARD32 s_emptyBegin[AGPCMDLIST_BEGIN_SIZE] =
  * \returns
  * 1 -- success 0 -- false
  */
-int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, CARD32 size)
+int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, unsigned int size)
 {
     XGIDebug(DBG_CMDLIST, "[DEBUG] Enter beginCmdList.\n");
 
@@ -228,8 +228,7 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, CARD32 size)
     pCmdList->current.request_size = size;
 
     /* Prepare next begin */
-    memcpy(pCmdList->current.end, s_emptyBegin,
-           AGPCMDLIST_BEGIN_SIZE * sizeof(CARD32));
+    memcpy(pCmdList->current.end, s_emptyBegin, sizeof(s_emptyBegin));
     pCmdList->current.end += AGPCMDLIST_BEGIN_SIZE;
     pCmdList->current.data_count = AGPCMDLIST_BEGIN_SIZE;
     pCmdList->current.type = BTYPE_2D;
@@ -280,10 +279,12 @@ void emit_bunch(struct xg47_CmdList *pCmdList)
 }
 
 
-void xg47_SendGECommand(struct xg47_CmdList *pCmdList, CARD32 addr, CARD32 cmd)
+void xg47_SendGECommand(struct xg47_CmdList *pCmdList, uint32_t addr,
+                        uint32_t cmd)
 {
     /* Encrypt the command for AGP. */
-    CARD32 shift        = (pCmdList->current.data_count++) & 0x00000003;
+    const unsigned int shift = (pCmdList->current.data_count++) & 0x00000003;
+
     pCmdList->_bunch[0] |= (addr | 1) << (shift << 3);
     pCmdList->_bunch[shift + 1]  = cmd;
 
@@ -376,10 +377,10 @@ static void addScratchBatch(struct xg47_CmdList * pCmdList)
     pCmdList->current.end[0]  = 0x7f413951;
 
     pCmdList->current.end[1]  = (0x1 << 24) 
-        | (((CARD32)pCmdList->scratch.hw_addr >> 4) & 0x3fffff);
+        | (((uint32_t) pCmdList->scratch.hw_addr >> 4) & 0x3fffff);
 
-    pCmdList->current.end[2]  = (((CARD32)pCmdList->scratch.hw_addr & 0x1c000000) >> 13)
-                             +((CARD32)pCmdList->scratch.hw_addr & 0xe0000000);
+    pCmdList->current.end[2]  = (((uint32_t)pCmdList->scratch.hw_addr & 0x1c000000) >> 13)
+                             +((uint32_t)pCmdList->scratch.hw_addr & 0xe0000000);
     pCmdList->current.end[3]  = 0x00010001;
 
 
@@ -459,7 +460,7 @@ static void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList)
 
 static int submit2DBatch(struct xg47_CmdList * pCmdList)
 {
-    CARD32 beginHWAddr;
+    uint32_t beginHWAddr;
     struct xgi_cmd_info submitInfo;
     int err;
 
@@ -476,7 +477,7 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
     submitInfo.type = pCmdList->current.type;
     submitInfo.hw_addr = beginHWAddr;
     submitInfo.size = pCmdList->current.data_count;
-    submitInfo.id = pCmdList->_debugBeginID;
+    submitInfo.id = pCmdList->id;
 
     XGIDebug(DBG_FUNCTION, "%s: calling ioctl XGI_IOCTL_SUBMIT_CMDLIST\n", 
              __func__);
@@ -489,7 +490,7 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
                           &submitInfo, sizeof(submitInfo));
     if (!err) {
         pCmdList->previous = pCmdList->current;
-        pCmdList->_debugBeginID++;
+        pCmdList->id++;
     }
     else {
         ErrorF("[2D] ioctl -- cmdList error (%d, %s)!\n",
