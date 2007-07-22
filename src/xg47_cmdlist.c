@@ -179,7 +179,9 @@ static CARD32 getCurBatchBeginPort(struct xg47_CmdList * pCmdList);
 static inline void triggerHWCommandList(struct xg47_CmdList * pCmdList, CARD32 triggerCounter);
 static inline void waitForPCIIdleOnly(struct xg47_CmdList *);
 static inline uint32_t getGEWorkedCmdHWAddr(const struct xg47_CmdList *);
+#ifdef DUMP_COMMAND_BUFFER
 static void dumpCommandBuffer(struct xg47_CmdList * pCmdList);
+#endif
 
 CARD32 s_emptyBegin[AGPCMDLIST_BEGIN_SIZE] =
 {
@@ -523,9 +525,6 @@ static void addScratchBatch(struct xg47_CmdList * pCmdList)
 
     pCmdList->current.end += AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
 	pCmdList->current.data_count += AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
-
-	/* Jong 06/29/2006; demark */
-	dumpCommandBuffer(pCmdList);
 }
 
 static void linkToLastBatch(struct xg47_CmdList * pCmdList)
@@ -653,32 +652,27 @@ static void waitForPCIIdleOnly(struct xg47_CmdList *s_pCmdList)
     }
 }
 
+#ifdef DUMP_COMMAND_BUFFER
 void dumpCommandBuffer(struct xg47_CmdList * pCmdList)
 {
-    unsigned i;
+    const unsigned int count = pCmdList->current.end
+        - pCmdList->current.begin;
+    unsigned int i;
 
     XGIDebug(DBG_FUNCTION,"Entering dumpCommandBuffer\n");
 
-    for (i = 0; 
-	 & pCmdList->command.ptr[i] < pCmdList->current.end;
-	 i++) {
-        if (i % 4 == 0) {
-            XGIDebug(DBG_CMD_BUFFER, "\n%08p ",
-		     pCmdList->command.ptr + i);
-        }
-
-	XGIDebug(DBG_CMD_BUFFER, "%08x ", 
-		 *(pCmdList->command.ptr + i));
-
-        if ((i+1) % 4 == 0)
-        {
-            XGIDebug(DBG_CMD_BUFFER, "\n");
-        }
-
+    for (i = 0; i < count; i += 4) {
+        XGIDebug(DBG_CMD_BUFFER, "%08p: %08x %08x %08x %08x\n",
+                 (pCmdList->current.begin + i),
+                 pCmdList->current.begin[i + 0],
+                 pCmdList->current.begin[i + 1],
+                 pCmdList->current.begin[i + 2],
+                 pCmdList->current.begin[i + 3]);
     }
 
     XGIDebug(DBG_FUNCTION,"Leaving dumpCommandBuffer\n");
 }
+#endif /* DUMP_COMMAND_BUFFER */
 
 
 /*
@@ -737,6 +731,10 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
 
     XGIDebug(DBG_FUNCTION, "%s: calling ioctl XGI_IOCTL_SUBMIT_CMDLIST\n", 
              __func__);
+
+#ifdef DUMP_COMMAND_BUFFER
+    dumpCommandBuffer(pCmdList);
+#endif
 
     err = drmCommandWrite(pCmdList->_fd, DRM_XGI_SUBMIT_CMDLIST,
                           &submitInfo, sizeof(submitInfo));
