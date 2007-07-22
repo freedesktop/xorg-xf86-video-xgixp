@@ -284,8 +284,9 @@ void xg47_SendGECommand(struct xg47_CmdList *pCmdList, uint32_t addr,
 {
     /* Encrypt the command for AGP. */
     const unsigned int shift = (pCmdList->current.data_count++) & 0x00000003;
+    const uint32_t reg = (addr & 0x00ff);
 
-    pCmdList->_bunch[0] |= (addr | 1) << (shift << 3);
+    pCmdList->_bunch[0] |= (reg | 1) << (shift << 3);
     pCmdList->_bunch[shift + 1]  = cmd;
 
     /* Bunch finished, Send to HW. */
