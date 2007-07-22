@@ -33,7 +33,8 @@ struct xg47_CmdList;
 /* cmdList size in dword */
 extern int  xg47_BeginCmdList(struct xg47_CmdList *, unsigned int size);
 extern void xg47_EndCmdList(struct xg47_CmdList *);
-extern void xg47_SendGECommand(struct xg47_CmdList *, CARD32 addr, CARD32 cmd);
+extern void xg47_SendGECommand(struct xg47_CmdList *, uint32_t addr,
+    uint32_t cmd);
 
 extern struct xg47_CmdList *xg47_Initialize(ScrnInfoPtr pScrn, 
     unsigned int cmdBufSize, int fd);
