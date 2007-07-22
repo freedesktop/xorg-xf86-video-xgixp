@@ -68,24 +68,16 @@ struct xg47_CmdList
     /* 2d cmd holder */
     CARD32      _bunch[4];
 
-    /* MMIO base */
-    uint32_t *  _mmioBase;
-
     /* fd number */
     int		_fd;
 };
-static inline void waitfor2D(struct xg47_CmdList * pCmdList);
 
-/* Jong 07/03/2006 */
-int g_bFirst=1;
-extern ScreenPtr g_pScreen;
 
 struct xg47_CmdList *
-xg47_Initialize(ScrnInfoPtr pScrn, CARD32 cmdBufSize, CARD32 *mmioBase, int fd)
+xg47_Initialize(ScrnInfoPtr pScrn, CARD32 cmdBufSize, int fd)
 {
     struct xg47_CmdList *list = xnfcalloc(sizeof(struct xg47_CmdList), 1);
 
-    list->_mmioBase = mmioBase;
     list->command.size = cmdBufSize;
     list->_fd = fd;
 
@@ -119,8 +111,6 @@ xg47_Initialize(ScrnInfoPtr pScrn, CARD32 cmdBufSize, CARD32 *mmioBase, int fd)
 
     xg47_Reset(list);
 
-    XGIDebug(DBG_CMDLIST, "mmioBase = %x\n", list->_mmioBase);
-    
     return list;
 
 err:
@@ -173,7 +163,6 @@ static void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList,
     const void * addrStart, const void * addrEnd);
 
 static inline void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList);
-static inline void waitForPCIIdleOnly(struct xg47_CmdList *);
 static inline uint32_t getGEWorkedCmdHWAddr(const struct xg47_CmdList *);
 #ifdef DUMP_COMMAND_BUFFER
 static void dumpCommandBuffer(struct xg47_CmdList * pCmdList);
@@ -391,7 +380,6 @@ static void addScratchBatch(struct xg47_CmdList * pCmdList)
 	/* 24:Command; 25~26:Op Mode; 27:ROP3 */
     pCmdList->current.end[6]  = 0xcc008201; 
 
-	/* Jong 06/15/2006; this value is checked at waitfor2D() */ /* 78~7B */
     pCmdList->current.end[7]  = pCmdList->command.hw_addr
 	+ ((intptr_t) pCmdList->previous.end
 	   - (intptr_t) pCmdList->command.ptr);
@@ -405,25 +393,6 @@ static void addScratchBatch(struct xg47_CmdList * pCmdList)
 	pCmdList->current.data_count += AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
 }
 
-
-static void waitForPCIIdleOnly(struct xg47_CmdList *s_pCmdList)
-{
-    volatile CARD32* v3DStatus;
-    int idleCount = 0;
-
-    v3DStatus = (volatile CARD32*) ((unsigned char*)s_pCmdList->_mmioBase + WHOLD_GE_STATUS);
-    while(idleCount < 5)
-    {
-        if ((*v3DStatus) & IDLE_MASK)
-        {
-            idleCount = 0;
-        }
-        else
-        {
-            idleCount ++;
-        }
-    }
-}
 
 #ifdef DUMP_COMMAND_BUFFER
 void dumpCommandBuffer(struct xg47_CmdList * pCmdList)
@@ -493,11 +462,6 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
     submitInfo.size = pCmdList->current.data_count;
     submitInfo.id = pCmdList->_debugBeginID;
 
-    if (NULL == pCmdList->previous.begin) {
-	XGIDebug(DBG_FUNCTION, "%s: calling waitForPCIIdleOnly\n", __func__);
-        waitForPCIIdleOnly(pCmdList);
-    }
-
     XGIDebug(DBG_FUNCTION, "%s: calling ioctl XGI_IOCTL_SUBMIT_CMDLIST\n", 
              __func__);
 
@@ -507,11 +471,6 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
 
     err = drmCommandWrite(pCmdList->_fd, DRM_XGI_SUBMIT_CMDLIST,
                           &submitInfo, sizeof(submitInfo));
-
-
-    XGIDebug(DBG_FUNCTION, "%s: calling waitFor2D\n", __func__);
-    waitfor2D(pCmdList); 
-
     if (!err) {
         pCmdList->previous = pCmdList->current;
         pCmdList->_debugBeginID++;
@@ -523,25 +482,4 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
 
     XGIDebug(DBG_FUNCTION, "%s: exit\n", __func__);
     return err;
-}
-
-static inline void waitfor2D(struct xg47_CmdList * pCmdList)
-{
-    const uint32_t lastBatchEndHW = pCmdList->command.hw_addr
-	+ ((intptr_t) pCmdList->previous.end
-	   - (intptr_t) pCmdList->command.ptr);
-
-    if (lastBatchEndHW >=0) {
-	XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] waitfor2D()-Begin loop\n");
-        while (lastBatchEndHW != (CARD32) getGEWorkedCmdHWAddr(pCmdList)) {
-	    if(g_bFirst==1)
-		usleep(1);
-        }
-
-	if (g_bFirst == 1) {
-	    g_bFirst = 0;
-	} 
-
-	XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] waitfor2D()-End loop\n");
-    }
 }

@@ -1195,8 +1195,7 @@ static Bool XG47InitCmdList(ScrnInfoPtr pScrn)
 	/* Jong 05/24/2006 */
     testRWPCIE(pScrn); 
 
-    pXGI->cmdList = xg47_Initialize(pScrn, CMDBUF_SIZE, 
-				    (CARD32 *) pXGI->IOBase, pXGI->drm_fd);
+    pXGI->cmdList = xg47_Initialize(pScrn, CMDBUF_SIZE, pXGI->drm_fd);
     if (pXGI->cmdList == NULL) {
         XAADestroyInfoRec(pXGI->pXaaInfo);
         pXGI->pXaaInfo = NULL;
