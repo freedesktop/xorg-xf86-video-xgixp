@@ -240,7 +240,10 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, CARD32 size)
     pCmdList->current.end += AGPCMDLIST_BEGIN_SIZE;
     pCmdList->current.data_count = AGPCMDLIST_BEGIN_SIZE;
     pCmdList->current.type = BTYPE_2D;
-    pCmdList->_bunch[0]     = 0x7f000000;
+    pCmdList->_bunch[0] = 0x7f000000;
+    pCmdList->_bunch[1] = 0x00000000;
+    pCmdList->_bunch[2] = 0x00000000;
+    pCmdList->_bunch[3] = 0x00000000;
 
     XGIDebug(DBG_CMDLIST, "[DEBUG] Leave beginCmdList.\n");
     return 1;
@@ -316,14 +319,28 @@ void xg47_EndCmdList(struct xg47_CmdList *pCmdList)
     submit2DBatch(pCmdList);
 }
 
+
 void emit_bunch(struct xg47_CmdList *pCmdList)
 {
+    /* Copy the commands from _bunch to the command buffer and advance the
+     * command buffer write pointer.
+     */
     pCmdList->current.end[0] = pCmdList->_bunch[0];
     pCmdList->current.end[1] = pCmdList->_bunch[1];
     pCmdList->current.end[2] = pCmdList->_bunch[2];
     pCmdList->current.end[3] = pCmdList->_bunch[3];
-    pCmdList->_bunch[0] = 0x7f000000;
     pCmdList->current.end += 4;
+
+    /* Reset _bunch.
+     */
+    pCmdList->_bunch[0] = 0x7f000000;
+    pCmdList->_bunch[1] = 0x00000000;
+    pCmdList->_bunch[2] = 0x00000000;
+    pCmdList->_bunch[3] = 0x00000000;
+
+    /* Advance data_count to the next 128-bit boundary.
+     */
+    pCmdList->current.data_count = (pCmdList->current.data_count + 3) & ~3;
 }
 
 
@@ -337,7 +354,6 @@ void xg47_SendGECommand(struct xg47_CmdList *pCmdList, CARD32 addr, CARD32 cmd)
     /* Bunch finished, Send to HW. */
     if (2 == shift) {
         emit_bunch(pCmdList);
-        pCmdList->current.data_count++;
     }
 }
 
@@ -478,10 +494,10 @@ static uint32_t getGEWorkedCmdHWAddr(const struct xg47_CmdList * pCmdList)
 
 static void sendRemainder2DCommand(struct xg47_CmdList * pCmdList)
 {
-    /* ASSERTDD(BTYPE_2D == m_btBatchType, "Only 2D batch can use SendCommand!");*/
+    /* If there are any pending commands in _bunch, emit the whole batch.
+     */
     if (0x7f000000 != pCmdList->_bunch[0]) {
         emit_bunch(pCmdList);
-        pCmdList->current.data_count = (pCmdList->current.data_count + 3) & ~3;
     }
 }
 
