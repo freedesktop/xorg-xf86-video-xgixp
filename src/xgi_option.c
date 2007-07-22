@@ -282,32 +282,32 @@ Bool XGIProcessOptions(ScrnInfoPtr pScrn)
     }
 
 #ifdef __DEBUG_FUNC__
-    if (xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_SOLID_LINE, FALSE))
+    if (xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_SOLID_LINE, TRUE))
         pXGI->EnableSolidLine = TRUE;
     else
         pXGI->EnableSolidLine = FALSE;
 
-    if (xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_SOLID_FILL, FALSE))
+    if (xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_SOLID_FILL, TRUE))
         pXGI->EnableSolidFill = TRUE;
     else
         pXGI->EnableSolidFill = FALSE;
 
-    if (xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_SRC_TO_SRC, FALSE))
+    if (xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_SRC_TO_SRC, TRUE))
         pXGI->EnableSrc2Src = TRUE;
     else
         pXGI->EnableSrc2Src = FALSE;
 
-    if (xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_8X8_PATTERN, FALSE))
+    if (xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_8X8_PATTERN, TRUE))
         pXGI->Enable8x8Pattern = TRUE;
     else
         pXGI->Enable8x8Pattern = FALSE;
 
-    if (xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_8X8_MONOPAT, FALSE))
+    if (xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_8X8_MONOPAT, TRUE))
         pXGI->Enable8x8MonoPat = TRUE;
     else
         pXGI->Enable8x8MonoPat = FALSE;
 
-    if (xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_IMAGE_WRITE, FALSE))
+    if (xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_IMAGE_WRITE, TRUE))
         pXGI->EnableImageWrite = TRUE;
     else
         pXGI->EnableImageWrite = FALSE;
