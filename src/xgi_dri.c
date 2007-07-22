@@ -90,7 +90,7 @@ Bool XGIDRIScreenInit(ScreenPtr pScreen)
     DRIInfoPtr     dri_info;
     void *scratch_ptr;
     int scratch_int;
-
+    drmVersionPtr kernel_version;
 
     if (pXGI->dri_info != NULL) {
         xf86DrvMsg(pScreen->myNum, X_ERROR,
@@ -161,6 +161,32 @@ Bool XGIDRIScreenInit(ScreenPtr pScreen)
     }
 
     pXGI->dri_screen_open = TRUE;
+
+    kernel_version = drmGetVersion(pXGI->drm_fd);
+    if (kernel_version == NULL) {
+        xf86DrvMsg(pScreen->myNum, X_ERROR,
+                   "[dri] Failed to get kernel module version.  "
+		   "Disabling DRI.\n");
+        XGIDRICloseScreen(pScreen);
+        return FALSE;
+    }
+
+	
+    /* Until the DRM hits 1.0.x, each minor version bump may be an
+     * incompatible change.  Therefore, require the exact version.
+     */
+    if ((kernel_version->version_major != 0) 
+	|| (kernel_version->version_minor != 9)) {
+        xf86DrvMsg(pScreen->myNum, X_ERROR,
+                   "[dri] Kernel module version mismatch.  "
+		   "Version 0.9.x required!  Disabling DRI.\n");
+	drmFreeVersion(kernel_version);
+        XGIDRICloseScreen(pScreen);
+        return FALSE;
+    }
+
+    drmFreeVersion(kernel_version);
+
     DRIGetDeviceInfo(pScreen, &pXGI->fb_handle,
                      &scratch_int, &scratch_int,
                      &scratch_int, &scratch_int,
