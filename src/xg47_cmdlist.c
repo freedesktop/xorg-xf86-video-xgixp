@@ -176,9 +176,16 @@ CARD32 s_emptyBegin[AGPCMDLIST_BEGIN_SIZE] =
     0x00000000
 };
 
-/*
-    return: 1 -- success 0 -- false
-*/
+
+/**
+ * Reserve space in the command buffer
+ * 
+ * \param pCmdList  pointer to the command list structure
+ * \param size      Size, in DWORDS, of the command
+ *
+ * \returns
+ * 1 -- success 0 -- false
+ */
 int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, CARD32 size)
 {
     XGIDebug(DBG_CMDLIST, "[DEBUG] Enter beginCmdList.\n");
@@ -200,8 +207,6 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, CARD32 size)
         if ((pCmdList->previous.end + size) <=
             (pCmdList->command.ptr + pCmdList->command.size))
         {
-            /* ASSERT_MSG(0 == (((CARD32*)pCmdList->previous.end) & 0x0f),  */
-            /*                 "Command List should be 4 Dwords alignment"); */
             pCmdList->current.begin = pCmdList->previous.end;
         }
         else /* no spare space, must roll over */
