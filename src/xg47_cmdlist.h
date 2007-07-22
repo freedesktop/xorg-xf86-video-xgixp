@@ -28,24 +28,6 @@
 #ifndef _XG47_CMDLIST_H_
 #define _XG47_CMDLIST_H_
 
-/*
-    Usage:
-    Initialize()
-
-    BegineCmdList()
-
-    SendGECommand()
-    ...
-    StartFillData()
-    FillData()
-    SubmitData()
-    ...
-
-    EndCmdlist()
-
-    Cleanup()
-*/
-
 struct xg47_CmdList;
 
 /* cmdList size in dword */
@@ -53,20 +35,10 @@ extern int  xg47_BeginCmdList(struct xg47_CmdList *, CARD32 size);
 extern void xg47_EndCmdList(struct xg47_CmdList *);
 extern void xg47_SendGECommand(struct xg47_CmdList *, CARD32 addr, CARD32 cmd);
 
-extern void xg47_StartFillData(struct xg47_CmdList *, CARD32 size);
-extern void xg47_SubmitData(struct xg47_CmdList *);
-
-extern void xg47_FillData(struct xg47_CmdList *, const unsigned char *ptr,
-    unsigned width, int delta, unsigned height);
-
 extern struct xg47_CmdList *xg47_Initialize(ScrnInfoPtr pScrn, 
     CARD32 cmdBufSize, CARD32 *mmioBase, int fd);
 extern void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList);
 extern void xg47_Reset(struct xg47_CmdList *);
-
-/* extern int XGIDebug(int level, const char *format, ...); */
-
-/*data struct define, simulate the OO*/
 
 typedef enum
 {

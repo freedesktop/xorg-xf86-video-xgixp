@@ -167,7 +167,6 @@ void xg47_Reset(struct xg47_CmdList *s_pCmdList)
 /* Implementation Part*/
 static inline int submit2DBatch(struct xg47_CmdList * pCmdList);
 static inline void sendRemainder2DCommand(struct xg47_CmdList * pCmdList);
-static inline void reserveData(struct xg47_CmdList * pCmdList, size_t size);
 static inline void addScratchBatch(struct xg47_CmdList * pCmdList);
 
 static void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList,
@@ -250,63 +249,6 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, CARD32 size)
 }
 
 
-/*
-    parameter: size -- length of space in bytes
-*/
-static void reserveData(struct xg47_CmdList * pCmdList, size_t size)
-{
-    unsigned int NewBatchSize;
-    uint32_t *pulNewBatchEnd;
-
-    /* Size should be 4 dwords alignment (0xff000000 | data length), data 0,
-     * data 1 .... 
-     */
-    size = ((size + 0x04 + 0x0f) & ~0x0f) / 4;
-
-    /* Check for enlarging this batch to accomodate Data */
-    NewBatchSize =  pCmdList->current.request_size       /* require command size */
-                  + size                                 /* require data size.   */
-                  + AGPCMDLIST_BEGIN_SIZE                /* We need a begin.     */
-                  + AGPCMDLIST_2D_SCRATCH_CMD_SIZE;      /* 2D scratch size      */
-
-    pulNewBatchEnd = pCmdList->current.begin + NewBatchSize;
-
-    if (pulNewBatchEnd <= (pCmdList->command.ptr + pCmdList->command.size))
-    {
-        /* There is enought space after this batch    */
-        /* Enlarge the batch size.                    */
-        pCmdList->current.request_size += size;
-        pCmdList->current.data_begin = pCmdList->current.end;
-    }
-    else {
-	/* If roll over, we should use new batch from the begin of
-	 * command list. 
-	 */
-	uint32_t *const pOldBatchBegin = pCmdList->current.begin;
-	const ptrdiff_t existCmdSize = pCmdList->current.end - pOldBatchBegin;
-
-	pCmdList->current.begin = pCmdList->command.ptr;
-	pulNewBatchEnd           = pCmdList->current.begin + NewBatchSize;
-
-	/* Move the midway commands to new home. */
-	waitCmdListAddrAvailable(pCmdList,
-				 pCmdList->current.begin,
-				 pCmdList->current.begin + existCmdSize);
-	memcpy(pCmdList->current.begin, pOldBatchBegin, existCmdSize * 4);
-	pCmdList->current.end = pCmdList->current.begin + existCmdSize;
-	pCmdList->current.request_size += size;
-	pCmdList->current.data_begin = pCmdList->current.end;
-    }
-
-    /* Wait for batch available. */
-    waitCmdListAddrAvailable(pCmdList,
-                             pCmdList->current.data_begin,
-                             pCmdList->current.data_begin + NewBatchSize);
-
-}
-
-
-
 void xg47_EndCmdList(struct xg47_CmdList *pCmdList)
 {
     XGIDebug(DBG_FUNCTION,"[DBG-Jong] endCmdList-1\n");
@@ -355,89 +297,6 @@ void xg47_SendGECommand(struct xg47_CmdList *pCmdList, CARD32 addr, CARD32 cmd)
     if (2 == shift) {
         emit_bunch(pCmdList);
     }
-}
-
-void xg47_StartFillData(struct xg47_CmdList *pCmdList, CARD32 size)
-{
-    reserveData(pCmdList, size);
-    sendRemainder2DCommand(pCmdList);
-
-    pCmdList->current.data_begin = pCmdList->current.end;
-    pCmdList->current.end++;
-    pCmdList->_sendDataLength = 0;
-}
-
-/**
- * \param width  Width in bytes.
- * \param delta  Source pitch, in bytes.
- */
-void xg47_FillData(struct xg47_CmdList *pCmdList,
-		   const unsigned char *ptr,
-		   unsigned width, int delta, unsigned height)
-{
-    const unsigned sizeAlign = width & ~0x03;
-
-    /* fill data to the cmdbatch
-     * write 1 dword per time
-     * pack the data to 4 dwords align
-     * ...
-     */
-    while(height--)
-    {
-        /* ASSERTDD((m_ulDataLength - m_ulSendDataLen) >= ulWidth, "Reserved size is not enough!");*/
-        /* m_pulDataStartAddr = (ULONG*)((m_pulDataStartAddr) & m_ulDataPortMask);*/
-        /* m_pulDataStartAddr = (ULONG*)((m_pulDataStartAddr) | m_ulDataPortOr);*/
-
-        /* Next line start address */
-        CARD32 sizeRem = 0;
-        const unsigned char *ptrNext = ptr + delta;
-
-        /* ????SSEable????? */
-        memcpy(pCmdList->current.end, ptr, sizeAlign);
-        /* DumpArray32(ptr, ulSizeAlign / 4);*/
-
-        pCmdList->current.end         += sizeAlign / 4;
-        pCmdList->_sendDataLength   += sizeAlign;
-        ptr                         += sizeAlign;
-
-        sizeRem     = width - sizeAlign;
-
-        if(0 != sizeRem)
-        {
-            CARD32 remainder   = 0;
-            int i;
-
-            for (i=0; i < sizeRem; i++)
-            {
-                remainder += (*ptr++) << (i*8);
-            }
-
-            *pCmdList->current.end = remainder;
-            pCmdList->current.end++;
-            pCmdList->_sendDataLength += 4;
-
-            /* Dump to file for debug */
-            /* DumpData32(0x10000, ulRemainder);*/
-        }
-        ptr = ptrNext;
-    }
-    /* then call endCmdList() outside */
-}
-
-
-void xg47_SubmitData(struct xg47_CmdList *pCmdList)
-{
-    /* ASSERTDD(m_ulSendDataLen <= m_ulDataLength, "Reserved size is not enough!");*/
-    /* ASSERTDD(DATAFILL_INBATCH_BEGIN != m_DataFillMode, "Did not fill data after reserve.");*/
-
-    /* Pad the data to 128 bit alignment. */
-    while (0 != ((intptr_t)pCmdList->current.end & 0x0f)) {
-        *pCmdList->current.end++ = 0;
-    }
-
-    /* Correct the data length */
-    *pCmdList->current.data_begin = 0xff000000 | (pCmdList->_sendDataLength/4);
-    pCmdList->current.data_count += (CARD32)(pCmdList->current.end - pCmdList->current.data_begin);
 }
 
 
