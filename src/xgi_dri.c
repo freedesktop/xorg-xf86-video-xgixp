@@ -176,10 +176,10 @@ Bool XGIDRIScreenInit(ScreenPtr pScreen)
      * incompatible change.  Therefore, require the exact version.
      */
     if ((kernel_version->version_major != 0) 
-	|| (kernel_version->version_minor != 9)) {
+	|| (kernel_version->version_minor != 10)) {
         xf86DrvMsg(pScreen->myNum, X_ERROR,
                    "[dri] Kernel module version mismatch.  "
-		   "Version 0.9.x required!  Disabling DRI.\n");
+		   "Version 0.10.x required!  Disabling DRI.\n");
 	drmFreeVersion(kernel_version);
         XGIDRICloseScreen(pScreen);
         return FALSE;
@@ -218,9 +218,9 @@ Bool XGIDRIFinishScreenInit(ScreenPtr pScreen)
     }
 
 
-    bs.gart_size = 16;
-    err = drmCommandWrite(pXGI->drm_fd, DRM_XGI_BOOTSTRAP, & bs,
-			  sizeof(bs));
+    bs.gart.size = 16 * 1024 * 1024;
+    err = drmCommandWriteRead(pXGI->drm_fd, DRM_XGI_BOOTSTRAP, & bs,
+			      sizeof(bs));
     if (err) {
         xf86DrvMsg(pScreen->myNum, X_ERROR,
                    "[dri] Unable to bootstrap card for DMA (%d, %s).  "
@@ -229,15 +229,8 @@ Bool XGIDRIFinishScreenInit(ScreenPtr pScreen)
     }
 
 
-    pXGI->gart_size = bs.gart_size * 1024 * 1024;
-    err = drmAddMap(pXGI->drm_fd, 0, pXGI->gart_size, DRM_SCATTER_GATHER,
-		    DRM_KERNEL, & pXGI->gart_handle);
-    if (err) {
-        xf86DrvMsg(pScreen->myNum, X_ERROR,
-                   "[dri] Unable to add GART map (%d, %s).  Disabling DRI.\n",
-		   -err, strerror(-err));
-	return FALSE;
-    }
+    pXGI->gart_size = bs.gart.size;
+    pXGI->gart_handle = bs.gart.handle;
 
     err = drmMap(pXGI->drm_fd, pXGI->gart_handle, pXGI->gart_size,
 		 (drmAddressPtr) & pXGI->gart_vaddr);
