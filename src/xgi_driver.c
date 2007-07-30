@@ -2791,8 +2791,6 @@ static Bool XGIEnterVT(int scrnIndex, int flags)
 
 	/* reset 2D cmdlist status */
 	xg47_Reset(pXGI->cmdList);
-
-        XGIEngineInit(pScrn);
     }
 
     pScrn->AdjustFrame(scrnIndex, pScrn->frameX0, pScrn->frameY0, 0);

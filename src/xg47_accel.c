@@ -78,12 +78,6 @@ static XG47_accel_info  accel_info;
 
 
 /* inner functions */
-/*
-static void XG47EnableGE(XGIPtr pXGI);
-static void XG47DisableGE(XGIPtr pXGI);
-static void XG47WaitForIdle(XGIPtr pXGI);
-*/
-
 static Bool XG47InitCmdList();
 static void ResetClip();
 static void SetClip(XGIPtr, CARD32 left, CARD32 top, CARD32 right, CARD32 bottom);
@@ -221,69 +215,6 @@ static void XG47SubsequentDashedBresenhamLine(ScrnInfoPtr pScrn,
 static void XGIRestoreAccelState(ScrnInfoPtr pScrn);
 #endif
 
-/* Called from outside */
-void XG47EngineInit(ScrnInfoPtr pScrn)
-{
-    unsigned char temp;
-
-    XGIPtr  pXGI = XGIPTR(pScrn);
-
-    XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47EngineInit()\n");
-
-    /* unprotect all register except which protected by 3c5.0e.7 */
-    OUT3C5B(0x11,0x92);
-
-    /* -------> copy from OT2D
-     * PCI Retry Control Register.
-     * disable PCI read retry & enable write retry in mem. (10xx xxxx)b
-     */
-    temp = IN3X5B(0x55);
-    OUT3X5B(0x55, (temp & 0xbf) | 0x80);
-
-    XG47EnableGE(pXGI);
-
-    /* Enable linear addressing of the card. */
-    temp = IN3X5B(0x21);
-    OUT3X5B(0x21, temp | 0x20);
-
-    /* Enable 32-bit internal data path */
-    temp = IN3X5B(0x2A);
-    OUT3X5B(0x2A, temp | 0x40);
-
-    /* Enable PCI burst write ,disable burst read and enable MMIO. */
-    /*
-     * 0x3D4.39 Enable PCI burst write, disable burst read and enable MMIO.
-     * 7 ---- Pixel Data Format 1:  big endian 0:  little endian
-     * 6 5 4 3---- Memory Data with Big Endian Format, BE[3:0]#  with Big Endian Format
-     * 2 ---- PCI Burst Write Enable
-     * 1 ---- PCI Burst Read Enable
-     * 0 ---- MMIO Control
-     */
-    temp = IN3X5B(0x39);
-    OUT3X5B(0x39, (temp | 0x05) & 0xfd);
-
-    /* enable GEIO decode */
-    /*
-        OUT3X5B(0x29,IN3X5B(0x29)|0x08);
-    */
-
-    /*Init MEMORY again*/
-
-    /* Patch For BIOS*/
-
-    /* Enable graphic engine I/O PCI retry function*/
-    /*
-        temp = IN3X5B(0x62);
-        OUT3X5B(0x62, temp | 0x50);
-    */
-
-    /* protect all register except which protected by 3c5.0e.7 */
-    /*
-        OUT3C5B(0x11,0x87);
-    */
-    XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47EngineInit()\n");
-}
-
 Bool XG47AccelInit(ScreenPtr pScreen)
 {
     XAAInfoRecPtr   pXaaInfo;
@@ -295,9 +226,6 @@ Bool XG47AccelInit(ScreenPtr pScreen)
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47AccelInit\n");
 
     XGIDebug(DBG_CMDLIST, "[DBG] XG47AccelInit() Enable cmdlist\n");
-
-    /*pXG47->InitializeAccelerator = XG47EngineInit;*/
-    XG47EngineInit(pScrn);
 
     if (pXGI->noAccel)
         return FALSE;

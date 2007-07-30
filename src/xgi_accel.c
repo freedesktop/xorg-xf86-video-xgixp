@@ -53,25 +53,3 @@ Bool XGIAccelInit(ScreenPtr pScreen)
 
     return ret;
 }
-
-/*
- * Enable 2D/3D Engine for Acceleration.
- * In XP4/XP5 code, its name is InitializeAccelerator.
- * It's called in modeinit at the first time and EnterVT() every time
-*/
-void XGIEngineInit(ScrnInfoPtr pScrn)
-{
-    XGIPtr      pXGI = XGIPTR(pScrn);
-
-    switch(pXGI->chipset)
-    {
-    case XG47:
-    {
-        XG47EngineInit(pScrn);
-        break;
-    }
-    default:
-        break;
-    }
-}
-

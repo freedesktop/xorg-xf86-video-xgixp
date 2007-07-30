@@ -28,7 +28,6 @@
 #ifndef _XG47_ACCEL_H_
 #define _XG47_ACCEL_H_
 
-extern void XG47EngineInit(ScrnInfoPtr pScrn);
 extern Bool XG47AccelInit(ScreenPtr pScreen);
 extern void XG47AccelExit(ScreenPtr pScreen);
 extern void XG47WaitForIdle(XGIPtr pXGI);

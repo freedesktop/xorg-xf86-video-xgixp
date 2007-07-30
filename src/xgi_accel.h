@@ -30,6 +30,5 @@
 
 /* xgi_accel.c */
 extern Bool XGIAccelInit(ScreenPtr pScreen);
-extern void XGIEngineInit(ScrnInfoPtr pScrn);
 
 #endif
