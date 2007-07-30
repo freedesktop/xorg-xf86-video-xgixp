@@ -72,8 +72,6 @@ typedef struct XG47_ACCEL_INFO
     CARD32 pitch;
     int fg_color;
     int bg_color;
-
-    Bool discardCmd;
 }XG47_accel_info;
 
 static XG47_accel_info  accel_info;
@@ -412,8 +410,6 @@ Bool XG47AccelInit(ScreenPtr pScreen)
     accel_info.clp_x2 = pScrn->virtualX;    /* Virtual width */
     accel_info.clp_y2 = pScrn->virtualY;
 
-    accel_info.discardCmd = FALSE;
-
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-Before XAAInit()\n");
     return(XAAInit(pScreen, pXaaInfo));
 
@@ -556,10 +552,6 @@ void XG47WaitForIdle(XGIPtr pXGI)
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47WaitForIdle\n");
 }
 
-void XG47StopCmd(Bool flag)
-{
-    accel_info.discardCmd = flag;
-}
 
 static void XG47SetClippingRectangle(ScrnInfoPtr pScrn,
                                      int left, int top, int right, int bottom)
@@ -1210,8 +1202,6 @@ void XG47AccelExit(ScreenPtr pScreen)
     XGIPtr      pXGI = XGIPTR(pScrn);
 
     XGIDebug(DBG_FUNCTION, "Enter XG47AccelExit\n");
-
-    XG47StopCmd(TRUE);
 
     XG47WaitForIdle(pXGI);
 
