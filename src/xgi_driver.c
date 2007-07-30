@@ -3047,10 +3047,6 @@ static Bool XGICloseScreen(int scrnIndex, ScreenPtr pScreen)
 
     result = (*pScreen->CloseScreen)(scrnIndex, pScreen);
 
-#ifdef XGI_DUMP
-    XGIDumpRegisterValue(pScrn);
-#endif
-
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
