@@ -37,9 +37,6 @@
 #include <drm/xgi_drm.h>
 #include "sarea.h"
 
-static Bool XGIDRIDoCloseScreen(int scrnIndex, ScreenPtr pScreen);
-static void XGIDRICloseScreen(ScreenPtr pScreen);
-
 static void XGIDRITransitionNoop(ScreenPtr pScreen)
 {
     return;
@@ -242,11 +239,6 @@ Bool XGIDRIFinishScreenInit(ScreenPtr pScreen)
     }
 
 	
-    /* Wrap CloseScreen */
-    pXGI->DRICloseScreen = pScreen->CloseScreen;
-    pScreen->CloseScreen = XGIDRIDoCloseScreen;
-
-
     return TRUE;
 }
 
@@ -278,16 +270,4 @@ void XGIDRICloseScreen(ScreenPtr pScreen)
         DRIDestroyInfoRec(pXGI->dri_info);
         pXGI->dri_info = NULL;
     }
-}
-
-
-static Bool XGIDRIDoCloseScreen(int scrnIndex, ScreenPtr pScreen)
-{
-    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
-    XGIPtr pXGI = XGIPTR(pScrn);
-
-    XGIDRICloseScreen(pScreen);
-
-    pScreen->CloseScreen = pXGI->DRICloseScreen;
-    return (*pScreen->CloseScreen)(scrnIndex, pScreen);
 }

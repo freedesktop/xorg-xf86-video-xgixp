@@ -645,5 +645,6 @@ struct XGIDRIContext {
 
 extern Bool XGIDRIScreenInit(ScreenPtr pScreen);
 extern Bool XGIDRIFinishScreenInit(ScreenPtr pScreen);
+extern void XGIDRICloseScreen(ScreenPtr pScreen);
 
 #endif

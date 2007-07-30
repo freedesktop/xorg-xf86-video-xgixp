@@ -2985,8 +2985,10 @@ static Bool XGICloseScreen(int scrnIndex, ScreenPtr pScreen)
     }
 
     vgaHWLock(pVgaHW);
-    if (!pXGI->noMMIO)
-    {
+    if (pXGI->directRenderingEnabled) {
+	XGIDRICloseScreen(pScreen);
+    }
+    else if (!pXGI->noMMIO) {
         XGIDisableMMIO(pScrn);
     }
 
