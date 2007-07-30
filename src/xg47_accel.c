@@ -344,83 +344,6 @@ Bool XG47AccelInit(ScreenPtr pScreen)
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47AccelInit\n");
 }
 
-void XG47EnableGE(XGIPtr pXGI)
-{
-    CARD32 iWait;
-    /* this->vAcquireRegIOProctect();*/
-    /* Save and close dynamic gating */
-    CARD8 bOld3cf2a = IN3CFB(0x2a);
-
-    XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47EnableGE\n");
-
-    OUT3CFB(0x2a, bOld3cf2a & 0xfe);
-
-    /* Reset both 3D and 2D engine */
-    OUT3X5B(0x36, 0x84);
-    iWait = 10;
-    while (iWait--)
-    {
-        INB(0x36);
-    }
-
-    OUT3X5B(0x36, 0x94);
-    iWait = 10;
-    while (iWait--)
-    {
-        INB(0x36);
-    }
-    OUT3X5B(0x36, 0x84);
-    iWait = 10;
-    while (iWait--)
-    {
-        INB(0x36);
-    }
-    /* Enable 2D engine only */
-    OUT3X5B(0x36, 0x80);
-
-    /* Enable 2D+3D engine */
-    OUT3X5B(0x36, 0x84);
-
-    /* Restore dynamic gating */
-    OUT3CFB(0x2a, bOld3cf2a);
-
-    /* this->vReleaseRegIOProctect();
-    m_b3DGEOn = FALSE;*/
-
-    XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47EnableGE\n");
-}
-
-void XG47DisableGE(XGIPtr pXGI)
-{
-    CARD32 iWait;
-
-    XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47DisableGE\n");
-    /* this->vAcquireRegIOProctect();*/
-    /* Reset both 3D and 2D engine */
-    OUT3X5B(0x36, 0x84);
-    iWait = 10;
-    while (iWait--)
-    {
-        INB(0x36);
-    }
-    OUT3X5B(0x36, 0x94);
-    iWait = 10;
-    while (iWait--)
-    {
-        INB(0x36);
-    }
-    OUT3X5B(0x36, 0x84);
-    iWait = 10;
-    while (iWait--)
-    {
-        INB(0x36);
-    }
-    /* Disable 2D engine only */
-    OUT3X5B(0x36, 0);
-    /* this->vReleaseRegIOProctect();
-     m_b3DGEOn = FALSE;*/
-    XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47DisableGE\n");
-}
 
 /*
 Function:
@@ -1132,8 +1055,6 @@ void XG47AccelExit(ScreenPtr pScreen)
     XGIDebug(DBG_FUNCTION, "Enter XG47AccelExit\n");
 
     XG47WaitForIdle(pXGI);
-
-    XG47DisableGE(pXGI);
 
     xg47_Cleanup(pScreen, pXGI->cmdList);
     pXGI->cmdList = NULL;

@@ -31,8 +31,5 @@
 extern Bool XG47AccelInit(ScreenPtr pScreen);
 extern void XG47AccelExit(ScreenPtr pScreen);
 extern void XG47WaitForIdle(XGIPtr pXGI);
-extern void XG47EnableGE(XGIPtr pXGI);
-extern void XG47DisableGE(XGIPtr pXGI);
-extern void XG47StopCmd(Bool flag);
 
 #endif

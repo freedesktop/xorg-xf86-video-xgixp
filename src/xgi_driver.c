@@ -2861,14 +2861,6 @@ static void XGILeaveVT(int scrnIndex, int flags)
 		       "-- Leave %s() - After XG47WaitForIdle()\n", __func__);
 #endif
 
-            /* disable GE end out */
-            XG47DisableGE(pXGI);
-
-#if DBG_FLOW
-	    xf86DrvMsg(pScrn->scrnIndex, X_INFO,
-		       "-- Leave %s() - After XG47DisableGE()\n", __func__);
-#endif
-
             /* reset KD cmdlist status */
             ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE,
 				  &stateInfo, sizeof(stateInfo));
