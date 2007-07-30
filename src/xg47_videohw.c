@@ -1360,7 +1360,7 @@ void XG47HwDisableVideo(ScrnInfoPtr pScrn)
     }
 
     /* Turn off PCLK */
-    if (b3x5be != bIN3X5B(0xbe))
+    if (b3x5be != IN3X5B(0xbe))
     {
         /*WaitVRetrace(pXGI, VGA_RETRACE);*/
         XG47WaitForSync(pScrn);
