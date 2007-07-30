@@ -2778,35 +2778,22 @@ static Bool XGIEnterVT(int scrnIndex, int flags)
     XGIDumpRegisterValue(pScrn);
 #endif
 
-    if (!pXGI->noAccel)
-    {
-        if(pXGI->chipset == XG47)
-        {
-            int ret;
-            struct xgi_state_info stateInfo;
+    if (!pXGI->noAccel) {
+	int ret;
+	static const struct xgi_state_info stateInfo = { 0, 1 };
 
-            stateInfo._fromState    = 0;    /* console */
-            stateInfo._toState      = 1;    /* graphic */
+	/* reset KD cmdlist status */
+	ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE, &stateInfo,
+			      sizeof(stateInfo));
+	if (ret < 0) {
+	    return FALSE;
+	}
 
-	    /* reset KD cmdlist status */
-            ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE, &stateInfo,
-				  sizeof(stateInfo));
-            if (ret < 0) {
-                return FALSE;
-            }
-
-            /* reset 2D cmdlist status */
-            xg47_Reset(pXGI->cmdList);
-
-            /* reset 3D cmdlist status */
-            /* notify 3D to start run */
-        }
+	/* reset 2D cmdlist status */
+	xg47_Reset(pXGI->cmdList);
 
         XGIEngineInit(pScrn);
     }
-
-/*    if (pXGI->InitializeAccelerator)
-        pXGI->InitializeAccelerator(pScrn);*/
 
     pScrn->AdjustFrame(scrnIndex, pScrn->frameX0, pScrn->frameY0, 0);
 
@@ -2856,53 +2843,44 @@ static void XGILeaveVT(int scrnIndex, int flags)
     XGIDumpRegisterValue(pScrn);
 #endif
 
-  /* Jong 11/09/2006; support dual view */
-  /* Do only one time; otherwise will cause system hang */
-  if((g_DualViewMode == 0 ) || (pXGI->FirstView == 1)) 
-  {
-    if (!pXGI->noAccel)
-    {
-        if(pXGI->chipset == XG47)
-        {
+    /* Do only one time; otherwise will cause system hang 
+     */
+    if((g_DualViewMode == 0 ) || (pXGI->FirstView == 1)) {
+	if (!pXGI->noAccel) {
             int ret;
-            struct xgi_state_info stateInfo;
-
-            stateInfo._fromState    = 1;    /* console */
-            stateInfo._toState      = 0;    /* graphic */
-
-            /* notify 3D to stop */
-
-            /* notify 2D to stop */
+            static const struct xgi_state_info stateInfo = { 1, 0 };
 
 #if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() - Before XG47WaitForIdle()\n", __FUNCTION__);
+	    xf86DrvMsg(pScrn->scrnIndex, X_INFO,
+		       "-- Leave %s() - Before XG47WaitForIdle()\n", __func__);
 #endif
 
             /* flush cmdlist */
             XG47WaitForIdle(pXGI);
 
 #if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() - After XG47WaitForIdle()\n", __FUNCTION__);
+	    xf86DrvMsg(pScrn->scrnIndex, X_INFO,
+		       "-- Leave %s() - After XG47WaitForIdle()\n", __func__);
 #endif
 
             /* disable GE end out */
             XG47DisableGE(pXGI);
 
 #if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() - After XG47DisableGE()\n", __FUNCTION__);
+	    xf86DrvMsg(pScrn->scrnIndex, X_INFO,
+		       "-- Leave %s() - After XG47DisableGE()\n", __func__);
 #endif
 
-            /* no use, just for kernel test */
             /* reset KD cmdlist status */
-            ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE, &stateInfo,
-				  sizeof(stateInfo));
+            ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE,
+				  &stateInfo, sizeof(stateInfo));
             if (ret < 0) {
-                xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Notify kernel to change state (G==>C)\n");
+                xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
+			   "Notify kernel to change state (G==>C)\n");
                 return;
             }
         }
     }
-  }
   
     pXGI->isNeedCleanBuf = TRUE;
 
@@ -2951,32 +2929,22 @@ static Bool XGICloseScreen(int scrnIndex, ScreenPtr pScreen)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    if (pXGI->pCursorInfo)
-    {
-        if (pXGI->chipset == XG47)
-        {
-            XG47HWCursorCleanup(pScreen);
-        }
-
+    if (pXGI->pCursorInfo) {
+	XG47HWCursorCleanup(pScreen);
         xf86DestroyCursorInfoRec(pXGI->pCursorInfo);
         pXGI->pCursorInfo = NULL;
     }
 
-	/* Jong 09/28/2006; support dual view */
-	/* Do only one time; otherwise will cause system hang */
-	/* if(pScreen->myNum == 0) */ /* cause system hang */
-	if((g_DualViewMode == 0 ) || (pScreen->myNum == 1)) 
-		if (pXGI->pXaaInfo)
-		{
-			if (pXGI->chipset == XG47)
-			{
-				XG47AccelExit(pScreen);
-			}
+    /* Do only one time; otherwise will cause system hang 
+     */
+    if ((g_DualViewMode == 0 ) || (pScreen->myNum == 1)) {
+	if (pXGI->pXaaInfo) {
+	    XG47AccelExit(pScreen);
+	    XAADestroyInfoRec(pXGI->pXaaInfo);
 
-			XAADestroyInfoRec(pXGI->pXaaInfo);
-
-			pXGI->pXaaInfo = NULL;
-		}
+	    pXGI->pXaaInfo = NULL;
+	}
+    }
 
     /* Restore the saved video state and unmap the memory regions. */
     if (pScrn->vtSema)
