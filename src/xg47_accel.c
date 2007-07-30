@@ -210,7 +210,6 @@ static void XG47SubsequentDashedBresenhamLine(ScrnInfoPtr pScrn,
                                               int flags, int phase);
 */
 
-/* Jong 09/16/2006; support dual view */
 #ifdef XGIDUALVIEW
 static void XGIRestoreAccelState(ScrnInfoPtr pScrn);
 #endif
@@ -249,13 +248,8 @@ Bool XG47AccelInit(ScreenPtr pScreen)
 		PDEBUG(ErrorF("*-*Jong-[INFO]Enable HW Screen to Screen Copy\n"));
         XGIDebug(DBG_INFO, "[INFO]Enable HW Screen to Screen Copy\n");
 
-		/* Jong 07/03/2006; it seems improve performance of window moving to right */
         pXaaInfo->ScreenToScreenCopyFlags      = NO_PLANEMASK                  |
                                                  NO_TRANSPARENCY; 
-
-        /* pXaaInfo->ScreenToScreenCopyFlags      = ONLY_TWO_BITBLT_DIRECTIONS    |
-                                                 NO_PLANEMASK                  |
-                                                 NO_TRANSPARENCY; */
 
         pXaaInfo->SetupForScreenToScreenCopy   = XG47SetupForScreenToScreenCopy;
         pXaaInfo->SubsequentScreenToScreenCopy = XG47SubsequentScreenToScreenCopy;
@@ -334,7 +328,6 @@ Bool XG47AccelInit(ScreenPtr pScreen)
 
     accel_info.clp_x1 = 0;
     accel_info.clp_y1 = 0;
-    /*accel_info.clp_x2 = pScrn->displayWidth;*/
     accel_info.clp_x2 = pScrn->virtualX;    /* Virtual width */
     accel_info.clp_y2 = pScrn->virtualY;
 
@@ -362,7 +355,6 @@ static void XG47Sync(ScrnInfoPtr pScrn)
     }
 
     XG47WaitForIdle(pXGI);
-    /*ResetGE()*/
 
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47Sync\n");
 }
@@ -592,9 +584,6 @@ static void XG47SubsequentMono8x8PatternFillRect(ScrnInfoPtr pScrn,
                                                  int patx, int paty,
                                                  int x, int y, int w, int h)
 {
-	/* Jong 09/22/2006; test for dual view */
-	/* if(pScrn->fbOffset == 0) return; */
-
     XGIPtr pXGI = XGIPTR(pScrn);
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentMono8x8PatternFillRect(%d,%d,%d,%d)\n", x, y, w, h);
@@ -688,9 +677,6 @@ static void XG47SubsequentColor8x8PatternFillRect(ScrnInfoPtr pScrn,
                                                   int patx, int paty,
                                                   int x, int y, int w, int h)
 {
-	/* Jong 09/22/2006; test for dual view */
-	/* if(pScrn->fbOffset == 0) return; */
-
     XGIPtr pXGI = XGIPTR(pScrn);
     unsigned long pattern_offset;
     unsigned long trans_draw = 0;
@@ -1035,7 +1021,6 @@ static Bool XG47InitCmdList(ScrnInfoPtr pScrn)
 
     XGIDebug(DBG_FUNCTION, "[DBG]Enter XG47InitCmdList() - XGI_CMDLIST_ENABLE(1)\n");
 
-	/* Jong 05/24/2006 */
     testRWPCIE(pScrn); 
 
     pXGI->cmdList = xg47_Initialize(pScrn, CMDBUF_SIZE, pXGI->drm_fd);
@@ -1063,7 +1048,6 @@ void XG47AccelExit(ScreenPtr pScreen)
 }
 
 
-/* Jong 09/16/2006; support dual view */
 #ifdef XGIDUALVIEW
 static void
 XGIRestoreAccelState(ScrnInfoPtr pScrn)
