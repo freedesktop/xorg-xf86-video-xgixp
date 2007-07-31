@@ -1041,7 +1041,7 @@ void XG47AccelExit(ScreenPtr pScreen)
 
     XG47WaitForIdle(pXGI);
 
-    xg47_Cleanup(pScreen, pXGI->cmdList);
+    xg47_Cleanup(pScrn, pXGI->cmdList);
     pXGI->cmdList = NULL;
 
     XGIDebug(DBG_FUNCTION, "Leave XG47AccelExit\n");
