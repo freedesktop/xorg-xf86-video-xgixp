@@ -49,8 +49,6 @@ xgixp_drv_la_SOURCES = \
 	xg47_videohw.h \
 	xgi_bios.c \
 	xgi_bios.h \
-	xgi_accel.c \
-	xgi_accel.h \
 	xgi_cursor.c \
 	xgi_cursor.h \
 	xgi_dga.c \

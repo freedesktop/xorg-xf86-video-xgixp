@@ -76,7 +76,6 @@
 #include "xgi_bios.h"
 #include "xgi_mode.h"
 #include "xgi_dga.h"
-#include "xgi_accel.h"
 #include "xgi_cursor.h"
 #include "xgi_shadow.h"
 #include "xgi_video.h"
@@ -2431,25 +2430,17 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 
     XGIPutScreenInfo(pScrn);
     /* 2D accel Initialize */
-    if (!pXGI->noAccel)
-    {
-        if (XGIAccelInit(pScreen))
-        {
-            xf86DrvMsg(scrnIndex, X_INFO, "Acceleration enabled\n");
-		    XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-Acceleration enabled\n");
-            pXGI->noAccel = FALSE;
-        }
-        else
-        {
+    if (!pXGI->noAccel) {
+        pXGI->noAccel = !XG47AccelInit(pScreen);
+        if (pXGI->noAccel) {
             xf86DrvMsg(scrnIndex, X_ERROR, "Acceleration initialization failed\n");
-            xf86DrvMsg(scrnIndex, X_INFO, "Acceleration disabled\n");
-            pXGI->noAccel = TRUE;
         }
     }
-    else
-    {
+
+    if (!pXGI->noAccel) {
+        xf86DrvMsg(scrnIndex, X_INFO, "Acceleration enabled\n");
+    } else {
         xf86DrvMsg(scrnIndex, X_INFO, "Acceleration disabled\n");
-        pXGI->noAccel = TRUE;
     }
 
     /*
