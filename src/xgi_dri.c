@@ -173,10 +173,10 @@ Bool XGIDRIScreenInit(ScreenPtr pScreen)
      * incompatible change.  Therefore, require the exact version.
      */
     if ((kernel_version->version_major != 0) 
-	|| (kernel_version->version_minor != 10)) {
+	|| (kernel_version->version_minor != 11)) {
         xf86DrvMsg(pScreen->myNum, X_ERROR,
                    "[dri] Kernel module version mismatch.  "
-		   "Version 0.10.x required!  Disabling DRI.\n");
+		   "Version 0.11.x required!  Disabling DRI.\n");
 	drmFreeVersion(kernel_version);
         XGIDRICloseScreen(pScreen);
         return FALSE;

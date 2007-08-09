@@ -287,10 +287,10 @@ int XGIXvMCCreateSurface(ScrnInfoPtr pScrn,
     {
         if (!pXGI->surfID[i])
         {
-            alloc.is_front = 0;
+            alloc.location = XGI_MEMLOC_LOCAL;
             alloc.size = surfSize;
 
-	    ret = drmCommandWriteRead(pXGI->drm_fd, DRM_XGI_FB_ALLOC, &alloc,
+	    ret = drmCommandWriteRead(pXGI->drm_fd, DRM_XGI_ALLOC, &alloc,
 				      sizeof(alloc));
             if (ret < 0) {
                 xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "FB memory allocate ioctl failed !\n");
@@ -357,9 +357,9 @@ int XGIXvMCCreateSubpicture(ScrnInfoPtr pScrn,
 
     if (!pXGI->spID)
     {
-        alloc.is_front = 0;
+        alloc.location = XGI_MEMLOC_LOCAL;
         alloc.size = surfSize;
-        ret = drmCommandReadWrite(pXGI->drm_fd, DRM_XGI_FB_ALLOC, &alloc,
+        ret = drmCommandWriteRead(pXGI->drm_fd, DRM_XGI_ALLOC, &alloc,
 				  sizeof(alloc));
         if (ret < 0) {
             memset(*priv, 0, sizeof(XGIXvMCSubpictureRec));
@@ -414,7 +414,7 @@ void XGIXvMCDestroySurface (ScrnInfoPtr pScrn, XvMCSurfacePtr pSurface)
             if (pXGISurface != NULL)
             {
                 surfBusAddr = pXGISurface->hwAddr;
-                ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_FB_FREE, 
+                ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_FREE, 
 				      &surfBusAddr, sizeof(surfBusAddr));
                 if (ret < 0) {
                     xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
@@ -445,7 +445,7 @@ void XGIXvMCDestroySubpicture (ScrnInfoPtr pScrn, XvMCSubpicturePtr pSubpicture)
 
         memset(pXGISubpicture, 0, sizeof(XGIXvMCSubpictureRec));
 
-        ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_FB_FREE, &surfBusAddr,
+        ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_FREE, &surfBusAddr,
 			      sizeof(surfBusAddr));
         if (ret < 0) {
             xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "FB memory free failed!\n");

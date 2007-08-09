@@ -344,9 +344,10 @@ Bool XGIPcieMemAllocate(ScrnInfoPtr pScrn, size_t size,
     struct xgi_mem_alloc  alloc;
     int ret;
 
+    alloc.location = XGI_MEMLOC_NON_LOCAL;
     alloc.size = size;
 
-    ret = drmCommandWriteRead(pXGI->drm_fd, DRM_XGI_PCIE_ALLOC, &alloc,
+    ret = drmCommandWriteRead(pXGI->drm_fd, DRM_XGI_ALLOC, &alloc,
 			      sizeof(alloc));
     if (ret < 0) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
@@ -358,7 +359,7 @@ Bool XGIPcieMemAllocate(ScrnInfoPtr pScrn, size_t size,
                "alloc.offset: 0x%lx alloc.hwAddr: 0x%x\n",
                alloc.size, alloc.offset, alloc.hw_addr);
 
-    *offset = alloc.offset;
+    *offset = alloc.index;
     *pBufHWAddr = alloc.hw_addr;
     *pBufVirtAddr = pXGI->gart_vaddr + alloc.offset;
 
@@ -372,25 +373,17 @@ Bool XGIPcieMemFree(ScrnInfoPtr pScrn, size_t size, unsigned long offset)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
     int ret;
-    int mode;
 
 
-    if ((size <= 0) || ((size & 0xFFF) != 0)
-         || ((offset & 0xFFF) != 0)) {
-        xf86DrvMsg(pScrn->scrnIndex, X_WARNING,
-                   "Wrong PCIE memory size: 0x%x bufBusAddr: 0x%lx to free\n",
-                   (unsigned int) size, offset);
+    ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_FREE, &offset,
+			  sizeof(offset));
+    if (ret < 0) {
+	xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
+		   "PCIE memory IOCTL free failed (%d, %s) %p, %d\n",
+		   -ret, strerror(-ret), pXGI, pXGI->drm_fd);
     }
 
-    ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_PCIE_FREE, &offset,
-			  sizeof(offset));
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl] XGIPcieMemFree()-1\n");
-
-    mode = (ret < 0) ? X_ERROR : X_INFO;
-    xf86DrvMsg(pScrn->scrnIndex, mode, "PCIE memory IOCTL free %s\n",
-	       (ret < 0) ? "failed!" : "successful.");
-
-    xf86DrvMsg(pScrn->scrnIndex, mode,
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO,
                "PCIE memory free size: 0x%x offset: 0x%lx\n",
                (unsigned int) size, offset);
 
