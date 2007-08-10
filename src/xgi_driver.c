@@ -1844,13 +1844,10 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     }
 
     /* Enable MMIO */
-    if (!pXGI->noMMIO)
-    {
+    if (!pXGI->noMMIO) {
         if (!XGIMapMMIO(pScrn)) {
             goto fail;
         }
-
-        XG47EnableMMIO(pScrn);
     }
 
     if (!pXGI->isFBDev && !XGIPreInitInt10(pScrn)) {
@@ -1927,10 +1924,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
 
     return TRUE;
 fail:
-    if (!pXGI->noMMIO)
-    {
-        XG47DisableMMIO(pScrn);
-    }
     XGIUnmapMem(pScrn);
     /* Free the video bios (if applicable) */
     if (pXGI->biosBase)
@@ -2206,13 +2199,10 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
             return FALSE;
     }
 
-    if (!pXGI->noMMIO)
-    {
+    if (!pXGI->noMMIO) {
         if (!XGIMapMMIO(pScrn)) {
             goto fail;
         }
-
-        XG47EnableMMIO(pScrn);
 
         /* Initialize the MMIO vgahw functions */
         vgaHWSetMmioFuncs(pVgaHW, pXGI->IOBase, 0);
@@ -2370,6 +2360,9 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
     if (pXGI->directRenderingEnabled) {
         pXGI->directRenderingEnabled = XGIDRIFinishScreenInit(pScreen);
 	if (!pXGI->directRenderingEnabled) {
+	    /* Eventually we should just disable acceleration here.  We'll
+	     * also need to call XG47EnableMMIO.
+	     */
 	    goto fail;
 	}
     }
@@ -2549,9 +2542,8 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 
     return TRUE;
 fail:
-    if (!pXGI->noMMIO)
-    {
-        XG47DisableMMIO(pScrn);
+    if (!pXGI->noMMIO && !pXGI->directRenderingEnabled) {
+	XG47DisableMMIO(pScrn);
     }
     PDEBUG(ErrorF("Jong-After-XGIInitMC-7\n"));
     XGIUnmapMem(pScrn);
@@ -2691,43 +2683,35 @@ static Bool XGIEnterVT(int scrnIndex, int flags)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    if (!pXGI->noMMIO)
-        XG47EnableMMIO(pScrn);
+    if (!pXGI->noAccel) {
+        int ret;
+        static const struct xgi_state_info stateInfo = { 0, 1 };
 
-#ifdef XGI_DUMP
-    XGIDumpRegisterValue(pScrn);
-#endif
+        /* reset KD cmdlist status */
+        ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE, &stateInfo,
+                              sizeof(stateInfo));
+        if (ret < 0) {
+            return FALSE;
+        }
+    }
+    else if (!pXGI->noMMIO) {
+        XG47EnableMMIO(pScrn);
+    }
 
     pXGI->isNeedCleanBuf = TRUE;
 
-    if (pXGI->isFBDev)
-    {
-        if (!fbdevHWEnterVT(scrnIndex,flags)) return FALSE;
-    }
-    else
-    {
+    if (pXGI->isFBDev) {
+        if (!fbdevHWEnterVT(scrnIndex,flags))
+            return FALSE;
+    } else {
         /* Should we re-save the text mode on each VT enter? */
         if (!XGIModeInit(pScrn, pScrn->currentMode))
             return FALSE;
     }
 
-#ifdef XGI_DUMP
-    XGIDumpRegisterValue(pScrn);
-#endif
-
     if (!pXGI->noAccel) {
-	int ret;
-	static const struct xgi_state_info stateInfo = { 0, 1 };
-
-	/* reset KD cmdlist status */
-	ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE, &stateInfo,
-			      sizeof(stateInfo));
-	if (ret < 0) {
-	    return FALSE;
-	}
-
-	/* reset 2D cmdlist status */
-	xg47_Reset(pXGI->cmdList);
+        /* reset 2D cmdlist status */
+        xg47_Reset(pXGI->cmdList);
     }
 
     pScrn->AdjustFrame(scrnIndex, pScrn->frameX0, pScrn->frameY0, 0);
@@ -2759,84 +2743,49 @@ static void XGILeaveVT(int scrnIndex, int flags)
 
     if (pXGI == NULL) {
 #if DBG_FLOW
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
+        xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n",
+                   __func__, __FILE__, __LINE__);
 #endif
-	return;
+        return;
     }
 
-	/* Jong 11/09/2006; only call once */
-	if((g_DualViewMode == 1) & (pXGI->FirstView == 0)) 
-	{
-		ErrorF("--Leave XGILeaveVT()---\n");
-		return;
-	}
-
-    /*
-    XGISavePalette(pScrn, save);
-    */
-#ifdef XGI_DUMP
-    XGIDumpRegisterValue(pScrn);
-#endif
-
-    /* Do only one time; otherwise will cause system hang 
-     */
-    if((g_DualViewMode == 0 ) || (pXGI->FirstView == 1)) {
-	if (!pXGI->noAccel) {
-            int ret;
-            static const struct xgi_state_info stateInfo = { 1, 0 };
-
+    /* Jong 11/09/2006; only call once */
+    if ((g_DualViewMode == 1) && (pXGI->FirstView == 0)) {
 #if DBG_FLOW
-	    xf86DrvMsg(pScrn->scrnIndex, X_INFO,
-		       "-- Leave %s() - Before XG47WaitForIdle()\n", __func__);
+        xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n",
+                   __func__, __FILE__, __LINE__);
 #endif
-
-            /* flush cmdlist */
-            XG47WaitForIdle(pXGI);
-
-#if DBG_FLOW
-	    xf86DrvMsg(pScrn->scrnIndex, X_INFO,
-		       "-- Leave %s() - After XG47WaitForIdle()\n", __func__);
-#endif
-
-            /* reset KD cmdlist status */
-            ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE,
-				  &stateInfo, sizeof(stateInfo));
-            if (ret < 0) {
-                xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-			   "Notify kernel to change state (G==>C)\n");
-                return;
-            }
-        }
+        return;
     }
-  
+
     pXGI->isNeedCleanBuf = TRUE;
 
-    if (pXGI->isFBDev)
-    {
+    if (pXGI->isFBDev) {
         fbdevHWLeaveVT(scrnIndex,flags);
-    }
-    else
-    {
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() - Before XGIRestore()\n", __FUNCTION__);
-#endif
+    } else {
         XGIRestore(pScrn);
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() - After XGIRestore()\n", __FUNCTION__);
-#endif
     }
 
-#ifdef XGI_DUMP
-    XGIDumpRegisterValue(pScrn);
-#endif
+    if (!pXGI->noAccel) {
+        int ret;
+        static const struct xgi_state_info stateInfo = { 1, 0 };
 
-    if (!pXGI->noMMIO)
+
+        /* reset KD cmdlist status */
+        ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE,
+                              &stateInfo, sizeof(stateInfo));
+        if (ret < 0) {
+            xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
+                       "Notify kernel to change state (G==>C)\n");
+        }
+    } else if (!pXGI->noMMIO) {
         XG47DisableMMIO(pScrn);
+    }
 
 #if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n",
+               __func__, __FILE__, __LINE__);
 #endif
-
 }
 
 /*
@@ -2881,7 +2830,7 @@ static Bool XGICloseScreen(int scrnIndex, ScreenPtr pScreen)
 
     vgaHWLock(pVgaHW);
     if (pXGI->directRenderingEnabled) {
-	XGIDRICloseScreen(pScreen);
+        XGIDRICloseScreen(pScreen);
     }
     else if (!pXGI->noMMIO) {
         XG47DisableMMIO(pScrn);
