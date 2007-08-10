@@ -91,6 +91,10 @@ void XG47DisableMMIO(ScrnInfoPtr pScrn)
     CARD8   temp = 0, protect = 0;
     XGIPtr  pXGI = XGIPTR(pScrn);
 
+    if (pXGI->IOBase == 0) {
+	return;
+    }
+
     /* Protect registers */
     OUTB(0x3C4, 0x11);
     protect = INB(0x3C5);

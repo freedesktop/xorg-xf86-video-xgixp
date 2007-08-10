@@ -136,8 +136,6 @@ static Bool     XGIModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode);
 
 static void     XGIBlockHandler(int, pointer, pointer, pointer);
 
-static void     XGIEnableMMIO(ScrnInfoPtr pScrn);
-static void     XGIDisableMMIO(ScrnInfoPtr pScrn);
 
 /* Jong 07/03/2006 */
 ScreenPtr g_pScreen=NULL;
@@ -768,58 +766,6 @@ static void XGIUnmapMem(ScrnInfoPtr pScrn)
 #endif
 }
 
-static void XGIEnableMMIO(ScrnInfoPtr pScrn)
-{
-    XGIPtr  pXGI = XGIPTR(pScrn);
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-    switch(pXGI->chipset)
-    {
-    case XG47:
-        XG47EnableMMIO(pScrn);
-        break;
-    default:
-        break;
-    }
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-}
-
-static void XGIDisableMMIO(ScrnInfoPtr pScrn)
-{
-    XGIPtr  pXGI = XGIPTR(pScrn);
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-    if (pXGI->IOBase == 0) {
-#if DBG_FLOW
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-	return;
-    }
-
-    switch(pXGI->chipset)
-    {
-    case XG47:
-        XG47DisableMMIO(pScrn);
-        break;
-    default:
-        break;
-    }
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-}
 
 /*
  * Blank screen.
@@ -1904,7 +1850,7 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
             goto fail;
         }
 
-        XGIEnableMMIO(pScrn);
+        XG47EnableMMIO(pScrn);
     }
 
     if (!pXGI->isFBDev && !XGIPreInitInt10(pScrn)) {
@@ -1983,7 +1929,7 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
 fail:
     if (!pXGI->noMMIO)
     {
-        XGIDisableMMIO(pScrn);
+        XG47DisableMMIO(pScrn);
     }
     XGIUnmapMem(pScrn);
     /* Free the video bios (if applicable) */
@@ -2266,7 +2212,7 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
             goto fail;
         }
 
-        XGIEnableMMIO(pScrn);
+        XG47EnableMMIO(pScrn);
 
         /* Initialize the MMIO vgahw functions */
         vgaHWSetMmioFuncs(pVgaHW, pXGI->IOBase, 0);
@@ -2605,7 +2551,7 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 fail:
     if (!pXGI->noMMIO)
     {
-        XGIDisableMMIO(pScrn);
+        XG47DisableMMIO(pScrn);
     }
     PDEBUG(ErrorF("Jong-After-XGIInitMC-7\n"));
     XGIUnmapMem(pScrn);
@@ -2746,7 +2692,7 @@ static Bool XGIEnterVT(int scrnIndex, int flags)
 #endif
 
     if (!pXGI->noMMIO)
-        XGIEnableMMIO(pScrn);
+        XG47EnableMMIO(pScrn);
 
 #ifdef XGI_DUMP
     XGIDumpRegisterValue(pScrn);
@@ -2885,7 +2831,7 @@ static void XGILeaveVT(int scrnIndex, int flags)
 #endif
 
     if (!pXGI->noMMIO)
-        XGIDisableMMIO(pScrn);
+        XG47DisableMMIO(pScrn);
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -2938,7 +2884,7 @@ static Bool XGICloseScreen(int scrnIndex, ScreenPtr pScreen)
 	XGIDRICloseScreen(pScreen);
     }
     else if (!pXGI->noMMIO) {
-        XGIDisableMMIO(pScrn);
+        XG47DisableMMIO(pScrn);
     }
 
     XGIUnmapMem(pScrn);
