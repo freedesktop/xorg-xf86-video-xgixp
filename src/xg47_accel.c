@@ -963,65 +963,11 @@ static void ResetClip(void)
     accel_info.engineCmd &= ~FER_CLIP_ON;
 }
 
-int testRWPCIE(ScrnInfoPtr pScrn)
-{
-    XGIPtr pXGI = XGIPTR(pScrn);
-    unsigned long bus_addr;
-    uint32_t hd_addr;
-    volatile uint32_t *virt_addr;
-    const unsigned int sz_test = 0x1000;
-    uint32_t res;
-    int ret;
-
-    PDEBUG(ErrorF("\n\t[2D]begin test rw in kernel\n"));
-    XGIDebug(DBG_FUNCTION, "[DBG-Jong-ioctl-05292006][2D]begin test rw in kernel\n");
-
-    if (!XGIPcieMemAllocate(pScrn, sz_test, & bus_addr, & hd_addr,
-                            (void **) & virt_addr)) {
-        ErrorF("alloc memory for test kd write error\n");
-    }
-    else {
-        ErrorF("alloc memory for test kd write correctly\n");
-    }
-
-    PDEBUG(ErrorF("va = 0x%p, 1st value is [0x%8x]=0x%08x\n", 
-                  virt_addr, hd_addr, *virt_addr));
-
-    res = 0xff0ff000;
-    *virt_addr = res;
-
-    PDEBUG(ErrorF("va = 0x%p, 2nd value is [0x%8x]=0x%08x\n", 
-                  virt_addr, hd_addr, *virt_addr));
-
-    ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_TEST_RWINKERNEL, & hd_addr,
-                          sizeof(hd_addr));
-
-    ErrorF("[2D] ioctl XGI_IOCTL_TEST_RWINKERNEL = %d. %s\n", ret,
-           (ret == -1) ? "error" : "success");
-
-    res = *virt_addr;
-
-    if (*virt_addr == 0x00f00fff) {
-        ErrorF("[2D] kd write right: %x\n", *virt_addr);
-    }
-    else {
-        ErrorF("[2D] kd write error: %x\n", *virt_addr);
-    }
-
-    XGIPcieMemFree(pScrn, sz_test, bus_addr, virt_addr);
-
-    ErrorF("\n\t[2D]End test rw in kernel.\n");
-
-    return 1;
-}
-
 static Bool XG47InitCmdList(ScrnInfoPtr pScrn)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
 
     XGIDebug(DBG_FUNCTION, "[DBG]Enter XG47InitCmdList() - XGI_CMDLIST_ENABLE(1)\n");
-
-    testRWPCIE(pScrn); 
 
     pXGI->cmdList = xg47_Initialize(pScrn, CMDBUF_SIZE, pXGI->drm_fd);
     if (pXGI->cmdList == NULL) {
