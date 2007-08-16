@@ -126,12 +126,10 @@ void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList)
     if (s_pCmdList) {
         if (s_pCmdList->top_fence_set) {
             drmFenceWait(s_pCmdList->_fd, 0, & s_pCmdList->top_fence, 0);
-            s_pCmdList->top_fence_set = 0;
         }
 
         if (s_pCmdList->bottom_fence_set) {
             drmFenceWait(s_pCmdList->_fd, 0, & s_pCmdList->bottom_fence, 0);
-            s_pCmdList->bottom_fence_set = 0;
         }
 
         drmFenceDestroy(s_pCmdList->_fd, & s_pCmdList->top_fence);
@@ -153,8 +151,8 @@ void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList)
 
 void xg47_Reset(struct xg47_CmdList *s_pCmdList)
 {
-    s_pCmdList->previous.begin = 0;
-    s_pCmdList->previous.end = 0;
+    s_pCmdList->previous.begin = s_pCmdList->command.ptr;
+    s_pCmdList->previous.end = s_pCmdList->command.ptr;
     s_pCmdList->_sendDataLength = 0;
     s_pCmdList->current.end = 0;
 }
@@ -185,65 +183,61 @@ uint32_t s_emptyBegin[AGPCMDLIST_BEGIN_SIZE] =
  * \returns
  * 1 -- success 0 -- false
  */
-int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, unsigned int size)
+int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, unsigned int req_size)
 {
+    /* Pad the commmand list to 128-bit alignment and add the begin header.
+     */
+    const unsigned size = ((req_size + 0x3) & ~0x3) + AGPCMDLIST_BEGIN_SIZE;
+    const uint32_t *const mid_point =
+        pCmdList->command.ptr + (pCmdList->command.size / 2);
+    const uint32_t *const end_point = 
+        pCmdList->command.ptr + pCmdList->command.size;
+    uint32_t * begin_cmd = pCmdList->previous.end;
+    uint32_t *const end_cmd = pCmdList->previous.end + size;
+
+
     XGIDebug(DBG_CMDLIST, "[DEBUG] Enter beginCmdList.\n");
-
-    /* pad the commmand list */
-    size  = (size + 0x3) & ~ 0x3;
-
-    /* Add begin head. */
-    size += AGPCMDLIST_BEGIN_SIZE;
 
     if (size >= pCmdList->command.size) {
         return 0;
     }
 
-    if (NULL != pCmdList->previous.end) {
-        const uint32_t *const mid_point =
-            pCmdList->command.ptr + (pCmdList->command.size / 2);
-        const uint32_t *const end_point = 
-            pCmdList->command.ptr + pCmdList->command.size;
-        uint32_t * begin_cmd = pCmdList->previous.end;
-        uint32_t *const end_cmd = pCmdList->previous.end + size;
 
-        /* If the command spills into the bottom half of the command buffer,
-         * wait on the bottom half's fence.
-         */
-        if ((begin_cmd < mid_point) && (end_cmd > mid_point)) {
-            if (pCmdList->bottom_fence_set) {
-                drmFenceWait(pCmdList->_fd, 0, & pCmdList->bottom_fence, 0);
-                pCmdList->bottom_fence_set = 0;
-            }
-        } else {
-            /* If the command won't fit at the end of the list and we need to
-             * wrap back to the top half of the command buffer, wait on the top
-             * half's fence.
-             *
-             * After waiting on the top half's fence, emit the bottom half's
-             * fence.
-             */
-            if (end_cmd > end_point) {
-                begin_cmd = pCmdList->command.ptr;
-
-                if (pCmdList->top_fence_set) {
-                    drmFenceWait(pCmdList->_fd, 0, & pCmdList->top_fence, 0);
-                    pCmdList->top_fence_set = 0;
-                }
-
-                drmFenceEmit(pCmdList->_fd, 0, & pCmdList->bottom_fence, 0);
-                pCmdList->bottom_fence_set = 1;
-            }
+    /* If the command spills into the bottom half of the command buffer,
+     * wait on the bottom half's fence.
+     */
+    if ((begin_cmd < mid_point) && (end_cmd > mid_point)) {
+        if (pCmdList->bottom_fence_set) {
+            drmFenceWait(pCmdList->_fd, 0, & pCmdList->bottom_fence, 0);
+            pCmdList->bottom_fence_set = 0;
         }
-
-        pCmdList->current.begin = begin_cmd;
     } else {
-        pCmdList->current.begin = pCmdList->command.ptr;
+        /* If the command won't fit at the end of the list and we need to wrap
+         * back to the top half of the command buffer, wait on the top half's
+         * fence.
+         *
+         * After waiting on the top half's fence, emit the bottom half's
+         * fence.
+         */
+        if (end_cmd > end_point) {
+            begin_cmd = pCmdList->command.ptr;
+
+            if (pCmdList->top_fence_set) {
+                drmFenceWait(pCmdList->_fd, 0, & pCmdList->top_fence, 0);
+                pCmdList->top_fence_set = 0;
+            }
+
+            drmFenceEmit(pCmdList->_fd, 0, & pCmdList->bottom_fence, 0);
+            pCmdList->bottom_fence_set = 1;
+        }
     }
 
+
     /* Prepare the begin address of next batch. */
+    pCmdList->current.begin = begin_cmd;
     pCmdList->current.end = pCmdList->current.begin;
     pCmdList->current.request_size = size;
+
 
     /* Prepare next begin */
     memcpy(pCmdList->current.end, s_emptyBegin, sizeof(s_emptyBegin));
