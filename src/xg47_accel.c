@@ -49,8 +49,11 @@
 #include "xgi_debug.h"
 #include "xgi_misc.h"
 
+/**
+ * After the begin command, there are 4 DWORDs for every 3 commands.
+ */
+#define ACCEL_CMD_SIZE(num_cmds)  (4 * (((num_cmds) + 2) / 3))
 #define CMDBUF_SIZE      0x2000
-#define CMDBATCH_SIZE    0x80
 
 
 /* Jong 09/16/2006; support dual view */
@@ -423,8 +426,6 @@ static void XG47SetupForScreenToScreenCopy(ScrnInfoPtr pScrn,
                                            unsigned int planemask,
                                            int trans_color)
 {
-    XGIPtr  pXGI = XGIPTR(pScrn);
-
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SetupForScreenToScreenCopy\n");
 
     accel_info.color_depth = pScrn->bitsPerPixel >> 3;
@@ -447,37 +448,25 @@ static void XG47SubsequentScreenToScreenCopy(ScrnInfoPtr pScrn,
                                              int w, int h)
 {
     XGIPtr          pXGI = XGIPTR(pScrn);
+    const unsigned size = ACCEL_CMD_SIZE(1+1+2+1+1+1+2);
+
 
     XGIDebug(DBG_FUNCTION, "[DBG-Jong-05292006] Enter XG47SubsequentScreenToScreenCopy\n");
 
-    xg47_BeginCmdList(pXGI->cmdList, CMDBATCH_SIZE);
+    xg47_BeginCmdList(pXGI->cmdList, size);
 
-    XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentScreenToScreenCopy-0\n");
-	
     SetDstBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
-	
-
-    XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentScreenToScreenCopy-1\n");
     SetSrcBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
 
-    XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentScreenToScreenCopy-2\n");
-
-    if (accel_info.clp_enable == TRUE)
-    {
+    if (accel_info.clp_enable) {
         SetClip(pXGI, accel_info.clp_x1, accel_info.clp_y1, accel_info.clp_x2, accel_info.clp_y2);
     }
 
-    XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentScreenToScreenCopy-3\n");
-
     SetSrcXY(pXGI, x1, y1, 0);
-    XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentScreenToScreenCopy-3-1\n");
-
     SetDstXY(pXGI, x2, y2, 0);
-    XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentScreenToScreenCopy-3-2\n");
     SetDstSize(pXGI, w, h);
-    XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentScreenToScreenCopy-3-3\n");
+
     SetDrawingCommand(pXGI, FER_CMD_BITBLT, FER_SOURCE_IN_VRAM);
-    XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentScreenToScreenCopy-4\n");
 
     xg47_EndCmdList(pXGI->cmdList);
 
@@ -489,7 +478,6 @@ void XG47SetupForSolidFill(ScrnInfoPtr pScrn,
                            int rop,
                            unsigned int planemask)
 {
-    XGIPtr pXGI = XGIPTR(pScrn);
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SetupForSolidFill\n");
 
     accel_info.color_depth = pScrn->bitsPerPixel >> 3;
@@ -506,25 +494,22 @@ void XG47SetupForSolidFill(ScrnInfoPtr pScrn,
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SetupForSolidFill\n");
 }
 
+
 void XG47SubsequentSolidFillRect(ScrnInfoPtr pScrn,
                                  int x, int y, int w, int h)
 {
-    XGIPtr          pXGI = XGIPTR(pScrn);
+    XGIPtr pXGI = XGIPTR(pScrn);
+    const unsigned size = ACCEL_CMD_SIZE(1+1+2+1+1+2);
 
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentSolidFillRect(%d,%d,%d,%d)\n", x, y, w, h);
 
-    xg47_BeginCmdList(pXGI->cmdList, CMDBATCH_SIZE);
+    xg47_BeginCmdList(pXGI->cmdList, size);
 
     SetPatFGColor(pXGI, accel_info.fg_color);
     SetDstBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
 
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("XG47SubsequentSolidFillRect()-FirstView=%d-pScrn->fbOffset=%d\n", pXGI->FirstView, pScrn->fbOffset); 
-#endif
-
-    if (accel_info.clp_enable == TRUE)
-    {
+    if (accel_info.clp_enable) {
         SetClip(pXGI, accel_info.clp_x1, accel_info.clp_y1, accel_info.clp_x2, accel_info.clp_y2);
     }
 
@@ -585,27 +570,16 @@ static void XG47SubsequentMono8x8PatternFillRect(ScrnInfoPtr pScrn,
                                                  int x, int y, int w, int h)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
+    const unsigned size = ACCEL_CMD_SIZE(6+1+1+1+1+2+1+1+2);
+
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentMono8x8PatternFillRect(%d,%d,%d,%d)\n", x, y, w, h);
 
-    xg47_BeginCmdList(pXGI->cmdList, CMDBATCH_SIZE);
+    xg47_BeginCmdList(pXGI->cmdList, size);
 
-    /* PATCH ?? */
-/*
-    xg47_SendGECommand(pXGI->cmdList, ENG_DRAWINGFLAG, 0x00004000);
-    xg47_SendGECommand(pXGI->cmdList, ENG_LENGTH, 0x00010001);
-    xg47_SendGECommand(pXGI->cmdList, ENG_COMMAND, 0xf0400101);
-*/
     xg47_SendGECommand(pXGI->cmdList, ENG_DRAWINGFLAG, FER_EN_PATTERN_FLIP);
-
     xg47_SendGECommand(pXGI->cmdList, ENG_PATTERN, patx);
     xg47_SendGECommand(pXGI->cmdList, ENG_PATTERN1, paty);
-
-/*
-    xg47_SendGECommand(pXGI->cmdList, ENG_DRAWINGFLAG, 0x00004000);
-    xg47_SendGECommand(pXGI->cmdList, ENG_LENGTH, 0x00010001);
-    xg47_SendGECommand(pXGI->cmdList, ENG_COMMAND, 0xf0400101);
-*/
     xg47_SendGECommand(pXGI->cmdList, ENG_DRAWINGFLAG, FER_EN_PATTERN_FLIP | FER_PATTERN_BANK1);
     xg47_SendGECommand(pXGI->cmdList, ENG_PATTERN, patx);
     xg47_SendGECommand(pXGI->cmdList, ENG_PATTERN1, paty);
@@ -616,8 +590,7 @@ static void XG47SubsequentMono8x8PatternFillRect(ScrnInfoPtr pScrn,
     SetDstBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
     SetSrcBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
 
-    if (accel_info.clp_enable == TRUE)
-    {
+    if (accel_info.clp_enable) {
         SetClip(pXGI, accel_info.clp_x1, accel_info.clp_y1, accel_info.clp_x2, accel_info.clp_y2);
     }
 
@@ -643,6 +616,7 @@ static void XG47SetupForColor8x8PatternFill(ScrnInfoPtr pScrn,
     unsigned long pattern_offset;
     unsigned long* ptr;
     int i;
+    const unsigned size = ACCEL_CMD_SIZE((pScrn->bitsPerPixel * 2) * 2);
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SetupForColor8x8PatternFill\n");
 
@@ -657,7 +631,7 @@ static void XG47SetupForColor8x8PatternFill(ScrnInfoPtr pScrn,
 
     SetColorDepth(accel_info.color_depth);
 
-    xg47_BeginCmdList(pXGI->cmdList, CMDBATCH_SIZE);
+    xg47_BeginCmdList(pXGI->cmdList, size);
 
     pattern_offset = ((paty * pScrn->displayWidth * pScrn->bitsPerPixel / 8) +
                       (patx * pScrn->bitsPerPixel / 8));
@@ -678,37 +652,23 @@ static void XG47SubsequentColor8x8PatternFillRect(ScrnInfoPtr pScrn,
                                                   int x, int y, int w, int h)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
-    unsigned long pattern_offset;
-    unsigned long trans_draw = 0;
-    unsigned long* ptr;
-    int i;
+    uint32_t trans_draw = 0;
+    const unsigned size = ACCEL_CMD_SIZE(1+1+1+2+1+1+2);
+
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentColor8x8PatternFillRect(%d,%d,%d,%d)\n", x, y, w, h);
 
-    xg47_BeginCmdList(pXGI->cmdList, CMDBATCH_SIZE);
-
-/*
-    pattern_offset = ((paty * pScrn->displayWidth * pScrn->bitsPerPixel / 8) +
-                      (patx * pScrn->bitsPerPixel / 8));
-
-    ptr = (unsigned long *)(pXGI->fbBase + pattern_offset);
-    for(i = 0; i < pScrn->bitsPerPixel*2; i ++, ptr++ )
-    {
-        xg47_SendGECommand(pXGI->cmdList, ENG_PATTERN +((i & ~0x20)<<2), *ptr);
-    }
-*/
+    xg47_BeginCmdList(pXGI->cmdList, size);
 
     SetDstBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
     SetSrcBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
 
-    if (accel_info.trans_color != -1)
-    {
+    if (accel_info.trans_color != -1) {
         SetDstColorKey(pXGI, accel_info.trans_color & 0xffffff);
         trans_draw = EBP_TRANSPARENT_MODE;
     }
 
-    if (accel_info.clp_enable == TRUE)
-    {
+    if (accel_info.clp_enable) {
         SetClip(pXGI, accel_info.clp_x1, accel_info.clp_y1, accel_info.clp_x2, accel_info.clp_y2);
     }
 
@@ -748,17 +708,17 @@ static void XG47SubsequentSolidHorVertLine(ScrnInfoPtr pScrn,
                                            int x, int y, int len, int dir)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
+    const unsigned size = ACCEL_CMD_SIZE(1+1+1+2+1+1+2);
 
     XGIDebug(DBG_FUNCTION, "[DBG] Enter XG47SubsequentSolidHorVertLine(%d,%d,%d,%d)\n", x, y, len, dir);
 
-    xg47_BeginCmdList(pXGI->cmdList, CMDBATCH_SIZE);
+    xg47_BeginCmdList(pXGI->cmdList, size);
 
     SetPatFGColor(pXGI, accel_info.fg_color);
     SetPatBKColor(pXGI, accel_info.bg_color);
     SetDstBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
 
-    if (accel_info.clp_enable == TRUE)
-    {
+    if (accel_info.clp_enable) {
         SetClip(pXGI, accel_info.clp_x1, accel_info.clp_y1, accel_info.clp_x2, accel_info.clp_y2);
     }
 
@@ -773,7 +733,6 @@ static void XG47SubsequentSolidHorVertLine(ScrnInfoPtr pScrn,
     xg47_EndCmdList(pXGI->cmdList);
 
     XGIDebug(DBG_FUNCTION, "[DBG] Leave XG47SubsequentSolidHorVertLine\n");
-
 }
 
 static void XG47SubsequentSolidBresenhamLine(ScrnInfoPtr pScrn,
@@ -783,19 +742,20 @@ static void XG47SubsequentSolidBresenhamLine(ScrnInfoPtr pScrn,
     XGIPtr  pXGI = XGIPTR(pScrn);
     int direction = 0;
     int axial, diagonal, error;
+    const unsigned size = ACCEL_CMD_SIZE(1+1+1+2+1+1+1+2);
+
 
     XGIDebug(DBG_FUNCTION,
         "[DBG] Enter XG47SubsequentSolidBresenhamLine(%d,%d,%d,%d,%d,%d,%d)\n",
         x, y, absmaj, absmin, err, len, octant);
 
-    xg47_BeginCmdList(pXGI->cmdList, CMDBATCH_SIZE);
+    xg47_BeginCmdList(pXGI->cmdList, size);
 
     /* convert bresenham line interface style */
     axial = (absmin>>1)&0xFFF;
     diagonal = ((absmin - absmaj)>>1)&0xFFF;
     error = absmin -(absmaj>>1);
-    if(error &0x01)
-    {
+    if(error &0x01) {
         if(octant & YDECREASING)
             error++;
         else
@@ -812,8 +772,7 @@ static void XG47SubsequentSolidBresenhamLine(ScrnInfoPtr pScrn,
 
     SetDstBasePitch(pXGI, accel_info.pitch, pScrn->fbOffset);
 
-    if (accel_info.clp_enable == TRUE)
-    {
+    if (accel_info.clp_enable) {
         SetClip(pXGI, accel_info.clp_x1, accel_info.clp_y1, accel_info.clp_x2, accel_info.clp_y2);
     }
 
@@ -893,7 +852,7 @@ static void SetDstBasePitch(XGIPtr pXGI, CARD32 pitch, CARD32 base)
 	/* Jong 11/08/2006; seems have a bug for base=64MB=0x4000000 */
 	/* base >> 4 = 0x400000; 0x400000 & 0x3fffff = 0x0 */
 	/* Thus, base address must be less than 64MB=0x4000000 */
-    xg47_SendGECommand(pXGI->cmdList, ENG_DST_BASE, ((pitch & 0x3ff0) << 18) | ((base >> 4) & 0x3fffff)); 
+    xg47_SendGECommand(pXGI->cmdList, ENG_DST_BASE, ((pitch & 0x3ff0) << 18) | ((base >> 4) & 0x3fffff));
 
 #ifdef XGI_DUMP_DUALVIEW
 	ErrorF("Jong-Debug-SetDstBasePitch-((base >> 4) & 0x7fffff)=0x%x-\n", ((base >> 4) & 0x7fffff));
