@@ -49,8 +49,8 @@
 #include "xgi_debug.h"
 #include "xgi_misc.h"
 
-#define CMDBUF_SIZE      0x100000
-#define CMDBATCH_SIZE    0x2000
+#define CMDBUF_SIZE      0x2000
+#define CMDBATCH_SIZE    0x80
 
 
 /* Jong 09/16/2006; support dual view */

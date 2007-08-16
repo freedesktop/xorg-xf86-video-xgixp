@@ -97,7 +97,7 @@
 /* #define DPMSExtension */
 
 /* Jong 09/21/2006; support dual view */
-#define XGI_DUMP_DUALVIEW
+/* #define XGI_DUMP_DUALVIEW */
 /* #define CURSOR_DEBUG */
 
 /* #ifndef XGI_DUMP

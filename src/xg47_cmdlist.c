@@ -61,15 +61,17 @@ struct xg47_CmdList
     unsigned int _sendDataLength;            /* record the filled data size */
 
     struct xg47_buffer command;
-    struct xg47_buffer scratch;
-
-    unsigned int id;          /* write it at begin header as debug ID */
 
     /* 2d cmd holder */
     uint32_t _bunch[4];
 
     /* fd number */
     int		_fd;
+    
+    struct _drmFence  top_fence;
+    int top_fence_set;
+    struct _drmFence  bottom_fence;
+    int bottom_fence_set;
 };
 
 
@@ -77,6 +79,7 @@ struct xg47_CmdList *
 xg47_Initialize(ScrnInfoPtr pScrn, unsigned int cmdBufSize, int fd)
 {
     struct xg47_CmdList *list = xnfcalloc(sizeof(struct xg47_CmdList), 1);
+    int ret;
 
     list->command.size = cmdBufSize;
     list->_fd = fd;
@@ -93,21 +96,21 @@ xg47_Initialize(ScrnInfoPtr pScrn, unsigned int cmdBufSize, int fd)
     XGIDebug(DBG_CMDLIST, "cmdBuf VAddr=0x%p  HAddr=0x%p buffsize=0x%x\n",
              list->command.ptr, list->command.hw_addr, list->command.size);
 
-    list->scratch.size = 1024;
-
-    if (!XGIPcieMemAllocate(pScrn,
-                            list->scratch.size * sizeof(uint32_t),
-                            & list->scratch.bus_addr,
-                            & list->scratch.hw_addr,
-                            (void **) & list->scratch.ptr)) {
-        XGIDebug(DBG_ERROR, "[DBG ERROR]Allocate Scratch Pad error!\n");
-
+    ret = drmFenceCreate(list->_fd, 0, 0, DRM_FENCE_TYPE_EXE,
+                         & list->top_fence);
+    if (ret) {
+        xf86DrvMsg(0, X_ERROR, "Unable to create top-half fence (%s, %d)!\n",
+                   strerror(-ret), -ret);
         goto err;
     }
 
-
-    XGIDebug(DBG_CMDLIST, "[Malloc]Scratch VAddr=0x%p HAddr=0x%x\n",
-           list->scratch.ptr, list->scratch.hw_addr);
+    drmFenceCreate(list->_fd, 0, 0, DRM_FENCE_TYPE_EXE,
+                   & list->bottom_fence);
+    if (ret) {
+        xf86DrvMsg(0, X_ERROR, "Unable to create bottom-half fence "
+                   "(%s, %d)!\n", strerror(-ret), -ret);
+        goto err;
+    }
 
     xg47_Reset(list);
 
@@ -121,33 +124,25 @@ err:
 void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList)
 {
     if (s_pCmdList) {
-	if (s_pCmdList->scratch.bus_addr) {
-	    XGIDebug(DBG_CMDLIST, "[DBG Free]Scratch VAddr=0x%x HAddr=0x%x\n",
-		     s_pCmdList->scratch.ptr, 
-		     s_pCmdList->scratch.hw_addr);
-	
-	    XGIPcieMemFree(pScrn, s_pCmdList->scratch.size * sizeof(uint32_t),
-			   s_pCmdList->scratch.bus_addr,
-			   s_pCmdList->scratch.ptr);
-	}
-	
-	if (s_pCmdList->command.bus_addr) {
-	    XGIDebug(DBG_CMDLIST, "[DBG Free]cmdBuf VAddr=0x%x  HAddr=0x%x\n",
-		     s_pCmdList->command.ptr,
-		     s_pCmdList->command.hw_addr);
+        drmFenceDestroy(s_pCmdList->_fd, & s_pCmdList->top_fence);
+        drmFenceDestroy(s_pCmdList->_fd, & s_pCmdList->bottom_fence);
 
-	    XGIPcieMemFree(pScrn, s_pCmdList->command.size * sizeof(uint32_t),
-			   s_pCmdList->command.bus_addr,
-			   s_pCmdList->command.ptr);
-	}
+        if (s_pCmdList->command.bus_addr) {
+            XGIDebug(DBG_CMDLIST, "[DBG Free]cmdBuf VAddr=0x%x  HAddr=0x%x\n",
+                     s_pCmdList->command.ptr,
+                     s_pCmdList->command.hw_addr);
 
-	xfree(s_pCmdList);
+            XGIPcieMemFree(pScrn, s_pCmdList->command.size * sizeof(uint32_t),
+                           s_pCmdList->command.bus_addr,
+                           s_pCmdList->command.ptr);
+        }
+
+        xfree(s_pCmdList);
     }
 }
 
 void xg47_Reset(struct xg47_CmdList *s_pCmdList)
 {
-    *(s_pCmdList->scratch.ptr) = 0;
     s_pCmdList->previous.begin = 0;
     s_pCmdList->previous.end = 0;
     s_pCmdList->_sendDataLength = 0;
@@ -157,13 +152,7 @@ void xg47_Reset(struct xg47_CmdList *s_pCmdList)
 /* Implementation Part*/
 static int submit2DBatch(struct xg47_CmdList * pCmdList);
 static void sendRemainder2DCommand(struct xg47_CmdList * pCmdList);
-static void addScratchBatch(struct xg47_CmdList * pCmdList);
 
-static void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList,
-    const void * addrStart, const void * addrEnd);
-
-static inline void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList);
-static inline uint32_t getGEWorkedCmdHWAddr(const struct xg47_CmdList *);
 #ifdef DUMP_COMMAND_BUFFER
 static void dumpCommandBuffer(struct xg47_CmdList * pCmdList);
 #endif
@@ -193,37 +182,56 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, unsigned int size)
     /* pad the commmand list */
     size  = (size + 0x3) & ~ 0x3;
 
-    /* Add  begin head + scratch batch. */
-    size += AGPCMDLIST_BEGIN_SIZE + AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
+    /* Add begin head. */
+    size += AGPCMDLIST_BEGIN_SIZE;
 
-    if (size >= pCmdList->command.size)
-    {
+    if (size >= pCmdList->command.size) {
         return 0;
     }
 
-    if (NULL != pCmdList->previous.end)
-    {
-         /* We have spare buffer after last command list. */
-        if ((pCmdList->previous.end + size) <=
-            (pCmdList->command.ptr + pCmdList->command.size))
-        {
-            pCmdList->current.begin = pCmdList->previous.end;
+    if (NULL != pCmdList->previous.end) {
+        const uint32_t *const mid_point =
+            pCmdList->command.ptr + (pCmdList->command.size / 2);
+        const uint32_t *const end_point = 
+            pCmdList->command.ptr + pCmdList->command.size;
+        uint32_t * begin_cmd = pCmdList->previous.end;
+        uint32_t *const end_cmd = pCmdList->previous.end + size;
+
+        /* If the command spills into the bottom half of the command buffer,
+         * wait on the bottom half's fence.
+         */
+        if ((begin_cmd < mid_point) && (end_cmd > mid_point)) {
+	    if (pCmdList->bottom_fence_set) {
+		drmFenceWait(pCmdList->_fd, 0, & pCmdList->bottom_fence, 0);
+		pCmdList->bottom_fence_set = 0;
+	    }
+        } else {
+            /* If the command won't fit at the end of the list and we need to
+             * wrap back to the top half of the command buffer, wait on the top
+             * half's fence.
+             *
+             * After waiting on the top half's fence, emit the bottom half's
+             * fence.
+             */
+            if (end_cmd > end_point) {
+                begin_cmd = pCmdList->command.ptr;
+
+		if (pCmdList->top_fence_set) {
+		    drmFenceWait(pCmdList->_fd, 0, & pCmdList->top_fence, 0);
+		    pCmdList->top_fence_set = 0;
+		}
+
+                drmFenceEmit(pCmdList->_fd, 0, & pCmdList->bottom_fence, 0);
+		pCmdList->bottom_fence_set = 1;
+            }
         }
-        else /* no spare space, must roll over */
-        {
-            preventOverwriteCmdbuf(pCmdList);
-            pCmdList->current.begin = pCmdList->command.ptr;
-        }
-    }
-    else /* fresh */
-    {
+
+        pCmdList->current.begin = begin_cmd;
+    } else {
         pCmdList->current.begin = pCmdList->command.ptr;
     }
 
     /* Prepare the begin address of next batch. */
-    waitCmdListAddrAvailable(pCmdList, pCmdList->current.begin,
-                             pCmdList->current.begin + size);
-
     pCmdList->current.end = pCmdList->current.begin;
     pCmdList->current.request_size = size;
 
@@ -248,9 +256,6 @@ void xg47_EndCmdList(struct xg47_CmdList *pCmdList)
     sendRemainder2DCommand(pCmdList);
 
     XGIDebug(DBG_FUNCTION,"[DBG-Jong] endCmdList-2\n");
-    addScratchBatch(pCmdList);
-
-    XGIDebug(DBG_FUNCTION,"[DBG-Jong] endCmdList-3\n");
     submit2DBatch(pCmdList);
 }
 
@@ -296,64 +301,6 @@ void xg47_SendGECommand(struct xg47_CmdList *pCmdList, uint32_t addr,
 }
 
 
-void waitCmdListAddrAvailable(struct xg47_CmdList * pCmdList,
-                              const void * addrStart, const void * addrEnd)
-{
-    /* Offsets, in bytes, from the start of the command buffer to the start
-     * and end of the proposed range.
-     */
-    const intptr_t offset_start = (intptr_t) addrStart 
-        - (intptr_t) pCmdList->command.ptr;
-    const intptr_t offset_end = (intptr_t) addrEnd 
-        - (intptr_t)pCmdList->command.ptr;
-
-
-    /* The loop of waiting for enough command list buffer */
-    while (1) {
-        /* Get the current runing batch address. */
-
-        const uint32_t hw_addr = getGEWorkedCmdHWAddr(pCmdList);
-        const uint32_t cmd_offset = hw_addr - pCmdList->command.hw_addr;
-
-        if (hw_addr != 0) {
-            /* If cmdlist is fresh or cmdlist already rolled over, current
-             * batch does not overlay the buffer. 
-             */
-            if ((cmd_offset < offset_start) || (cmd_offset > offset_end)) {
-                /* There is enough memory at the begin of command list. */
-                break;
-            }
-        }
-        else {
-            const intptr_t previous_begin = 
-                (intptr_t) pCmdList->previous.begin
-                - (intptr_t) pCmdList->command.ptr;
-            const intptr_t previous_end = 
-                (intptr_t) pCmdList->previous.end
-                - (intptr_t) pCmdList->command.ptr;
-
-            /* No running batch */
-            if ((NULL != pCmdList->previous.begin)
-                && (((offset_start >= previous_begin) 
-                     && (offset_start <= previous_end))
-                    || ((offset_end >= previous_begin) 
-                        && (offset_end <= previous_end)))) {
-                /* If current command list overlaps the last begin
-                 * Force to reset
-                 */
-                xg47_Reset(pCmdList);
-            }
-            break;
-        }
-    }
-}
-
-static uint32_t getGEWorkedCmdHWAddr(const struct xg47_CmdList * pCmdList)
-{
-    return *pCmdList->scratch.ptr;
-}
-
-
 static void sendRemainder2DCommand(struct xg47_CmdList * pCmdList)
 {
     /* If there are any pending commands in _bunch, emit the whole batch.
@@ -361,54 +308,6 @@ static void sendRemainder2DCommand(struct xg47_CmdList * pCmdList)
     if (0x7f000000 != pCmdList->_bunch[0]) {
         emit_bunch(pCmdList);
     }
-}
-
-
-/**
- * Emit series of commands to write the batch end address to the scratch buffer.
- *
- * \note
- * Wouldn't it be easier to just write the end address to the software
- * scratch register (0x1f0, page 27 in 3D SPG)?
- */
-static void addScratchBatch(struct xg47_CmdList * pCmdList)
-{
-    /* In-line command to write to ENG_DST_BASE, ENG_DESTXY, and ENG_DIMENSION
-     */
-    pCmdList->current.end[0]  = 0x7f413951;
-
-    pCmdList->current.end[1]  = (0x1 << 24) 
-        | (((uint32_t) pCmdList->scratch.hw_addr >> 4) & 0x3fffff);
-
-    pCmdList->current.end[2]  = (((uint32_t)pCmdList->scratch.hw_addr & 0x1c000000) >> 13)
-                             +((uint32_t)pCmdList->scratch.hw_addr & 0xe0000000);
-    pCmdList->current.end[3]  = 0x00010001;
-
-
-    /* In-line command to write to ENG_DRAWINGFLAG, ENG_COMMAND, and
-     * 0x78 (?).
-     */
-    pCmdList->current.end[4]  = 0x7f792529;
-
-    /* Drawing Flag */
-    pCmdList->current.end[5]  = 0x10000000; /* 28~2B */
-
-    /* 24:Command; 25~26:Op Mode; 27:ROP3 */
-    pCmdList->current.end[6]  = 0xcc008201; 
-
-    pCmdList->current.end[7]  = pCmdList->command.hw_addr
-        + ((intptr_t) pCmdList->previous.end
-           - (intptr_t) pCmdList->command.ptr);
-
-    /* In-line end command to write to FLUSH_ENGINE_ADDRESS.
-     */
-    pCmdList->current.end[8]  = 0xff000001;
-    pCmdList->current.end[9]  = pCmdList->current.end[7];
-    pCmdList->current.end[10] = 0x00000000;
-    pCmdList->current.end[11] = 0x00000000;
-
-    pCmdList->current.end += AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
-    pCmdList->current.data_count += AGPCMDLIST_2D_SCRATCH_CMD_SIZE;
 }
 
 
@@ -435,30 +334,6 @@ void dumpCommandBuffer(struct xg47_CmdList * pCmdList)
 #endif /* DUMP_COMMAND_BUFFER */
 
 
-/*
-    |_________|______|_______|  ok
-    B         G      L       E
-
-    |_________|______|_______|  if roll back, will overwrite the cmdList
-    B         L      G       E  So MUST wait till G execute to before L
-*/
-static void preventOverwriteCmdbuf(struct xg47_CmdList * pCmdList)
-{
-    /* Calculate the offset of the end of the last batch in the command
-     * buffer.  This is "L" in the diagram above.
-     */
-    const intptr_t L = (intptr_t) pCmdList->command.ptr 
-	- (intptr_t) pCmdList->previous.end;
-    intptr_t G;
-
-    do {
-	/* Calculate the offset of the command that is currently being
-	 * processed by the GE.  This is "G" in the diagram
-	 */
-	G = getGEWorkedCmdHWAddr(pCmdList) - pCmdList->command.hw_addr;
-    } while (G > L);
-}
-
 static int submit2DBatch(struct xg47_CmdList * pCmdList)
 {
     uint32_t beginHWAddr;
@@ -478,7 +353,6 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
     submitInfo.type = pCmdList->current.type;
     submitInfo.hw_addr = beginHWAddr;
     submitInfo.size = pCmdList->current.data_count;
-    submitInfo.id = pCmdList->id;
 
     XGIDebug(DBG_FUNCTION, "%s: calling ioctl XGI_IOCTL_SUBMIT_CMDLIST\n", 
              __func__);
@@ -490,8 +364,20 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
     err = drmCommandWrite(pCmdList->_fd, DRM_XGI_SUBMIT_CMDLIST,
                           &submitInfo, sizeof(submitInfo));
     if (!err) {
+        uint32_t *const begin_cmd = pCmdList->current.begin;
+        uint32_t *const end_cmd = pCmdList->current.end;
+        const uint32_t *const mid_point =
+            pCmdList->command.ptr + (pCmdList->command.size / 2);
+
         pCmdList->previous = pCmdList->current;
-        pCmdList->id++;
+
+        /* If the command is the last command in the top half, emit the top
+         * half's fence.
+         */
+        if ((begin_cmd < mid_point) && (end_cmd >= mid_point)) {
+            drmFenceEmit(pCmdList->_fd, 0, & pCmdList->top_fence, 0);
+	    pCmdList->top_fence_set = 1;
+        }
     }
     else {
         ErrorF("[2D] ioctl -- cmdList error (%d, %s)!\n",
