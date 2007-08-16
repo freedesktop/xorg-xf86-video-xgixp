@@ -124,6 +124,16 @@ err:
 void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList)
 {
     if (s_pCmdList) {
+        if (s_pCmdList->top_fence_set) {
+            drmFenceWait(s_pCmdList->_fd, 0, & s_pCmdList->top_fence, 0);
+            s_pCmdList->top_fence_set = 0;
+        }
+
+        if (s_pCmdList->bottom_fence_set) {
+            drmFenceWait(s_pCmdList->_fd, 0, & s_pCmdList->bottom_fence, 0);
+            s_pCmdList->bottom_fence_set = 0;
+        }
+
         drmFenceDestroy(s_pCmdList->_fd, & s_pCmdList->top_fence);
         drmFenceDestroy(s_pCmdList->_fd, & s_pCmdList->bottom_fence);
 
@@ -201,10 +211,10 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, unsigned int size)
          * wait on the bottom half's fence.
          */
         if ((begin_cmd < mid_point) && (end_cmd > mid_point)) {
-	    if (pCmdList->bottom_fence_set) {
-		drmFenceWait(pCmdList->_fd, 0, & pCmdList->bottom_fence, 0);
-		pCmdList->bottom_fence_set = 0;
-	    }
+            if (pCmdList->bottom_fence_set) {
+                drmFenceWait(pCmdList->_fd, 0, & pCmdList->bottom_fence, 0);
+                pCmdList->bottom_fence_set = 0;
+            }
         } else {
             /* If the command won't fit at the end of the list and we need to
              * wrap back to the top half of the command buffer, wait on the top
@@ -216,13 +226,13 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, unsigned int size)
             if (end_cmd > end_point) {
                 begin_cmd = pCmdList->command.ptr;
 
-		if (pCmdList->top_fence_set) {
-		    drmFenceWait(pCmdList->_fd, 0, & pCmdList->top_fence, 0);
-		    pCmdList->top_fence_set = 0;
-		}
+                if (pCmdList->top_fence_set) {
+                    drmFenceWait(pCmdList->_fd, 0, & pCmdList->top_fence, 0);
+                    pCmdList->top_fence_set = 0;
+                }
 
                 drmFenceEmit(pCmdList->_fd, 0, & pCmdList->bottom_fence, 0);
-		pCmdList->bottom_fence_set = 1;
+                pCmdList->bottom_fence_set = 1;
             }
         }
 
@@ -376,7 +386,7 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
          */
         if ((begin_cmd < mid_point) && (end_cmd >= mid_point)) {
             drmFenceEmit(pCmdList->_fd, 0, & pCmdList->top_fence, 0);
-	    pCmdList->top_fence_set = 1;
+            pCmdList->top_fence_set = 1;
         }
     }
     else {
