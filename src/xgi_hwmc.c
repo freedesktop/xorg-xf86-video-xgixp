@@ -240,8 +240,14 @@ int XGIXvMCCreateContext(ScrnInfoPtr pScrn, XvMCContextPtr pContext,
     *numPriv = sizeof(XGIXvMCCreateContextRec) >> 2;
 
     pXGI->xvmcContext = *pXGIContext;    /* store it */
-    pXGIContext->IOAddr = pXGI->IOAddr;
-    pXGIContext->fbAddr = pXGI->fbAddr;
+    pXGIContext->IOAddr =
+#ifdef XSERVER_LIBPCIACCESS
+	pXGI->pPciInfo->regions[1].base_addr
+#else
+	pXGI->IOAddr
+#endif
+	;
+    pXGIContext->fbAddr = pScrn->memPhysBase;
     pXGIContext->IOSize = XGI_MMIO_SIZE;
     pXGIContext->fbSize = pXGI->fbSize;
 

@@ -110,8 +110,14 @@ static int	XGIEntityIndex = -1;
 
 #define XGI_XVMC
 
+static XGIPtr XGIGetRec(ScrnInfoPtr pScrn);
 static void     XGIIdentify(int flags);
+#ifdef XSERVER_LIBPCIACCESS
+static Bool XGIPciProbe(DriverPtr drv, int entity_num, struct pci_device *dev,
+    intptr_t match_data);
+#else
 static Bool     XGIProbe(DriverPtr drv, int flags);
+#endif
 static Bool     XGIPreInit(ScrnInfoPtr pScrn, int flags);
 static Bool     XGIScreenInit(int Index, ScreenPtr pScreen, int argc, char **argv);
 static Bool     XGIEnterVT(int scrnIndex, int flags);
@@ -273,6 +279,17 @@ static const char *fbdevHWSymbols[] = {
     NULL
 };
 
+#ifdef XSERVER_LIBPCIACCESS
+#define XGI_DEVICE_MATCH(d, i) \
+    { 0x18ca, (d), PCI_MATCH_ANY, PCI_MATCH_ANY, 0, 0, (i) }
+
+static const struct pci_id_match xgi_device_match[] = {
+    XGI_DEVICE_MATCH(PCI_CHIP_0047, XG47),
+
+    { 0, 0, 0 },
+};
+#endif
+
 static SymTabRec XGIChipsets[] = {
     { XG47,         "Volari 8300"   },
     { -1,           NULL            }
@@ -312,10 +329,20 @@ _X_EXPORT DriverRec XGI = {
     XGI_VERSION_CURRENT,
     XGI_DRIVER_NAME,
     XGIIdentify,
+#ifdef XSERVER_LIBPCIACCESS
+    NULL,
+#else
     XGIProbe,
+#endif
     XGIAvailableOptions,
     NULL,
-    0
+    0,
+    NULL,
+
+#ifdef XSERVER_LIBPCIACCESS
+    xgi_device_match,
+    XGIPciProbe
+#endif
 };
 
 static void XGILoaderRefSymLists(void)
@@ -387,7 +414,7 @@ static pointer XGISetup(pointer module,
          * here by calling LoadSubModule().
          */
         isInited = TRUE;
-        xf86AddDriver(&XGI, module, 0);
+        xf86AddDriver(&XGI, module, 1);
         LoaderRefSymLists(vgahwSymbols, fbSymbols, i2cSymbols, vbeSymbols,
                           ramdacSymbols, int10Symbols, xaaSymbols, shadowSymbols,
                           fbdevHWSymbols, NULL);
@@ -414,6 +441,74 @@ static void XGIIdentify(int flags)
     xf86PrintChipsets(XGI_NAME, "driver for XGI chipsets", XGIChipsets);
 }
 
+#ifdef XSERVER_LIBPCIACCESS
+static Bool XGIPciProbe(DriverPtr drv, int entity_num,
+                        struct pci_device *dev, intptr_t match_data)
+{
+    ScrnInfoPtr pScrn;
+
+    pScrn = xf86ConfigPciEntity(NULL, 0, entity_num, NULL,
+                                RES_SHARED_VGA, NULL, NULL, NULL, NULL);
+    if (pScrn != NULL) {
+	XGIPtr pXGI;
+#ifdef XGIDUALVIEW
+        EntityInfoPtr pEnt;
+#endif
+
+        pScrn->driverVersion = XGI_VERSION_CURRENT;
+        pScrn->driverName    = XGI_DRIVER_NAME;
+        pScrn->name          = XGI_NAME;
+        pScrn->PreInit       = XGIPreInit;
+        pScrn->ScreenInit    = XGIScreenInit;
+        pScrn->SwitchMode    = XGISwitchMode;
+        pScrn->AdjustFrame   = XGIAdjustFrame;
+        pScrn->EnterVT       = XGIEnterVT;
+        pScrn->LeaveVT       = XGILeaveVT;
+        pScrn->FreeScreen    = XGIFreeScreen;
+        pScrn->ValidMode     = XGIValidMode;
+
+        pXGI = XGIGetRec(pScrn);
+        if (pXGI == NULL) {
+            return FALSE;
+        }
+
+        pXGI->pPciInfo = dev;
+        pXGI->chipset = match_data;
+
+
+        /* Jong 09/06/2006; support dual view */
+#ifdef XGIDUALVIEW
+        pEnt = xf86GetEntityInfo(entity_num);
+        if (g_DualViewMode == 1) {
+            XGIEntityPtr pXGIEntity = NULL;
+            DevUnion  *pEntityPrivate;
+
+            xf86SetEntitySharable(entity_num);
+
+            if (XGIEntityIndex < 0) {
+                XGIEntityIndex = xf86AllocateEntityPrivateIndex();
+            }
+
+            pEntityPrivate = xf86GetEntityPrivate(pEnt->index, XGIEntityIndex);
+            if (!pEntityPrivate->ptr) {
+                pEntityPrivate->ptr = xnfcalloc(sizeof(XGIEntityRec), 1);
+                pXGIEntity = pEntityPrivate->ptr;
+                memset(pXGIEntity, 0, sizeof(XGIEntityRec));
+                pXGIEntity->lastInstance = -1;
+            } else {
+                pXGIEntity = pEntityPrivate->ptr;
+            }
+
+            pXGIEntity->lastInstance++;
+            xf86SetEntityInstanceForScreen(pScrn, pScrn->entityList[0],
+                                           pXGIEntity->lastInstance);
+        }
+#endif /* XGIDUALVIEW */
+    }
+
+    return (pScrn != NULL);
+}
+#else
 static Bool XGIProbe(DriverPtr drv, int flags)
 {
     int     i;
@@ -538,6 +633,7 @@ static Bool XGIProbe(DriverPtr drv, int flags)
     xfree(devSections);
     return foundScreen;
 }
+#endif
 
 static XGIPtr XGIGetRec(ScrnInfoPtr pScrn)
 {
@@ -617,6 +713,7 @@ static void XGIDPMSSet(ScrnInfoPtr pScrn, int PowerManagementMode, int flags)
 static Bool XGIMapMMIO(ScrnInfoPtr pScrn)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
+    int err = 0;
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -625,14 +722,21 @@ static Bool XGIMapMMIO(ScrnInfoPtr pScrn)
     if (!pXGI->IOBase) {
         if (pXGI->isFBDev) {
             pXGI->IOBase = fbdevHWMapMMIO(pScrn);
+            err = (pXGI->IOBase == NULL);
         }
         else {
             /* Map a virtual address IOBase from physical address IOAddr
              * for MMIO
              */
+#ifdef XSERVER_LIBPCIACCESS
+            err = pci_device_map_region(pXGI->pPciInfo, 1, TRUE);
+            pXGI->IOBase = pXGI->pPciInfo->regions[1].memory;
+#else
             pXGI->IOBase = xf86MapPciMem(pScrn->scrnIndex, VIDMEM_MMIO,
                                          pXGI->pciTag, pXGI->IOAddr, 
                                          XGI_MMIO_SIZE);
+            err = (pXGI->IOBase == NULL);
+#endif
         }
     }
 
@@ -643,7 +747,7 @@ static Bool XGIMapMMIO(ScrnInfoPtr pScrn)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    return pXGI->IOBase != NULL;
+    return (err == 0);
 }
 
 
@@ -666,10 +770,14 @@ static void XGIUnmapMMIO(ScrnInfoPtr pScrn)
             fbdevHWUnmapMMIO(pScrn);
         }
         else {
+#ifdef XSERVER_LIBPCIACCESS
+            pci_device_unmap_region(pXGI->pPciInfo, 1);
+#else
             xf86UnMapVidMem(pScrn->scrnIndex, pXGI->IOBase, XGI_MMIO_SIZE);
+#endif
         }
 
-	pXGI->IOBase = NULL;
+        pXGI->IOBase = NULL;
     }
 
 #if DBG_FLOW
@@ -683,6 +791,7 @@ static void XGIUnmapMMIO(ScrnInfoPtr pScrn)
 static Bool XGIMapFB(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
+    int err = 0;
 
 
 #if DBG_FLOW
@@ -692,6 +801,7 @@ static Bool XGIMapFB(ScrnInfoPtr pScrn)
     if (!pXGI->fbBase) {
         if (pXGI->isFBDev) {
             pXGI->fbBase = fbdevHWMapVidmem(pScrn);
+            err = (pXGI->fbBase == NULL);
         }
         else {
             /* Make sure that the fbSize has been set (after
@@ -699,11 +809,17 @@ static Bool XGIMapFB(ScrnInfoPtr pScrn)
              * mapping.
              */
             if (pXGI->fbSize != 0) {
+#ifdef XSERVER_LIBPCIACCESS
+                err = pci_device_map_region(pXGI->pPciInfo, 0, TRUE);
+                pXGI->fbBase = pXGI->pPciInfo->regions[0].memory;
+#else
                 pXGI->fbBase = xf86MapPciMem(pScrn->scrnIndex,
                                              VIDMEM_FRAMEBUFFER,
                                              pXGI->pciTag,
                                              pXGI->fbAddr,
-                                             pXGI->fbSize); 
+                                             pXGI->fbSize);
+                err = (pXGI->fbBase == NULL);
+#endif
 
                 xf86DrvMsg(pScrn->scrnIndex, X_INFO,
                            "Frame Buffer Map at 0x%p\n", pXGI->fbBase);
@@ -715,7 +831,7 @@ static Bool XGIMapFB(ScrnInfoPtr pScrn)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    return pXGI->fbBase != NULL;
+    return (err == 0);
 }
 
 
@@ -1006,23 +1122,6 @@ static Bool XGIPreInitConfig(ScrnInfoPtr pScrn)
 
     /* Chipset */
     from = X_PROBED;
-    /*
-    if (pDev->chipset && *pDev->chipset)
-    {
-        pXGI->chipset  = xf86StringToToken(XGIChipsets, pDev->chipset);
-        from           = X_CONFIG;
-    }
-    else if (pDev->chipID >= 0)
-    {
-        pXGI->chipset  = pDev->chipID;
-        from           = X_CONFIG;
-    }
-    else
-    {
-        pXGI->chipset = pXGI->pPciInfo->chipType;
-    }
-    pScrn->chipset = (char *)xf86TokenToString(XGIChipsets, pXGI->chipset);
-    */
     if (pScrn->chipset == NULL)
     {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
@@ -1042,24 +1141,21 @@ static Bool XGIPreInitConfig(ScrnInfoPtr pScrn)
                 pScrn->chipset,
                 pXGI->chipset);
 
-    /* Determine Frame Buffer base address */
-	/* Jong 07/07/2006; base address of frame buffer from PCI configuration space */
-	/* It's a physical address */
+#ifndef XSERVER_LIBPCIACCESS
+    /* Determine frame buffer base address from PCI configuration space.
+     * It's a physical address 
+     */
     from = X_PROBED;
-
     pXGI->fbAddr = pXGI->pPciInfo->memBase[0] & 0xFFFFFFF0; 
 
-    if (pDev->MemBase)
-    {
+    if (pDev->MemBase) {
         xf86DrvMsg(pScrn->scrnIndex, X_INFO,
                    "Linear address override, using 0x%08x instead of 0x%08x\n",
                     pDev->MemBase,
                     pXGI->fbAddr);
         pXGI->fbAddr = pDev->MemBase;
         from = X_CONFIG;
-    }
-    else if (!pXGI->fbAddr)
-    {
+    } else if (!pXGI->fbAddr) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
                    "No valid linear framebuffer address\n");
         return FALSE;
@@ -1068,53 +1164,26 @@ static Bool XGIPreInitConfig(ScrnInfoPtr pScrn)
     xf86DrvMsg(pScrn->scrnIndex, from, "Linear framebuffer at 0x%lx\n",
                pXGI->fbAddr);
 
-    /* MMIO registers */
-    from = X_PROBED;
 
-	/* Jong 07/07/2006; base address of MMIO from PCI configuration space */
-	/* It's a physical address */
+    /* Base address of MMIO from PCI configuration space.
+     * It's a physical address 
+     */
+    from = X_PROBED;
     pXGI->IOAddr = pXGI->pPciInfo->memBase[1] & 0xFFFFFFF0;
 
-    if (pDev->IOBase)
-    {
+    if (pDev->IOBase) {
         xf86DrvMsg(pScrn->scrnIndex, X_INFO,
                    "MMIO address override, using 0x%08x instead of 0x%08x\n",
                    pDev->IOBase,
                    pXGI->IOAddr);
         pXGI->IOAddr = pDev->IOBase;
         from = X_CONFIG;
-    }
-    else if (!pXGI->IOAddr)
-    {
+    } else if (!pXGI->IOAddr) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "No valid MMIO address\n");
         return FALSE;
     }
     xf86DrvMsg(pScrn->scrnIndex, X_PROBED,"IO registers at 0x%lx\n", pXGI->IOAddr);
-
-
-    /* BIOS */
-    from = X_PROBED;
-
-	/* Jong 07/07/2006; base address of VBIOS from PCI configuration space */
-	/* It's a physical address */
-	/* Is it the "Expansion ROM Base Address" at 30H ? */
-    pXGI->BIOSAddr = pXGI->pPciInfo->biosBase & 0xFFFFFFF0;
-
-    if (pDev->BiosBase)
-    {
-        xf86DrvMsg(pScrn->scrnIndex, X_INFO,
-                   "BIOS address override, using 0x%08x instead of 0x%08x\n",
-                    pDev->BiosBase,
-                    pXGI->BIOSAddr);
-        pXGI->BIOSAddr = pDev->BiosBase;
-        from = X_CONFIG;
-    }
-
-    if (pXGI->BIOSAddr)
-    {
-        xf86DrvMsg(pScrn->scrnIndex, from,
-                   "BIOS at 0x%08lx\n", pXGI->BIOSAddr);
-    }
+#endif
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -1526,20 +1595,19 @@ static Bool XGIPreInitMemory(ScrnInfoPtr pScrn)
     MessageType     from;
 
 
+    /* Save offset of frame buffer for setting destination and source base in
+     * acceleration functions.
+     * 
+     * On XP5, base address must be less than 64MB=0x4000000.
+     */
+    pScrn->fbOffset = 0;
 #ifdef XGIDUALVIEW
-    /* FB base of first view starts right from base address */
-    /* got from PCI config space or config file */
-    /* its FB size is set pXGI->freeFbSize / 2 */
-
-    /* Second view need an offset; first view keep pXGI->fbAddr */
-    /* Jong 09/20/2006; only dual view takes effect */
     if (g_DualViewMode) {
         /* Use half of the memory available for each view */
         pXGI->freeFbSize /= 2;
  
         if (!pXGI->FirstView) {
-            /* pXGI->fbAddr must be less than 0x4000000 (64MB) */
-            pXGI->fbAddr += (pXGI->freeFbSize >= 0x4000000)
+            pScrn->fbOffset = (pXGI->freeFbSize >= 0x4000000)
                 ? (pXGI->freeFbSize - 1024) : pXGI->freeFbSize; 
         }
     }
@@ -1762,6 +1830,7 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
 #endif
 
 
+#ifndef XSERVER_LIBPCIACCESS
     pXGI->pPciInfo = xf86GetPciInfoForEntity(pXGI->pEnt->index);
     pXGI->pciTag = pciTag(pXGI->pPciInfo->bus,
                           pXGI->pPciInfo->device,
@@ -1773,7 +1842,8 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
                pXGI->pPciInfo->func);
 
     pXGI->chipset = pXGI->pEnt->chipset;
-    pScrn->chipset = (char *)xf86TokenToString(XGIChipsets, pXGI->pEnt->chipset);
+#endif
+    pScrn->chipset = (char *)xf86TokenToString(XGIChipsets, pXGI->chipset);
 
     pXGI->isFBDev = FALSE;
 
@@ -2167,26 +2237,18 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
     OHACleanup = LoaderSymbol("OHACleanup");
 #endif
 
-    pScrn->memPhysBase = pXGI->fbAddr;
-
     pXGI->directRenderingEnabled = XGIDRIScreenInit(pScreen);
     if (!pXGI->directRenderingEnabled) {
-	goto fail;
+        goto fail;
     }
 
-	/* Jong 09/22/2006; to save offset of frame buffer for */
-	/* setting Des and Src base in acceleration function */
-	/* pScrn->fbOffset = 0; */
-	if(!g_DualViewMode || (pXGI->FirstView) )
-	    pScrn->fbOffset = 0;
-	else
-	{
-		/* Jong 11/09/2006; base address must be less than 64MB=0x4000000 */
-		pScrn->fbOffset = pXGI->fbAddr - (pXGI->pPciInfo->memBase[0] & 0xFFFFFFF0);
-		/* pScrn->fbOffset = pXGI->fbAddr - (pXGI->pPciInfo->memBase[0] & 0xFFFFFFF0); */
-
-		if(pScrn->fbOffset >= 0x4000000) pScrn->fbOffset = 0x4000000 - 1024;
-	}
+    pScrn->memPhysBase =
+#ifdef XSERVER_LIBPCIACCESS
+        (pXGI->pPciInfo->regions[0].base_addr & ~0x0F)
+#else
+        (pXGI->pPciInfo->memBase[0] & 0xFFFFFFF0);
+#endif
+        + pScrn->fbOffset;
 
     /*
      * If using the vgahw module, its data structures and related

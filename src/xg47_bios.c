@@ -2069,20 +2069,16 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
 
         OUTW(0x3C4, 0x9211);
 
-        /* W2 starting address default = 0 */
-		/* Jong 09/21/2006; Window 2 Starting address of (Y) frame buffer */
-		/* We need to give an different address than (0,0) if MHS is required */
-		/* Otherwise; (0,0) is correct for simultaneous and content mode */
-
-		/* Jong 09/26/2006; not necessary */
-		W2fbAddr=pXGI->fbAddr; /* total 25 bits is effective */
-		/* W2fbAddr=(pXGI->fbAddr) & 0x01FFFFFF; */ /* total 25 bits is effective */
-		/* dwTemp=(CARD32)INB(0x2483) & 0xFE;
-		W2fbAddr=(dwTemp<<24) | W2fbAddr; */
-
-		/* Jong 09/26/2006; test */
-		/* W2fbAddr=0x2000000;*/ /* 32MB */ /* Jong 10/02/2006; use pXGI->fbAddr instead */
-		XG47SetW2ViewBaseAddr(pScrn, (unsigned long)W2fbAddr); 
+	/* Window 2 Starting address of (Y) frame buffer.
+	 *
+	 * We need to give an different address than (0,0) if MHS is
+	 * required.  Otherwise (0,0) is correct for simultaneous and content
+	 * mode.
+	 * 
+	 * Total 25 bits is effective.
+	 */
+	W2fbAddr = pScrn->memPhysBase;
+	XG47SetW2ViewBaseAddr(pScrn, (unsigned long)W2fbAddr);
 
 /* Jong 09/26/2006; support dual view */
 #ifdef XGI_DUMP_DUALVIEW

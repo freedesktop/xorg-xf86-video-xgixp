@@ -37,7 +37,11 @@
 /*#include <sys/ioctl.h>*/
 
 #include "xf86str.h"        /* ScrnInfoPtr */
+#ifdef XSERVER_LIBPCIACCESS
+#include <pciaccess.h>
+#else
 #include "xf86Pci.h"        /* PCI config space */
+#endif
 #include "xaa.h"            /* XAA and Cursor Support */
 #include "xf86Cursor.h"
 #include "xf86DDC.h"        /* DDC support */
@@ -458,8 +462,12 @@ typedef struct {
 
 typedef struct {
     ScrnInfoPtr         pScrn;
+#ifdef XSERVER_LIBPCIACCESS
+    struct pci_device * pPciInfo;
+#else
     pciVideoPtr         pPciInfo;
     PCITAG              pciTag;
+#endif
     EntityInfoPtr       pEnt;
 
     CARD8               chipID;
@@ -471,9 +479,10 @@ typedef struct {
     int                 pix24bpp;       /* Depth of pixmap for 24bpp framebuffer */
     Bool                isDac8bits;     /* Use 8 bit DAC? */
 
+#ifndef XSERVER_LIBPCIACCESS
     unsigned long       IOAddr;
     unsigned long       fbAddr;
-    unsigned long       BIOSAddr;
+#endif
     unsigned char *     IOBase;
     unsigned char *     fbBase;
     unsigned char *     biosBase;

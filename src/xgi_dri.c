@@ -111,7 +111,7 @@ Bool XGIDRIScreenInit(ScreenPtr pScreen)
     dri_info->ddxDriverMajorVersion      = XGI_VERSION_MAJOR;
     dri_info->ddxDriverMinorVersion      = XGI_VERSION_MINOR;
     dri_info->ddxDriverPatchVersion      = XGI_VERSION_PATCH;
-    dri_info->frameBufferPhysicalAddress = (void *) pXGI->fbAddr;
+    dri_info->frameBufferPhysicalAddress = (void *) pScrn->memPhysBase;
     dri_info->frameBufferSize            = pXGI->fbSize;
     dri_info->frameBufferStride          = (pScrn->displayWidth *
                                             (pScrn->bitsPerPixel >> 3));

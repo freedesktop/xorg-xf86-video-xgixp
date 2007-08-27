@@ -274,7 +274,7 @@ XGIDGAOpenFramebuffer(ScrnInfoPtr pScrn,
     XGIPtr pXGI = XGIPTR(pScrn);
 
     *name = NULL;             /* no special device */
-    *mem = (unsigned char*)pXGI->fbAddr;
+    *mem = (unsigned char*) pScrn->memPhysBase;
     *size = pXGI->fbSize;
     *offset = 0;
     *flags = DGA_NEED_ROOT;
