@@ -73,9 +73,12 @@ AC_CHECK_FILE([${sdkdir}/dristruct.h],
 AC_DEFINE(XF86DRI,1,[Enable DRI driver support])
 AC_DEFINE(XF86DRI_DEVEL,1,[Enable developmental DRI driver support])
 
+save_CFLAGS="$CFLAGS"
+CFLAGS="$XORG_CFLAGS"
 AC_CHECK_DECL(XSERVER_LIBPCIACCESS,
               [XSERVER_LIBPCIACCESS=yes], [XSERVER_LIBPCIACCESS=no],
               [#include "xorg-server.h"])
+CFLAGS="$save_CFLAGS"
 
 if test "x$XSERVER_LIBPCIACCESS" = xyes; then
     PKG_CHECK_MODULES([PCIACCESS], [pciaccess >= 0.8.0])
