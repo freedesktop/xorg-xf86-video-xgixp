@@ -169,14 +169,10 @@ Bool XGIDRIScreenInit(ScreenPtr pScreen)
     }
 
 	
-    /* Until the DRM hits 1.0.x, each minor version bump may be an
-     * incompatible change.  Therefore, require the exact version.
-     */
-    if ((kernel_version->version_major != 0) 
-	|| (kernel_version->version_minor != 13)) {
+    if ((kernel_version->version_major != 1)) {
         xf86DrvMsg(pScreen->myNum, X_ERROR,
                    "[dri] Kernel module version mismatch.  "
-		   "Version 0.13.x required!  Disabling DRI.\n");
+		   "Version 1.0.x or later required!  Disabling DRI.\n");
 	drmFreeVersion(kernel_version);
         XGIDRICloseScreen(pScreen);
         return FALSE;
