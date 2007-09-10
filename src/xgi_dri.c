@@ -36,6 +36,7 @@
 
 #include <drm/xgi_drm.h>
 #include "sarea.h"
+#include "xgi_dri.h"
 
 static void XGIDRITransitionNoop(ScreenPtr pScreen)
 {
@@ -83,7 +84,7 @@ Bool XGIDRIScreenInit(ScreenPtr pScreen)
 {
     ScrnInfoPtr pScrn  = xf86Screens[pScreen->myNum];
     XGIPtr         pXGI = XGIPTR(pScrn);
-    struct XGIDRIPrivate *dri_priv;
+    struct xgi_dri_private *dri_priv;
     DRIInfoPtr     dri_info;
     void *scratch_ptr;
     int scratch_int;
@@ -129,7 +130,7 @@ Bool XGIDRIScreenInit(ScreenPtr pScreen)
     }
     dri_info->SAREASize = SAREA_MAX;
 
-    dri_priv = xcalloc(sizeof(struct XGIDRIPrivate), 1);
+    dri_priv = xcalloc(sizeof(struct xgi_dri_private), 1);
     dri_info->devPrivate = dri_priv;
 
     if (dri_priv == NULL) {
@@ -137,7 +138,7 @@ Bool XGIDRIScreenInit(ScreenPtr pScreen)
         return FALSE;
     }
 
-    dri_info->devPrivateSize = sizeof(struct XGIDRIPrivate);
+    dri_info->devPrivateSize = sizeof(struct xgi_dri_private);
     dri_info->contextSize    = sizeof(struct XGIDRIContext);
 
     dri_info->CreateContext  = XGICreateContext;
@@ -193,6 +194,7 @@ Bool XGIDRIFinishScreenInit(ScreenPtr pScreen)
 {
     ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
     XGIPtr pXGI = XGIPTR(pScrn);
+    struct xgi_dri_private *dri_priv = pXGI->dri_info->devPrivate;
     int err;
     struct xgi_bootstrap  bs;
 
@@ -234,7 +236,9 @@ Bool XGIDRIFinishScreenInit(ScreenPtr pScreen)
 	return FALSE;
     }
 
-	
+    dri_priv->bpp = pScrn->bitsPerPixel;
+    dri_priv->sarea_priv_offset = sizeof(XF86DRISAREARec);
+
     return TRUE;
 }
 

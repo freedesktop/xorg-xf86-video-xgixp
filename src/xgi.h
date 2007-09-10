@@ -642,10 +642,6 @@ typedef struct {
 #endif
 } XGIRec, *XGIPtr;
 
-struct XGIDRIPrivate {
-    int    dummy;
-};
-
 struct XGIDRIContext {
     int    dummy;
 };
