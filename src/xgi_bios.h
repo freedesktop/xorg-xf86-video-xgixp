@@ -442,16 +442,10 @@ extern CARD32 XGIGetSetChipSupportDevice(XGIPtr pXGI,
 extern CARD16 XGIGetColorIndex(CARD16 depth);
 
 extern Bool   XGIReadBiosData(XGIPtr pXGI, CARD8 *array);
-extern void   XGICloseSecondaryView(XGIPtr pXGI);
 extern CARD16 XGIBiosCalculateClock(XGIPtr pXGI,
                                     CARD8 low,
                                     CARD8 high);
-extern Bool   XGIBiosDllPunt(XGIPtr pXGI,
-                             unsigned long cmd,
-                             unsigned long *pInBuf,
-                             unsigned long *pOutBuf);
 
-/*extern Bool   XGIBiosDllInit(XGIPtr pXGI); */
 extern Bool XGIBiosDllInit(ScrnInfoPtr pScrn);
 
 extern Bool   XGIBiosValidMode(ScrnInfoPtr pScrn,
@@ -463,57 +457,12 @@ extern Bool   XGIBiosModeInit(ScrnInfoPtr pScrn,
                               unsigned long device);
 
 
-extern CARD32 XGIBiosGetMaxBandWidth(XGIPtr pXGI);
-extern Bool   XGIBiosSetMultiViewLoop(XGIPtr pXGI,
-                                      unsigned long multiLoop);
-extern void   XGIBiosGetMultiViewLoop(XGIPtr pXGI,
-                                      unsigned long *pMultiLoop);
-extern Bool   XGIBiosValidModeBaseRefRate(XGIPtr pXGI,
-                                          XGIAskModePtr pAskMode);
 extern unsigned long XGIBiosValueInit(XGIPtr pXGI);
-extern CARD32 XGIBiosGetFreeFbSize(XGIPtr pXGI, Bool isAvailable);
-extern unsigned long XGIBiosGetSupportDevice(XGIPtr pXGI);
-extern void   XGIBiosGetCurrentTime(XGIPtr pXGI,
-                                    unsigned long * pStartTime);
-extern Bool   XGIBiosGetLCDInfo(XGIPtr pXGI,
-                         unsigned long * pBuf);
-extern Bool   XGIBiosGetLidInfo(XGIPtr pXGI, unsigned long * pBuf);
-extern Bool   XGIBiosGetTVInfo(XGIPtr pXGI,
-                               unsigned long * pInBuf,
-                               unsigned long * pOutBuf);
 extern Bool   XGIBiosCloseSecondView(XGIPtr pXGI);
 extern Bool   XGIBiosCloseAllDevice(XGIPtr pXGI,
                                     unsigned long* pDevices);
 extern Bool   XGIBiosOpenAllDevice(XGIPtr pXGI,
                                    unsigned long* pDevices);
-extern Bool   XGIBiosSetLineBeating(XGIPtr pXGI,
-                                    unsigned long* pLineBeating);
-extern Bool   XGIBiosGetModeVClock(XGIPtr pXGI,
-                                   unsigned long* pModeVClock,
-                                   unsigned long  displayDevice,
-                                   CARD16 screenWidth,
-                                   CARD16 screenHeight,
-                                   CARD16 bitsPerPlane,
-                                   CARD16 frequency);
-extern Bool   XGIBiosGetMV7Info(XGIPtr pXGI,
-                                unsigned long* pOutBuf);
-extern Bool   XGIBiosSetMV7Info(XGIPtr pXGI,
-                                unsigned long* pInBuf);
-extern Bool   XGIBiosGetTVColorInfo(XGIPtr pXGI,
-                                    unsigned long *pBrightness,
-                                    unsigned long *pContrast);
-extern Bool   XGIBiosSetTVColorInfo(XGIPtr pXGI,
-                                    unsigned long brightness,
-                                    unsigned long contrast);
-extern Bool   XGIBiosGetTVPosition(XGIPtr pXGI,
-                                   unsigned long *pdwX,
-                                   unsigned long* pdwY);
-extern Bool   XGIBiosSetTVPosition(XGIPtr pXGI,
-                                   unsigned long dwX,
-                                   unsigned long dwY);
-extern unsigned long XGIBiosGetTVFlickerFilter(XGIPtr pXGI);
-extern Bool   XGIBiosSetTVFlickerFilter(XGIPtr pXGI,
-                                        unsigned long dwFlickerFilter);
 
 #endif
 

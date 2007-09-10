@@ -341,14 +341,12 @@ typedef Bool  (*FUN_XGIBiosDtvCtrl)(ScrnInfoPtr,
                                 unsigned long,
                                 unsigned long*,
                                 unsigned long*);
-typedef CARD32 (*FUN_XGIBiosGetfreeFbSize)(ScrnInfoPtr, Bool);
 
 typedef struct {
     unsigned long                   size;
     FUN_XGIBiosValidMode            biosValidMode;
     FUN_XGIBiosModeInit             biosModeInit;
     FUN_XGIBiosSpecialFeature       biosSpecialFeature;
-    FUN_XGIBiosGetfreeFbSize        biosGetFreeFbSize;
     FUN_XGIBiosValueInit            biosValueInit;
     unsigned long                   dtvType;
     FUN_XGIBiosDtvCtrl              biosDtvCtrl;

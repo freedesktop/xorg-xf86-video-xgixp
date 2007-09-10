@@ -40,7 +40,6 @@ extern int  XG47BiosSpecialFeature(ScrnInfoPtr pScrn,
                                    unsigned long cmd,
                                    unsigned long *pInBuf,
                                    unsigned long *pOutBuf);
-extern CARD32 XG47BiosGetFreeFbSize(ScrnInfoPtr pScrn, Bool isAvailable);
 extern Bool   XG47BiosDTVControl(ScrnInfoPtr pScrn,
                                  unsigned long cmd,
                                  unsigned long * pInBuf,

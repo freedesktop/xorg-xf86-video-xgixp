@@ -2450,19 +2450,6 @@ int XG47BiosSpecialFeature(ScrnInfoPtr pScrn,
         return FALSE;
 }
 
-/*
- * Get Frame buffer size.
- */
-CARD32 XG47BiosGetFreeFbSize(ScrnInfoPtr pScrn, Bool isAvailable)
-{
-    XGIPtr  pXGI = XGIPTR(pScrn);
-
-    if(isAvailable)
-        return pXGI->freeFbSize;
-    else
-        return pXGI->biosFbSize;
-}
-
 Bool XG47BiosDTVControl(ScrnInfoPtr pScrn,
                         unsigned long cmd,
                         unsigned long * pInBuf,

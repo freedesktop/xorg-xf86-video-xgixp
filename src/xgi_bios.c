@@ -909,10 +909,8 @@ CARD16 XGIBiosCalculateClock(XGIPtr pXGI, CARD8 low, CARD8 high)
 /*
  * below is bios call
  */
-Bool XGIBiosDllPunt(XGIPtr pXGI,
-                    unsigned long cmd,
-                    unsigned long *pInBuf,
-                    unsigned long *pOutBuf)
+static Bool XGIBiosDllPunt(XGIPtr pXGI, unsigned long cmd,
+                           unsigned long *pInBuf, unsigned long *pOutBuf)
 {
     ScrnInfoPtr pScrn = pXGI->pScrn;
     Bool        result = FALSE;
@@ -939,7 +937,6 @@ Bool XGIBiosDllPunt(XGIPtr pXGI,
 /*
  * Init bios dll
  */
-/*Bool XGIBiosDllInit(XGIPtr pXGI)*/
 Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
@@ -951,7 +948,6 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
         pXGI->pBiosDll->biosValidMode           = XG47BiosValidMode;
         pXGI->pBiosDll->biosModeInit            = XG47BiosModeInit;
         pXGI->pBiosDll->biosSpecialFeature      = XG47BiosSpecialFeature;
-        pXGI->pBiosDll->biosGetFreeFbSize       = XG47BiosGetFreeFbSize;
         pXGI->pBiosDll->biosValueInit           = XG47BiosValueInit;
         pXGI->pBiosDll->biosDtvCtrl             = NULL;
 
@@ -973,7 +969,6 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
         pXGI->pBiosDll->biosValidMode           = NULL;
         pXGI->pBiosDll->biosModeInit            = NULL;
         pXGI->pBiosDll->biosSpecialFeature      = NULL;
-        pXGI->pBiosDll->biosGetFreeFbSize       = NULL;
         pXGI->pBiosDll->biosValueInit           = NULL;
         pXGI->pBiosDll->biosDtvCtrl             = NULL;
         break;
@@ -1171,66 +1166,6 @@ Bool XGIBiosModeInit(ScrnInfoPtr pScrn,
 }
 
 /*
- * get max band width from bios
- */
-CARD32 XGIBiosGetMaxBandWidth(XGIPtr pXGI)
-{
-    unsigned long maxBandwidth;
-
-    if (XGIBiosDllPunt(pXGI,
-                      (CARD32)GET_AVAILABLE_BANDWIDTH,
-                       NULL,
-                      (unsigned long *)&maxBandwidth))
-    {
-        maxBandwidth &= 0x0000FFFF;
-    }
-    else
-    {
-        maxBandwidth  = 0x0000FFFF;     /* Maximum */
-    }
-    return maxBandwidth;
-}
-
-Bool XGIBiosSetMultiViewLoop(XGIPtr pXGI, unsigned long multiLoop)
-{
-    return XGIBiosDllPunt(pXGI,
-                          SET_HOTKEY_LOOP,
-                          &multiLoop, NULL);
-}
-
-void XGIBiosGetMultiViewLoop(XGIPtr pXGI, unsigned long *pMultiLoop)
-{
-    unsigned long arrMultiLoop[2];
-
-    arrMultiLoop[0] = GET_HOTKEY_LOOP;
-    arrMultiLoop[1] = 0;
-
-    XGIBiosDllPunt(pXGI,
-                   GET_HOTKEY_LOOP,
-                   NULL,
-                   (unsigned long *)&arrMultiLoop[0]);
-    *pMultiLoop = arrMultiLoop[1];
-}
-
-
-Bool XGIBiosValidModeBaseRefRate(XGIPtr pXGI,
-                                 XGIAskModePtr pAskMode)
-{
-    ScrnInfoPtr pScrn = pXGI->pScrn;
-    Bool        result;
-    CARD16      refreshRate = pAskMode->refRate;
-
-    result = XGIBiosValidMode(pScrn, pAskMode, 0);
-
-    if (result &&
-        (pAskMode->refRate & 0x00FF) != (CARD16)refreshRate)
-    {
-        result = FALSE;
-    }
-    return result;
-}
-
-/*
  * Used in Win2K driver for resuming from Hibernation/Standby,
  */
 unsigned long XGIBiosValueInit(XGIPtr pXGI)
@@ -1239,72 +1174,6 @@ unsigned long XGIBiosValueInit(XGIPtr pXGI)
     if (pXGI->pBiosDll->biosValueInit)
         (pXGI->pBiosDll->biosValueInit)(pScrn);
     return TRUE;
-}
-/*
- * this function is just for DSTN pannel
- */
-CARD32 XGIBiosGetFreeFbSize(XGIPtr pXGI, Bool isAvailable)
-{
-    ScrnInfoPtr pScrn = pXGI->pScrn;
-    if (pXGI->pBiosDll->biosGetFreeFbSize)
-        return (pXGI->pBiosDll->biosGetFreeFbSize)(pScrn, isAvailable);
-    return FALSE;
-}
-
-unsigned long XGIBiosGetSupportDevice(XGIPtr pXGI)
-{
-    unsigned long devSupportInfo = 0;
-
-    if (!XGIBiosDllPunt(pXGI,
-                        GET_DEV_SUPPORT_INFORMATION,
-                        0,
-                        (unsigned long *)&devSupportInfo))
-    {
-        devSupportInfo = 0xFF;
-    }
-    return devSupportInfo;
-}
-
-void XGIBiosGetCurrentTime(XGIPtr pXGI,
-                           unsigned long * pStartTime)
-{
-    XGIBiosDllPunt(pXGI, GET_CURRENT_TIME, NULL, pStartTime);
-}
-
-Bool XGIBiosGetLCDInfo(XGIPtr pXGI,
-                       unsigned long * pBuf)
-{
-    return XGIBiosDllPunt(pXGI,
-                          GET_FLAT_PANEL_INFORMATION,
-                          0,
-                          pBuf);
-}
-
-Bool XGIBiosGetLidInfo(XGIPtr pXGI, unsigned long * pBuf)
-{
-    return XGIBiosDllPunt(pXGI,
-                          GET_PANEL_LID_INFORMATION,
-                          0,
-                          pBuf);
-}
-
-Bool XGIBiosGetTVInfo(XGIPtr pXGI,
-                      unsigned long * pInBuf,
-                      unsigned long * pOutBuf)
-{
-    return XGIBiosDllPunt(pXGI,
-                          GET_TV_PHYSICAL_SIZE,
-                          pInBuf,
-                          pOutBuf);
-}
-
-Bool XGIBiosCloseSecondView(XGIPtr pXGI)
-{
-    unsigned long canCallBios = 1;
-    return XGIBiosDllPunt(pXGI,
-                          CLOSE_SECOND_VIEW,
-                          (unsigned long*)&canCallBios,
-                          NULL);
 }
 
 Bool XGIBiosCloseAllDevice(XGIPtr pXGI,
@@ -1323,56 +1192,6 @@ Bool XGIBiosOpenAllDevice(XGIPtr pXGI,
                           OPEN_ALL_DEVICE,
                           pDevices,
                           NULL);
-}
-
-Bool XGIBiosSetLineBeating(XGIPtr pXGI,
-                           unsigned long* pLineBeating)
-{
-    return XGIBiosDllPunt(pXGI,
-                          LINE_BEATING,
-                          pLineBeating,
-                          NULL);
-}
-
-Bool XGIBiosGetModeVClock(XGIPtr pXGI,
-                          unsigned long* pModeVClock,
-                          unsigned long  displayDevice,
-                          CARD16 screenWidth,
-                          CARD16 screenHeight,
-                          CARD16 bitsPerPlane,
-                          CARD16 frequency)
-{
-    XGIAskModeRec modeInfo;
-
-    modeInfo.width          = screenWidth;
-    modeInfo.height         = screenHeight;
-    modeInfo.pixelSize      = bitsPerPlane;
-    modeInfo.refRate        = frequency;
-    modeInfo.condition      = displayDevice;
-
-    return XGIBiosDllPunt(pXGI,
-                          GET_MODE_VCLOCK,
-                          (unsigned long*)&modeInfo,
-                          pModeVClock);
-}
-
-Bool XGIBiosGetMV7Info(XGIPtr pXGI,
-                       unsigned long* pOutBuf)
-{
-    unsigned long inBuf[2];
-    return XGIBiosDllPunt(pXGI,
-                          GET_MV7,
-                          (unsigned long*)&inBuf,
-                          pOutBuf);
-}
-Bool XGIBiosSetMV7Info(XGIPtr pXGI,
-                       unsigned long* pInBuf)
-{
-    unsigned long outBuf = 0;
-    return XGIBiosDllPunt(pXGI,
-                          SET_MV7,
-                          pInBuf,
-                          (unsigned long*)&outBuf);
 }
 
 /*
@@ -1437,145 +1256,4 @@ static unsigned long XGIBiosSetGradValue(XGIDigitalTVRec* pDtvInfo,
         pDtvInfo->direction = 0;
     }
     return TRUE;
-}
-
-Bool XGIBiosGetTVColorInfo(XGIPtr pXGI, unsigned long *pBrightness, unsigned long *pContrast)
-{
-    XGIDigitalTVColorRec dtvColor;
-    unsigned long        input = 0;
-
-    /* Get three color information. */
-    XGIBiosDllPunt(pXGI,
-                   GET_TV_COLOR_INFORMATION,
-                   (unsigned long *)&input,
-                   (unsigned long *)&dtvColor);
-
-    if (dtvColor.ret == 0) return FALSE; /* Calling failure. */
-
-    *pBrightness = XGIBiosGetGradValue((XGIDigitalTVRec*)&(dtvColor.info[1]), 100); /* Brigheness: 0..100. */
-    *pContrast   = XGIBiosGetGradValue((XGIDigitalTVRec*)&(dtvColor.info[0]), 100); /* Contrast:   0..100. */
-    return TRUE;
-}
-
-/*
- *  Set the TV color information.
- */
-Bool XGIBiosSetTVColorInfo(XGIPtr pXGI, unsigned long brightness, unsigned long contrast)
-{
-    XGIDigitalTVColorRec dtvColor;
-    unsigned long        output;
-    unsigned long        input = 0;
-    Bool                 ret;
-
-    /* Read three color information first. */
-    ret = XGIBiosDllPunt(pXGI,
-                         GET_TV_COLOR_INFORMATION,
-                         (unsigned long*)&input,
-                         (unsigned long*)&dtvColor);
-
-    if (0 == dtvColor.ret || !ret) return FALSE; /* Calling failure. */
-
-    if (brightness <= 100)
-    {
-        XGIBiosSetGradValue(&dtvColor.info[1], 100, brightness);
-    }
-    if (contrast <= 100)
-    {
-        XGIBiosSetGradValue(&dtvColor.info[0], 100, brightness);
-    }
-    ret = XGIBiosDllPunt(pXGI,
-                         SET_TV_COLOR_INFORMATION,
-                         (unsigned long*)&dtvColor,
-                         (unsigned long*)&output);
-    return ret;
-}
-
-Bool XGIBiosGetTVPosition(XGIPtr pXGI, unsigned long *pdwX, unsigned long* pdwY)
-{
-    XGIDigitalTVPositionRec    dtvPos;
-    unsigned long              input;
-    Bool                       ret;
-
-    /* Get (x,y) position. */
-    input = CHANGE_ON_HORIZONTAL | CHANGE_ON_VERTICAL;
-    ret = XGIBiosDllPunt(pXGI,
-                         GET_TV_SCREEN_POSITION,
-                         (unsigned long*)&input,
-                         (unsigned long*)&dtvPos);
-
-    if (!ret || dtvPos.ret == 0) return FALSE; /* Calling failure. */
-
-    *pdwX = XGIBiosGetGradValue(&dtvPos.info[0], INVALID_VALUE);
-    *pdwY = XGIBiosGetGradValue(&dtvPos.info[1], INVALID_VALUE);
-    return ret;
-}
-
-/*
- *  Set the TV Position.
- */
-Bool XGIBiosSetTVPosition(XGIPtr pXGI, unsigned long dwX, unsigned long dwY)
-{
-    XGIDigitalTVPositionRec     dtvPos;
-    unsigned long               input;
-    unsigned long               output;
-    Bool                        ret;
-
-    /* Get (x,y) position. */
-    input = CHANGE_ON_HORIZONTAL | CHANGE_ON_VERTICAL;
-    ret = XGIBiosDllPunt(pXGI,
-                         GET_TV_SCREEN_POSITION,
-                         (unsigned long*)&input,
-                         (unsigned long*)&dtvPos);
-
-    if (!ret || dtvPos.ret == 0) return FALSE; /* Calling failure. */
-
-    XGIBiosSetGradValue(&dtvPos.info[0], INVALID_VALUE, dwX);
-    XGIBiosSetGradValue(&dtvPos.info[1], INVALID_VALUE, dwY);
-    dtvPos.ret = CHANGE_ON_HORIZONTAL | CHANGE_ON_VERTICAL;
-    ret = XGIBiosDllPunt(pXGI,
-                         SET_TV_SCREEN_POSITION,
-                         (unsigned long*)&dtvPos,
-                         (unsigned long*)&output);
-    return ret;
-}
-
-/*
- *  Get the TV flicker filter.
- */
-unsigned long XGIBiosGetTVFlickerFilter(XGIPtr pXGI)
-{
-    XGIDigitalTVCallRec     dtvCall;
-    unsigned long           input;
-
-    XGIBiosDllPunt(pXGI,
-                   GET_TV_FLICKER,
-                   (unsigned long*)&input,
-                   (unsigned long*)&dtvCall);
-    if (!dtvCall.ret) return 0; /* Calling failure. */
-
-    return XGIBiosGetGradValue(&dtvCall.info, 1000); /* Flicker filter: 0..1000. */
-}
-
-/*
- *  Set the TV flicker filter.
- */
-Bool XGIBiosSetTVFlickerFilter(XGIPtr pXGI, unsigned long dwFlickerFilter)
-{
-    XGIDigitalTVCallRec     dtvCall;
-    unsigned long           output;
-    Bool                    ret;
-
-    /* Read the flicker info first. */
-    ret = XGIBiosDllPunt(pXGI,
-                         GET_TV_FLICKER,
-                         (unsigned long*)&output,
-                         (unsigned long*)&dtvCall);
-    if (!ret || 0 == dtvCall.ret) return FALSE; /* Calling failure. */
-
-    XGIBiosSetGradValue(&dtvCall.info, 1000, dwFlickerFilter); /* Flicker filter: 0..1000 */
-    ret = XGIBiosDllPunt(pXGI,
-                         SET_TV_FLICKER,
-                         (unsigned long*)&dtvCall,
-                         (unsigned long*)&output);
-    return ret;
 }
