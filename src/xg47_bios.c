@@ -38,6 +38,9 @@
 static Bool XG47BiosDTVControl(XGIPtr pXGI, unsigned cmd,
     const CARD16 *piWord);
 
+static CARD16 XGIGetRefreshSupport(XGIPtr pXGI, unsigned device, 
+    unsigned index, unsigned modeNum, unsigned colorIndex);
+
 extern XGIPixelClockRec XG47ModeVClockTable[];
 extern int XG47ModeVClockTableSize;
 extern XGIPixelClockRec XG47ModeVClockTable2[];
@@ -636,56 +639,25 @@ void XG47OpenAllDevice(XGIPtr pXGI, CARD8 device2Open)
  *   (See BIOS spec: Get refresh rate support for definition)
  *
  */
-CARD16 XGIGetRefreshSupport(XGIPtr pXGI, CARD8 device, CARD8 index, CARD16 modeNum, CARD16 colorIndex)
+CARD16 XGIGetRefreshSupport(XGIPtr pXGI, unsigned device, unsigned index,
+                            unsigned modeNum, unsigned colorIndex)
 {
-    XGIModePtr  pModeTable = XG47ModeTable;
-    CARD16      refresh;
-    CARD8       i = index;
+    static const int dev_to_idx_table[16] = {
+        ~0,  0,  1, ~0,  2, ~0, ~0, ~0,
+         3, ~0, ~0, ~0, ~0, ~0, ~0, ~0,
+    };
+    const int j = dev_to_idx_table[device & 0x0f];
 
-    switch (device)
-    {
-    case DEV_SUPPORT_LCD:
-        if(pModeTable[i].refBIOS[0])
-        {
-            refresh = pModeTable[i].refBIOS[0];
-        }
-        else
-        {
-            pModeTable[i].refBIOS[0] = refresh = XGIGetRefreshRateCapability(pXGI, modeNum, colorIndex);
-        }
-        break;
-    case DEV_SUPPORT_CRT:
-        if(pModeTable[i].refBIOS[1])
-        {
-            refresh = pModeTable[i].refBIOS[1];
-        }
-        else
-        {
-            pModeTable[i].refBIOS[1] = refresh = XGIGetRefreshRateCapability(pXGI, modeNum, colorIndex);
-        }
-        break;
-    case DEV_SUPPORT_TV:
-        if(pModeTable[i].refBIOS[2])
-        {
-            refresh = pModeTable[i].refBIOS[2];
-        }
-        else
-        {
-            pModeTable[i].refBIOS[2] = refresh = XGIGetRefreshRateCapability(pXGI, modeNum, colorIndex);
-        }
-        break;
-    case DEV_SUPPORT_DVI:
-        if(pModeTable[i].refBIOS[3])
-        {
-            refresh = pModeTable[i].refBIOS[3];
-        }
-        else
-        {
-            pModeTable[i].refBIOS[3] = refresh = XGIGetRefreshRateCapability(pXGI, modeNum, colorIndex);
-        }
-        break;
+    if (j == ~0) {
+        return 0;
     }
-    return refresh;
+
+    if (!XG47ModeTable[index].refBIOS[j]) {
+        XG47ModeTable[index].refBIOS[j] = 
+            XGIGetRefreshRateCapability(pXGI, modeNum, colorIndex);
+    }
+
+    return XG47ModeTable[index].refBIOS[j];
 }
 
 /*
@@ -796,7 +768,7 @@ Bool XG47GetValidMode(XGIPtr pXGI,
 			modeSpec |= (pMode0->modeNo & 0x0100) >> 7; /* 10 bits */
 		}
 
-		refSupport = XGIGetRefreshSupport(pXGI, (CARD8)(pMode0->condition & 0x0f), i, modeNo, modeSpec);
+		refSupport = XGIGetRefreshSupport(pXGI, pMode0->condition, i, modeNo, modeSpec);
 		/*
 		 * CRT, DVI device
 		 */
@@ -911,9 +883,8 @@ Bool XG47GetValidMode(XGIPtr pXGI,
             save = INB(XGI_REG_GRX + 1);
             OUTB(XGI_REG_GRX + 1, ((save & 0xF0) | (pMode1->condition & 0x0F)));
 
-            refSupport = XGIGetRefreshSupport(pXGI,
-                                              (CARD8)(pMode1->condition & 0x0f), k,
-                                              (CARD16)(pMode1->modeNo & 0x7F),
+            refSupport = XGIGetRefreshSupport(pXGI, pMode1->condition, k,
+                                              (pMode1->modeNo & 0x7F),
                                               XGIGetColorIndex(pMode1->pixelSize));
             OUTW(0x3C4, 0x9211);
             OUTB(XGI_REG_GRX, 0x5A);
