@@ -859,48 +859,20 @@ Bool XG47GetValidMode(XGIPtr pXGI,
 		pMode0->refRate = (CARD16)XG47GetRefreshRateByIndex((CARD8)refRateIndex);
 	}
 
-    /*
-     *
+    /* Check mode for dual view.
      */
-	/* Jong 09/14/2006; Check mode for dual view */
-	/* Jong 09/16/2006; codes need to be modified because they use pMode0 = NULL */
-    if(pMode1)
-    {
+    if (pMode1) {
  #ifdef XGI_DUMP_DUALVIEW
 	ErrorF("Jong-Debug-pMode1->modeNo=%d--\n", pMode1->modeNo);
 #endif
 
-		/* Check framebuffer size */
-        if(pMode1->condition & 0x80000000)  /* MHS */
-        {
-			ret_value= (CARD32)(pMode1->width * pMode1->height * (pMode1->pixelSize/8) );
-
-			/* Jong 09/16/2006; don't need to check total size of dual view but just check second view */
-            /* ret_value  = (CARD32)pMode0->width * pMode0->height * pMode0->pixelSize/8;
-            ret_value += (CARD32)pMode1->width * pMode1->height * pMode1->pixelSize/8; */
-
+        /* Check the memory requirements for this mode.  If it's larger than
+         * the reported on-card memory, reject the mode.
+         */
+        ret_value = (pMode1->width * pMode1->height * (pMode1->pixelSize/8));
+        if (ret_value > pXGI->freeFbSize) {
+            return FALSE;
         }
-        else
-        {
-			ret_value= (CARD32)(pMode1->width * pMode1->height * (pMode1->pixelSize/8) );
-
-			/* Jong 09/16/2006; why comparing pMode0 and pMode1 ??? */
-            /* if(pMode0->width < pMode1->width)
-                ret_value = (CARD32)pMode1->width;
-            else
-                ret_value = (CARD32)pMode0->width;
-
-            if(pMode0->height < pMode1->height)
-                ret_value *= (CARD32)pMode1->height;
-            else
-                ret_value *= (CARD32)pMode0->height;
-
-            ret_value *= (CARD32)pMode0->pixelSize;
-            ret_value /= 8; */
-        }
-
-        /* Check memory size supportting by panel type. */
-        if(ret_value > pXGI->freeFbSize)  return FALSE;
 
         pMode1->modeNo &= ~0x7F;
         /*pMode1->modeNo |= (CARD16)XGIConvertResToModeNo(pMode1->width,
@@ -985,39 +957,6 @@ Bool XG47GetValidMode(XGIPtr pXGI,
             }
             pMode1->refRate = (CARD16)XG47GetRefreshRateByIndex((CARD8)refRateIndex2);
         }
-
-        /*
-         * Check Refresh Rate & BW
-         */
-#if 0 /* Jong 09/16/2006 uncertainly; don't apply at this moment !!!! */
-        for(j=0; j<VREF_MAX_NUMBER; j++)
-        {
-            if((pMode0->refSupport >> j) & 0x01)
-            {
-                if (XGICheckModeSupported(pXGI, pMode0, pMode1, (CARD16)XG47GetRefreshRateByIndex((CARD8)j)) == FALSE)
-                    pMode0->refSupport &= ~((CARD16)0x0001 << j);
-            }
-        }
-
-        if(!pMode0->refSupport) return FALSE;
-
-        if(flag)               /* flag and refRateIndex come from pMode0. */
-        {
-            if (!XGICheckRefreshRateSupport(pMode0->refSupport, (CARD8)refRateIndex))
-                return FALSE;
-        }
-        else
-        {
-            for(j=0; j<VREF_MAX_NUMBER; j++)
-            {
-                if((pMode0->refSupport >> j) & 0x01) break;
-            }
-            pMode0->refRate = (CARD16)XG47GetRefreshRateByIndex((CARD8)(j+1));
-            if(pMode0->refRate == 0)
-                return FALSE;
-        }
-#endif
-
     }
     else
     {
@@ -1050,176 +989,6 @@ Bool XG47GetValidMode(XGIPtr pXGI,
         }
 
         if (!pMode0->refRate) return FALSE;
-
-#if 0 /* old codes */
-        /* Check framebuffer size */
-        if(pMode1->condition & 0x80000000)  /* MHS */
-        {
-            ret_value  = (CARD32)pMode0->width * pMode0->height * pMode0->pixelSize/8;
-            ret_value += (CARD32)pMode1->width * pMode1->height * pMode1->pixelSize/8;
-
-        }
-        else
-        {
-            if(pMode0->width < pMode1->width)
-                ret_value = (CARD32)pMode1->width;
-            else
-                ret_value = (CARD32)pMode0->width;
-
-            if(pMode0->height < pMode1->height)
-                ret_value *= (CARD32)pMode1->height;
-            else
-                ret_value *= (CARD32)pMode0->height;
-
-            ret_value *= (CARD32)pMode0->pixelSize;
-            ret_value /= 8;
-        }
-
-        /* Check memory size supportting by panel type. */
-        if(ret_value > pXGI->freeFbSize)  return FALSE;
-
-        pMode1->modeNo &= ~0x7F;
-        /*pMode1->modeNo |= (CARD16)XGIConvertResToModeNo(pMode1->width,
-                                                        pMode1->height,
-                                                        pMode1->pixelSize);*/
-        for (k = 0; k < XG47ModeTableSize; k++)
-        {
-            if ((pModeTable[k].width == pMode1->width)
-             && (pModeTable[k].height == pMode1->height))
-            {
-                pMode1->modeNo |= pModeTable[k].modeNo & 0x7F;
-                break;
-            }
-        }
-        if(!(pMode1->modeNo & 0x7F))    return FALSE;
-
-        if (pMode1->condition & DEV_SUPPORT_LCD)
-        {
-            pMode1->refRate = pXGI->lcdRefRate;
-            pMode1->refSupport =(CARD16)XG47ConvertRefValueToIndex(pXGI->lcdRefRate);
-        }
-        else
-        {
-            /*
-             * Refresh Rate for second view.
-             */
-            CARD8 save;
-            INT8  refRateIndex2 = 0;
-
-            OUTW(0x3C4, 0x9211);
-            OUTB(XGI_REG_GRX, 0x5A);
-            save = INB(XGI_REG_GRX + 1);
-            OUTB(XGI_REG_GRX + 1, ((save & 0xF0) | (pMode1->condition & 0x0F)));
-
-            refSupport = XGIGetRefreshSupport(pXGI,
-                                              (CARD8)(pMode1->condition & 0x0f), k,
-                                              (CARD16)(pMode1->modeNo & 0x7F),
-                                              XGIGetColorIndex(pMode1->pixelSize));
-            OUTW(0x3C4, 0x9211);
-            OUTB(XGI_REG_GRX, 0x5A);
-            OUTB(XGI_REG_GRX+1, save);
-
-            pMode1->refSupport = refSupport;
-            if (!refSupport)    return FALSE;
-
-            refRateIndex2 = XG47ConvertRefValueToIndex(pMode1->refRate);
-
-            if (!refRateIndex2)
-            {
-                for (refRateIndex2 = 0; refRateIndex2 < VREF_MAX_NUMBER; refRateIndex2++)
-                {
-                    if ((refSupport >> refRateIndex2) & 0x01)
-                    {
-                        refRateIndex2++;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                for (; refRateIndex2 >= 0; refRateIndex2--)
-                {
-                    if (XGICheckRefreshRateSupport(refSupport, (CARD8)refRateIndex2))
-                        break;
-                }
-                if (refRateIndex2 < 0)
-                {
-
-                    for (refRateIndex2 = 0; refRateIndex2 < VREF_MAX_NUMBER; refRateIndex2++)
-                    {
-                        if ((refSupport >> refRateIndex2) & 0x01)
-                        {
-                            refRateIndex2++;
-                            break;
-                        }
-                    }
-                }
-            }
-            pMode1->refRate = (CARD16)XG47GetRefreshRateByIndex((CARD8)refRateIndex2);
-        }
-
-        /*
-         * Check Refresh Rate & BW
-         */
-        for(j=0; j<VREF_MAX_NUMBER; j++)
-        {
-            if((pMode0->refSupport >> j) & 0x01)
-            {
-                if (XGICheckModeSupported(pXGI, pMode0, pMode1, (CARD16)XG47GetRefreshRateByIndex((CARD8)j)) == FALSE)
-                    pMode0->refSupport &= ~((CARD16)0x0001 << j);
-            }
-        }
-
-        if(!pMode0->refSupport) return FALSE;
-
-        if(flag)               /* flag and refRateIndex come from pMode0. */
-        {
-            if (!XGICheckRefreshRateSupport(pMode0->refSupport, (CARD8)refRateIndex))
-                return FALSE;
-        }
-        else
-        {
-            for(j=0; j<VREF_MAX_NUMBER; j++)
-            {
-                if((pMode0->refSupport >> j) & 0x01) break;
-            }
-            pMode0->refRate = (CARD16)XG47GetRefreshRateByIndex((CARD8)(j+1));
-            if(pMode0->refRate == 0)
-                return FALSE;
-        }
-    }
-    else
-    {
-		/* Jong 09/15/2006; support dual view */
-		if(pMode0 == NULL) return FALSE;
-
-        for(j=0; j<VREF_MAX_NUMBER; j++)
-        {
-            if((pMode0->refSupport >> j) & 0x01)
-            {
-                if(XGICheckModeSupported(pXGI, pMode0, pMode1, (CARD16)XG47GetRefreshRateByIndex((CARD8)j+1))==FALSE)
-                    pMode0->refSupport &= ~((CARD16)0x0001 << j);
-            }
-        }
-
-        if (!(pMode0->refSupport & ((CARD16)0x0001 << (refRateIndex-1))))
-        {
-            /*
-             * If the current refresh rate can not be supported,
-             * find lowest one.
-             */
-            for (refRateIndex=0; refRateIndex<VREF_MAX_NUMBER; refRateIndex++)
-            {
-                if ((pMode0->refSupport >> refRateIndex) & 0x01)
-                {
-                    refRateIndex++;
-                    break;
-                }
-            }
-        }
-
-        if (!pMode0->refRate) return FALSE;
-#endif
     }
 
     return TRUE;
