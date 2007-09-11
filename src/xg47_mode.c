@@ -453,25 +453,86 @@ void XG47SetW2ViewBaseAddr(ScrnInfoPtr pScrn, unsigned long startAddr)
     OUTB(0x2483, (CARD8)((INB(0x2483) & 0xFE) |((startAddr >> 24) & 0x1)));
 }
 
+
+static void fill_ask_mode(ScrnInfoPtr pScrn, DisplayModePtr dispMode,
+                          XGIAskModeRec *askMode, unsigned index)
+{
+    XGIPtr pXGI = XGIPTR(pScrn);
+    CARD8 ConnectedDevices;
+
+    askMode[index].width = dispMode->HDisplay;
+    askMode[index].height = dispMode->VDisplay; 
+    askMode[index].pixelSize = pScrn->bitsPerPixel;
+
+    switch (pXGI->displayDevice) {
+    case ST_DISP_LCD:
+    case ST_DISP_CRT:
+    case ST_DISP_TV:
+    case ST_DISP_DVI:
+    case ST_DISP_LCD_MV:
+    case ST_DISP_CRT_MV:
+    case ST_DISP_TV_MV:
+    case ST_DISP_DVI_MV:
+        askMode[index].condition = pXGI->displayDevice;
+        break;
+    default:
+        /* Use IN3X5B(0x5A) to check whether device is attached
+         *    0x22: single CRT
+         *    0x2e: DVI + CRT
+         *    0x2f: single DVI
+         *    ...
+         *
+         * How about LCD ??? 
+         */
+        ConnectedDevices = IN3X5B(0x5A);
+        if (ConnectedDevices & 0x01) {
+            /* single DVI */
+            askMode[index].condition = ST_DISP_DVI;
+        } else if ((ConnectedDevices & 0x0E) == 0x0E) {
+            /* DVI + CRT */
+            askMode[index].condition = ST_DISP_CRT | ST_DISP_DVI;
+        } else if (ConnectedDevices & 0x02) {
+            /* single CRT */
+            askMode[index].condition = ST_DISP_CRT;
+        } else if (ConnectedDevices & 0x10) {
+            /* TV : need to be verified more */
+            askMode[index].condition = ST_DISP_TV;
+        }
+
+        break;
+    }
+
+    if (dispMode->VRefresh <= 0.0) {
+        dispMode->VRefresh = (dispMode->SynthClock * 1000.0) /
+                             (dispMode->CrtcHTotal * dispMode->CrtcVTotal);
+    }
+
+    if (((int)dispMode->VRefresh) >= 85) {
+        askMode[index].refRate = 85;
+    } else if (((int)dispMode->VRefresh) >= 75) {
+        askMode[index].refRate = 75;
+    } else {
+        askMode[index].refRate = 60;
+    }
+}
+
+
 Bool XG47ModeInit(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
 {
-	/* Jong 09/15/2006; support dual view */
-    XGIAskModeRec   askMode[2];
-    /* XGIAskModeRec   askMode = {0, 0}; */
+    XGIAskModeRec askMode[2];
+    XGIPtr pXGI = XGIPTR(pScrn);
+    vgaHWPtr pVgaHW = VGAHWPTR(pScrn);
+    const int index =
+#ifdef XGIDUALVIEW
+        (!g_DualViewMode || pXGI->FirstView) ? 0 : 1
+#else
+        0
+#endif
+        ;
 
-    XGIPtr          pXGI = XGIPTR(pScrn);
-    vgaHWPtr        pVgaHW = VGAHWPTR(pScrn);
+    askMode[0].modeNo = 0x00;
+    askMode[1].modeNo = 0x00;
 
-	int				i;
-
-	/* Jong 09/15/2006; index of display mode */
-	int				index=0;
-	/* Jong 11/14/2006; use IN3X5B(0x5A) to check whether device is attached */
-	CARD8			ConnectedDevices=0x00;
-
-	/* Jong 11/08/2006; initialize modeNo */
-	askMode[0].modeNo=0x00;
-	askMode[1].modeNo=0x00;
 
     vgaHWUnlock(pVgaHW);
 
@@ -479,459 +540,74 @@ Bool XG47ModeInit(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
     if (!vgaHWInit(pScrn, dispMode))
         return FALSE;
 
-	/* Jong 07/1/42006; write OK! */
-	/*----------------------------*/
-	/*
-	for(i=0; i< 256; i++)
-		*(((CARD8*)(pXGI->fbBase))+i)=0x32; 
-
-	ErrorF("Jong-07142006-dump memory of FB-(32)\n");
-	XGIDumpMemory(pXGI->fbBase,  256); */
-	/*----------------------------*/
 
     pScrn->vtSema = TRUE;
 
-	/* Jong 09/15/2006; Use askMode[0] for single view or first view of dual view mode */
-	/* Use askMode[1] for second view of dual view mode */
-#ifdef XGIDUALVIEW
-	if(!g_DualViewMode || (pXGI->FirstView) )
-		index=0;
-	else
-		index=1;
-#endif
 
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-index=%d--\n", index);
-#endif
-
-	/* Jong 10/04/2006; hard code for test */
-    /* dispMode->HDisplay   = 1024;
-    dispMode->VDisplay      = 768; */
-
-    askMode[index].width       = dispMode->HDisplay;
-    askMode[index].height      = dispMode->VDisplay; 
-
-    askMode[index].pixelSize   = pScrn->bitsPerPixel;
-
-	/* Jong 11/09/2006; pXGI->displayDevice == 0 and then go to default */
-    switch(pXGI->displayDevice) /* Jong 11/09/2006; Be used to force opening devices */
-    {
-		case ST_DISP_LCD:
-			askMode[index].condition   = ST_DISP_LCD;
-			break;
-		case ST_DISP_CRT:
-			askMode[index].condition   = ST_DISP_CRT;
-			break;
-		case ST_DISP_TV:
-			askMode[index].condition   = ST_DISP_TV;
-			break;
-		case ST_DISP_DVI:
-			askMode[index].condition   = ST_DISP_DVI;
-			break;
-		/* Jong 11/14/2006; add for MV(multiple view) */
-		case ST_DISP_LCD_MV:
-			askMode[index].condition   = ST_DISP_LCD_MV;
-			break;
-		case ST_DISP_CRT_MV:
-			askMode[index].condition   = ST_DISP_CRT_MV;
-			break;
-		case ST_DISP_TV_MV:
-			askMode[index].condition   = ST_DISP_TV_MV;
-			break;
-		case ST_DISP_DVI_MV:
-			askMode[index].condition   = ST_DISP_DVI_MV;
-			break;
-		default : /* Jong 11/09/2006; follow current detection status to open device */
-			/* Jong 11/14/2006; 0x3cf-0x5B is a scratch register */
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-XG47ModeInit-IN3CFB(0x5B)=0x%x--\n", IN3CFB(0x5B));
-	ErrorF("Jong-Debug-XG47ModeInit-IN3X5B(0x5A)=0x%x--\n", IN3X5B(0x5A));
-#endif
-			/* Jong 11/14/2006; use IN3X5B(0x5A) to check whether device is attached */
-			/* 0x22 : single CRT; 0x2e : DVI + CRT , 0x2f : single DVI ... */
-			/* How about LCD ??? */
-			ConnectedDevices=IN3X5B(0x5A);
-
-			if (ConnectedDevices & 0x01) /* single DVI */
-			{
-				askMode[index].condition = ST_DISP_DVI;
-			}
-			else
-			{
-				if (ConnectedDevices & 0x0E == 0x0E) /* DVI + CRT */
-				{
-					askMode[index].condition = ST_DISP_CRT | ST_DISP_DVI;
-				}
-				else if (ConnectedDevices & 0x02) /* single CRT */
-				{
-					askMode[index].condition = ST_DISP_CRT;
-				}
-				else if(ConnectedDevices & 0x10) /* TV : need to be verified more */
-				{
-					askMode[index].condition = ST_DISP_TV;
-				}
-			}
-
-			/*
-			if (IN3CFB(0x5B) & ST_DISP_LCD)
-			{
-				askMode[index].condition = ST_DISP_LCD;
-			}
-			else if (IN3CFB(0x5B) & ST_DISP_CRT)
-			{
-				askMode[index].condition = ST_DISP_CRT;
-			}
-			else if (IN3CFB(0x5B) & ST_DISP_TV)
-			{
-				askMode[index].condition = ST_DISP_TV;
-			}
-			else if (IN3CFB(0x5B) & ST_DISP_DVI)
-			{
-				askMode[index].condition = ST_DISP_DVI;
-			} */
-			/* Jong 11/14/2006; add for MV(multiple view) */
-			/* 
-			else if (IN3CFB(0x5B) & ST_DISP_LCD_MV)
-			{
-				askMode[index].condition = ST_DISP_LCD_MV;
-			}
-			else if (IN3CFB(0x5B) & ST_DISP_CRT_MV)
-			{
-				askMode[index].condition = ST_DISP_CRT_MV;
-			}
-			else if (IN3CFB(0x5B) & ST_DISP_TV_MV)
-			{
-				askMode[index].condition = ST_DISP_TV_MV;
-			}
-			else if (IN3CFB(0x5B) & ST_DISP_DVI_MV)
-			{
-				askMode[index].condition = ST_DISP_DVI_MV;
-			} */
-
-			break;
-    }
-
-    if (dispMode->VRefresh <= 0.0)
-    {
-        dispMode->VRefresh = (dispMode->SynthClock * 1000.0) /
-                             (dispMode->CrtcHTotal * dispMode->CrtcVTotal);
-    }
-
-    if (((int)dispMode->VRefresh) >= 85)
-    {
-        askMode[index].refRate = 85;
-    }
-    else if (((int)dispMode->VRefresh) >= 75)
-    {
-        askMode[index].refRate = 75;
-    }
-    else
-    {
-        askMode[index].refRate = 60;
-    }
-
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-0-askMode[index].modeNo=0x%x--\n", askMode[index].modeNo);
-#endif
+    /* Use askMode[0] for single view or first view of dual view mode.
+     * Use askMode[1] for second view of dual view mode.
+     */
+    fill_ask_mode(pScrn, dispMode, askMode, index);
 
     if (g_DualViewMode && pXGI->FirstView) {
-	g_ModeOfFirstView = askMode[index];
+        g_ModeOfFirstView = askMode[index];
     }
 
-#ifdef XGI_DUMP_DUALVIEW
-    ErrorF("Jong-Debug-Before calling XGIBiosModeInit()-0-askMode[index].modeNo=0x%x--\n", askMode[index].modeNo);
-#endif
     if (!XGIBiosModeInit(pScrn, askMode, (g_DualViewMode != 0))) {
-	return FALSE;
+        return FALSE;
     }
 
-#if 0
-    askMode.width       = dispMode->HDisplay;
-    askMode.height      = dispMode->VDisplay;
-    askMode.pixelSize   = pScrn->bitsPerPixel;
-
-    switch(pXGI->displayDevice)
-    {
-    case ST_DISP_LCD:
-        askMode.condition   = ST_DISP_LCD;
-        break;
-    case ST_DISP_CRT:
-        askMode.condition   = ST_DISP_CRT;
-        break;
-    case ST_DISP_TV:
-        askMode.condition   = ST_DISP_TV;
-        break;
-    case ST_DISP_DVI:
-        askMode.condition   = ST_DISP_DVI;
-        break;
-    default :
-        if (IN3CFB(0x5B) & ST_DISP_LCD)
-        {
-            askMode.condition = ST_DISP_LCD;
-        }
-        else if (IN3CFB(0x5B) & ST_DISP_CRT)
-        {
-            askMode.condition = ST_DISP_CRT;
-        }
-        else if (IN3CFB(0x5B) & ST_DISP_TV)
-        {
-            askMode.condition = ST_DISP_TV;
-        }
-        else if (IN3CFB(0x5B) & ST_DISP_DVI)
-        {
-            askMode.condition = ST_DISP_DVI;
-        }
-        break;
+    /* Fix bug of supporting different modes for each view of dual view mode
+     * don't set offset register when 2nd view.
+     */
+    if (!g_DualViewMode || pXGI->FirstView) {
+        XG47SetCRTCViewStride(pScrn);
     }
-
-    if (dispMode->VRefresh <= 0.0)
-    {
-        dispMode->VRefresh = (dispMode->SynthClock * 1000.0) /
-                             (dispMode->CrtcHTotal * dispMode->CrtcVTotal);
-    }
-
-    if (((int)dispMode->VRefresh) >= 85)
-    {
-        askMode.refRate = 85;
-    }
-    else if (((int)dispMode->VRefresh) >= 75)
-    {
-        askMode.refRate = 75;
-    }
-    else
-    {
-        askMode.refRate = 60;
-    }
-
-	/* Jong 09/15/2006; Force to dual view */
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-Before calling XGIBiosModeInit()-2-askMode[index].modeNo=0x%x--\n", askMode[index].modeNo);
-#endif
-
-    if (!XGIBiosModeInit(pScrn, &askMode, TRUE)) return FALSE;
-    /* if (!XGIBiosModeInit(pScrn, &askMode, FALSE)) return FALSE;*/
-#endif
-
-	/* Jong 10/05/2006; fix bug of supporting different modes for each view of dual view mode */
-	/* don't set offset register when 2nd view */
-	if(!g_DualViewMode || (pXGI->FirstView) )
-	{
-#ifdef XGI_DUMP
-    XGIDumpRegisterValue(pScrn);
-#endif
-
-		XG47SetCRTCViewStride(pScrn);
-
-#ifdef XGI_DUMP
-	ErrorF("Jong-Debug-After-XG47SetCRTCViewStride()\n");
-    XGIDumpRegisterValue(pScrn);
-#endif
-	}
 
     return TRUE;
 }
 
-/* Jong 09/14/2006; check one mode per time from xf86ValidateModes()-xf86InitialCheckModeForDriver() */
-/* dispMode is mode information to be checked from X */
-/* Why to check modes at the same time with askMode[0] and askMode[1]? */
-/* It seems not feasible to get more information (dispMode) of second view when checking first view */
-/* We might need to check modes for each view individually because */
-/* xf86ValidateModes() will be called twice in different XGIPreInit()-XGIPreInitModes() */
-/* Of course, we must have the ability to identify which device in attached with each view (screen=pScrn) */
+
+/**
+ * Validate a mode passed from the core X server.
+ * 
+ * \sa xf86ValidateModes, xf86InitialCheckModeForDriver
+ */
 int XG47ValidMode(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
 {
-	/* Jong 09/12/2006; support dual view */
-	CARD8			DeviceStatus=0;
+    XGIPtr pXGI = XGIPTR(pScrn);
+    XGIAskModeRec askMode[2];
 
-	/* Jong 11/14/2006; use IN3X5B(0x5A) to check whether device is attached */
-	CARD8			ConnectedDevices=0x00;
 
-    XGIAskModeRec   askMode[2];
-    XGIPtr          pXGI = XGIPTR(pScrn);
+    fill_ask_mode(pScrn, dispMode, askMode, 0);
 
-/* Jong 09/12/2006; support dual view */
-/* will cause support mode not found even if single view */
-/* #ifdef XGIDUALVIEW
-    CARD32          dualView = 1;
-#else
-    CARD32          dualView = 0;
-#endif */
-    CARD32          dualView = 0;
-
-    askMode[0].width       = dispMode->HDisplay;
-    askMode[0].height      = dispMode->VDisplay;
-    askMode[0].pixelSize   = pScrn->bitsPerPixel;
-
-    switch(pXGI->displayDevice)
-    {
-		case ST_DISP_LCD:
-			askMode[0].condition   = ST_DISP_LCD;
-			break;
-		case ST_DISP_CRT:
-			askMode[0].condition   = ST_DISP_CRT;
-			break;
-		case ST_DISP_TV:
-			askMode[0].condition   = ST_DISP_TV;
-			break;
-		case ST_DISP_DVI:
-			askMode[0].condition   = ST_DISP_DVI;
-			break;
-		/* Jong 11/14/2006; add for MV(multiple view) */
-		case ST_DISP_LCD_MV: 
-			askMode[0].condition   = ST_DISP_LCD_MV;
-			break;
-		case ST_DISP_CRT_MV:
-			askMode[0].condition   = ST_DISP_CRT_MV;
-			break;
-		case ST_DISP_TV_MV:
-			askMode[0].condition   = ST_DISP_TV_MV;
-			break;
-		case ST_DISP_DVI_MV:
-			askMode[0].condition   = ST_DISP_DVI_MV;
-
-		/* Jong 09/11/2006; get current device status */
-		default :
-			/* Jong 09/12/2006; support dual view */
-			DeviceStatus=IN3CFB(0x5B); /* CRT:0x02; DVI:0x08 */
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-XG47ModeInit-IN3CFB(0x5B)=0x%x--\n", DeviceStatus);
-	ErrorF("Jong-Debug-XG47ModeInit-IN3X5B(0x5A)=0x%x--\n", IN3X5B(0x5A));
-#endif
-
-			/* Jong 11/14/2006; use IN3X5B(0x5A) to check whether device is attached */
-			/* 0x22 : single CRT; 0x2e : DVI + CRT , 0x2f : single DVI ... */
-			/* How about LCD ??? */
-			ConnectedDevices=IN3X5B(0x5A);
-
-			if (ConnectedDevices & 0x01) /* single DVI */
-			{
-				askMode[0].condition = ST_DISP_DVI;
-			}
-			else
-			{
-				if (ConnectedDevices & 0x0E) /* DVI + CRT */
-				{
-					askMode[0].condition = ST_DISP_CRT | ST_DISP_DVI;
-				}
-				else if (ConnectedDevices & 0x02) /* single CRT */
-				{
-					askMode[0].condition = ST_DISP_CRT;
-				}
-				else if(ConnectedDevices & 0x10) /* TV : need to be verified more */
-				{
-					askMode[0].condition = ST_DISP_TV;
-				}
-			}
-
-			/*
-			if (DeviceStatus & ST_DISP_LCD)
-			{
-				askMode[0].condition   = ST_DISP_LCD;
-			}
-			else if (DeviceStatus & ST_DISP_CRT)
-			{
-				askMode[0].condition   = ST_DISP_CRT;
-			}
-			else if (DeviceStatus & ST_DISP_TV)
-			{
-				askMode[0].condition   = ST_DISP_TV;
-			}
-			else if (DeviceStatus & ST_DISP_DVI)
-			{
-				askMode[0].condition   = ST_DISP_DVI;
-			} */
-			/* Jong 11/14/2006; add for MV(multiple view) */
-			/*
-			else if (DeviceStatus & ST_DISP_LCD_MV)
-			{
-				askMode[0].condition   = ST_DISP_LCD_MV;
-			}
-			else if (DeviceStatus & ST_DISP_CRT_MV)
-			{
-				askMode[0].condition   = ST_DISP_CRT_MV;
-			}
-			else if (DeviceStatus & ST_DISP_TV_MV)
-			{
-				askMode[0].condition   = ST_DISP_TV_MV;
-			}
-			else if (DeviceStatus & ST_DISP_DVI_MV)
-			{
-				askMode[0].condition   = ST_DISP_DVI_MV;
-			} */
-
-/* #if 0
-        if (IN3CFB(0x5B) & ST_DISP_LCD)
-        {
-            askMode[0].condition   = ST_DISP_LCD;
-        }
-        else if (IN3CFB(0x5B) & ST_DISP_CRT)
-        {
-            askMode[0].condition   = ST_DISP_CRT;
-        }
-        else if (IN3CFB(0x5B) & ST_DISP_TV)
-        {
-            askMode[0].condition   = ST_DISP_TV;
-        }
-        else if (IN3CFB(0x5B) & ST_DISP_DVI)
-        {
-            askMode[0].condition   = ST_DISP_DVI;
-        }
-#endif */
-
-        break;
-    }
-    /*askMode[0].condition   = ST_DISP_CRT;*/
-
-    if (dispMode->VRefresh <= 0.0)
-    {
-        dispMode->VRefresh = (dispMode->SynthClock * 1000.0) /
-                             (dispMode->CrtcHTotal * dispMode->CrtcVTotal);
-    }
-
-    if (((int)dispMode->VRefresh) >= 85)
-    {
-        askMode[0].refRate = 85;
-    }
-    else if (((int)dispMode->VRefresh) >= 75)
-    {
-        askMode[0].refRate = 75;
-    }
-    else
-    {
-        askMode[0].refRate = 60;
-    }
-
-	/* Jong 09/12/2006; Both askMode[0] and askMode[1] will be used in XG47BiosValidMode() */
-	/* pXGI->pBiosDll->biosValidMode() is XG47BiosValidMode() */
-    if (!pXGI->pBiosDll->biosValidMode(pScrn, askMode, dualView))
-    {
-        return (MODE_BAD);
+    /* Both askMode[0] and askMode[1] will be used in XG47BiosValidMode()
+     */
+    if (!pXGI->pBiosDll->biosValidMode(pScrn, askMode, 0)) {
+        return MODE_BAD;
     }
 
     /* judge the mode on LCD */
-    if (pXGI->displayDevice & ST_DISP_LCD
-        || (IN3CFB(0x5B) & ST_DISP_LCD))
-    {
-        if ((pXGI->lcdWidth == 1600) && (dispMode->HDisplay == 1400))
-        {
-            return(MODE_BAD);
+    if ((pXGI->displayDevice & ST_DISP_LCD)
+        || (IN3CFB(0x5B) & ST_DISP_LCD)) {
+        if ((pXGI->lcdWidth == 1600) && (dispMode->HDisplay == 1400)) {
+            return MODE_BAD;
         }
 
-        if (dispMode->HDisplay > pXGI->lcdWidth)
-        {
-            return(MODE_BAD);
+        if (dispMode->HDisplay > pXGI->lcdWidth) {
+            return MODE_BAD;
         }
     }
 
     /* judge the mode on CRT, DVI */
-    if ((pXGI->displayDevice & ST_DISP_CRT) || (IN3CFB(0x5B) & ST_DISP_CRT)
-         || (pXGI->displayDevice & ST_DISP_DVI) || (IN3CFB(0x5B) & ST_DISP_DVI))
-    {
-        if (dispMode->HDisplay == 1400)
-        {
-            return(MODE_BAD);
+    if ((pXGI->displayDevice & ST_DISP_CRT) 
+        || (IN3CFB(0x5B) & ST_DISP_CRT)
+        || (pXGI->displayDevice & ST_DISP_DVI)
+        || (IN3CFB(0x5B) & ST_DISP_DVI)) {
+        if (dispMode->HDisplay == 1400) {
+            return MODE_BAD;
         }
     }
 
-    return (MODE_OK);
+    return MODE_OK;
 }
