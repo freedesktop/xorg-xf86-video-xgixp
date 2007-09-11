@@ -641,10 +641,10 @@ CARD32 XGIGetCurrentDeviceStatus(XGIPtr pXGI)
  *
  * Current device(Primary/Secondary) status use same definition
  */
-CARD32 XGIGetSetChipSupportDevice(XGIPtr pXGI, CARD8 no, CARD32 device)
+void XGIGetSetChipSupportDevice(XGIPtr pXGI, Bool reset_to_original)
 {
-	/* Jong 09/12/2006; XGI_REG_CRX is 0x03D4 */
-	/* 0xC2 : TV Status flag 2 */
+    /* Jong 09/12/2006; XGI_REG_CRX is 0x03D4 */
+    /* 0xC2 : TV Status flag 2 */
     OUTB(XGI_REG_CRX, 0xC2);
 
     if ((INB(XGI_REG_CRX+1)) & 0x40) /* Jong 09/12/2006; Yes */
@@ -652,31 +652,12 @@ CARD32 XGIGetSetChipSupportDevice(XGIPtr pXGI, CARD8 no, CARD32 device)
     else
         pXGI->biosDevSupport    |= SUPPORT_CURRENT_NO_TV;
 
-    switch(no)
-    {
-    case 0x0:  /* Reset orignal support. */
-         pXGI->biosDevSupport = pXGI->biosOrgDevSupport;
-         return pXGI->biosOrgDevSupport;
-    case 0x2:
-    case 0x4:  /* Set support */
-         if(device & 0x000C0000)
-             device |= 0x000C0000;
-         pXGI->biosDevSupport &= 0x00ffff00;
-         pXGI->biosDevSupport |= (device & 0xff0000ff);
-         if(!(device & DEV_SUPPORT_TV))
-         {
-             pXGI->biosDevSupport  &= 0xff00ffff;
-         }
-         if(!(device & DEV_SUPPORT_LCD))
-         {
-             pXGI->biosDevSupport  &= 0xffff00ff;
-         }
-         return pXGI->biosDevSupport;
-    case 0x3:  /* Get support */
-    case 0x1:
-    default:
-         return pXGI->biosDevSupport;
+    if (reset_to_original) {
+        /* Reset orignal support. */
+        pXGI->biosDevSupport = pXGI->biosOrgDevSupport;
     }
+
+    return;
 }
 
 /*

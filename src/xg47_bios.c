@@ -686,7 +686,7 @@ Bool XG47GetValidMode(XGIPtr pXGI,
     CARD8       k;
     unsigned long   ret_value;
 
-    XGIGetSetChipSupportDevice(pXGI, 0, 0);
+    XGIGetSetChipSupportDevice(pXGI, TRUE);
 
 	/* Jong 09/20/2006; must be assigned for both pMode0 and pMode1 */
 	pModeTable = XG47ModeTable; 
@@ -1136,8 +1136,7 @@ Bool XG47BiosValidMode(ScrnInfoPtr pScrn,
     XGIAskModePtr   pMode0, pMode1;
     CARD32          temp;
 
-	/* Jong 09/12/2006; why to do this but don't get its return value? */
-    XGIGetSetChipSupportDevice(pXGI, 1, 0);
+    XGIGetSetChipSupportDevice(pXGI, FALSE);
     pMode0 = pMode;
 
 	/* Jong 09/12/2006; test */
