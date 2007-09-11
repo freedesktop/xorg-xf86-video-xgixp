@@ -913,24 +913,18 @@ static Bool XGIBiosDllPunt(XGIPtr pXGI, unsigned long cmd,
                            unsigned long *pInBuf, unsigned long *pOutBuf)
 {
     ScrnInfoPtr pScrn = pXGI->pScrn;
-    Bool        result = FALSE;
+    int result;
 
-    if (pXGI->pBiosDll->biosSpecialFeature)
-    {
-        if ((*pXGI->pBiosDll->biosSpecialFeature)(pScrn, cmd, pInBuf, pOutBuf) < 0)
-        {
-            /* DTV functions needed */
-            if (pXGI->pBiosDll->biosDtvCtrl)
-                return (*pXGI->pBiosDll->biosDtvCtrl)(pScrn, cmd, pInBuf, pOutBuf);
-            else /* No DTV support */
-                return FALSE;
-        }
-        else
-        {
-            /* Already dealt in BiosDll */
-            result = TRUE;
-        }
+    if (pXGI->pBiosDll->biosSpecialFeature == NULL) {
+        return FALSE;
     }
+
+    result = (*pXGI->pBiosDll->biosSpecialFeature)(pScrn, cmd, pInBuf,
+                                                   pOutBuf);
+    if ((result < 0) && pXGI->pBiosDll->biosDtvCtrl) {
+        result = (*pXGI->pBiosDll->biosDtvCtrl)(pScrn, cmd, pInBuf, pOutBuf);
+    }
+
     return result;
 }
 
@@ -995,38 +989,28 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
 
     pXGI->biosCapability = ((CARD32)pXGI->pInt10->bx << 16) | pXGI->pInt10->dx;
 
+
+    pXGI->pInt10->ax = 0x1280;
+    pXGI->pInt10->bx = 0x0014;
+    pXGI->pInt10->num = 0x10;
+    xf86ExecX86int10(pXGI->pInt10);
+
+    pXGI->pInt10->bx &= 0x7FFF;         /* Clear Master/Slave mode flag. */
+    switch(pXGI->pInt10->bx)
     {
-        pXGI->pInt10->ax = 0x1280;
-        pXGI->pInt10->bx = 0x0014;
-        pXGI->pInt10->num = 0x10;
-        xf86ExecX86int10(pXGI->pInt10);
-
-        pXGI->pInt10->bx &= 0x7FFF;         /* Clear Master/Slave mode flag. */
-        switch(pXGI->pInt10->bx)
-        {
-        case 0x0003: /* TV_TVX2 */
-
-            pXGI->pBiosDll->biosDtvCtrl = XG47BiosDTVControl;
-
-            pXGI->pBiosDll->dtvType = DTV_TVEXPRESS_XP4E; /* TV_TVX internal */
-            pXGI->dtvInfo = TV_TVXI;
-            break;
-        default:
-            pXGI->dtvInfo = 0xFFFFFFFF;
-            break;
-        }
-    }
-
-    switch (pXGI->pBiosDll->dtvType)
-    {
-    case DTV_TVEXPRESS_XP4E:
-        XGI47BiosAttachDTV(pXGI);
+    case 0x0003: /* TV_TVX2 */
         pXGI->pBiosDll->biosDtvCtrl = XG47BiosDTVControl;
+
+        pXGI->pBiosDll->dtvType = DTV_TVEXPRESS_XP4E; /* TV_TVX internal */
+        pXGI->dtvInfo = TV_TVXI;
+
+        XGI47BiosAttachDTV(pXGI);
         break;
     default:
-        pXGI->pBiosDll->biosDtvCtrl = NULL;
+        pXGI->dtvInfo = 0xFFFFFFFF;
         break;
     }
+
 
     /*
      * Get display device
@@ -1040,9 +1024,8 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
     return TRUE;
 }
 
-Bool XGIBiosValidMode(ScrnInfoPtr pScrn,
-                      XGIAskModePtr pAskMode,
-                      CARD32 dualView)
+static Bool XGIBiosValidMode(ScrnInfoPtr pScrn, XGIAskModePtr pAskMode,
+			     CARD32 dualView)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
 

@@ -199,21 +199,9 @@ typedef struct {
  *
  * BIOSDLL call Command definition
  */
-#define GET_TV_INFORMATION              20009
-
-#define GET_FLAT_PANEL_INFORMATION      10000
-#define GET_PANEL_LID_INFORMATION       20005
-#define GET_DEV_SUPPORT_INFORMATION     20003
 #define CLOSE_ALL_DEVICE                20400
 #define OPEN_ALL_DEVICE                 20401
-#define GET_TV_PHYSICAL_SIZE            20011
-#define GET_MODE_VCLOCK                 20800
-#define GET_AVAILABLE_BANDWIDTH         20801
-#define GET_CURRENT_TIME                20888
 #define CLOSE_SECOND_VIEW               20900
-
-#define SET_HOTKEY_LOOP                 20300
-#define GET_HOTKEY_LOOP                 20301
 
 /*
  * The following command list is defined for Digital TV
@@ -221,27 +209,8 @@ typedef struct {
  */
 #define INIT_TV_SCREEN                  30000
 
-#define GET_TV_SCREEN_POSITION          30003
-#define SET_TV_SCREEN_POSITION          30004
-#define GET_TV_COLOR_INFORMATION        30009
-#define SET_TV_COLOR_INFORMATION        30010
-/* TV flicker. */
-#define GET_TV_FLICKER                  30011
-#define SET_TV_FLICKER                  30012
-
 #define ENABLE_TV_DISPLAY               30014
 #define DISABLE_TV_DISPLAY              30015
-
-/* Line Beating */
-#define LINE_BEATING                    30016
-/* TV information for MV7 */
-#define SET_MV7                         30300
-#define GET_MV7                         30301
-
-#define GET_NEW_TV_INTERFACE            30308
-
-/* Save TV standard to CMOS */
-#define SAVE_PAL_NTSC_TO_CMOS           30500
 
 #define DTV_TVEXPRESS_XP4E  3
 
@@ -448,9 +417,6 @@ extern CARD16 XGIBiosCalculateClock(XGIPtr pXGI,
 
 extern Bool XGIBiosDllInit(ScrnInfoPtr pScrn);
 
-extern Bool   XGIBiosValidMode(ScrnInfoPtr pScrn,
-                               XGIAskModePtr pAskMode,
-                               CARD32 dualView);
 extern Bool   XGIBiosModeInit(ScrnInfoPtr pScrn,
                               XGIAskModePtr pMode,
                               CARD32 dualView,

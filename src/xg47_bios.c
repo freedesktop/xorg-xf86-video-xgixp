@@ -2334,37 +2334,7 @@ int XG47BiosSpecialFeature(ScrnInfoPtr pScrn,
     CARD16          *x;
     CARD32          *xd;
 
-    switch(cmd)
-    {
-    case GET_FLAT_PANEL_INFORMATION:
-        x = (CARD16 *)pOutBuf;
-        /*x[0] = wPanelSize;*/
-        x[1] = pXGI->lcdWidth;
-        x[2] = pXGI->lcdHeight;
-        x[3] = pXGI->lcdType;
-        x[4] = pXGI->lcdRefRate;
-        return TRUE;
-
-    case GET_PANEL_LID_INFORMATION:
-        xd = (CARD32 *)pOutBuf;
-        pXGI->pInt10->ax = 0x1205;
-        pXGI->pInt10->bx = 0x0014;
-        pXGI->pInt10->num = 0x10;
-        xf86ExecX86int10(pXGI->pInt10);
-
-        if((pXGI->pInt10->ax & 0xFF00)!=0)
-            xd[0] = LCD_LID_STATUS_UNKNOWN;
-        else if (pXGI->pInt10->cx & 0x02)
-            xd[0] = LCD_LID_CLOSE;
-        else
-            xd[0] = LCD_LID_OPEN;
-        return TRUE;
-
-    case GET_DEV_SUPPORT_INFORMATION:
-        xd = (CARD32 *)pOutBuf;
-        xd[0] = XGIGetSetChipSupportDevice(pXGI, 0x03, 0x0);
-        return TRUE;
-
+    switch(cmd) {
     case CLOSE_ALL_DEVICE:
         x = (CARD16 *)pInBuf;
         OUTW(0x3C4, 0x9211);
@@ -2377,65 +2347,9 @@ int XG47BiosSpecialFeature(ScrnInfoPtr pScrn,
         XG47OpenAllDevice(pXGI, (CARD8)x[0]);
         return TRUE;
 
-    case GET_TV_INFORMATION:
-
-        {
-            CARD32 dwNewIF = 0;
-
-            /* Query DTV to know new interface or not. */
-            if (pXGI->pBiosDll->biosDtvCtrl)
-            {
-                (*pXGI->pBiosDll->biosDtvCtrl)(pScrn, (CARD32)GET_NEW_TV_INTERFACE, 0, (unsigned long*)&dwNewIF);
-            }
-            xd = (CARD32*)pOutBuf;
-            xd[0] = pXGI->dtvInfo;
-            if (dwNewIF) xd[0] |= TV_NEW_INTERFACE;
-        }
-        return TRUE;
-
-    case GET_TV_PHYSICAL_SIZE:
-        xd=(CARD32 *)pInBuf;
-        pXGI->pInt10->ax = 0x1280;
-        pXGI->pInt10->bx = 0x0214;
-        if(xd[0]==0) pXGI->pInt10->bx |= 0x1000;   /*PAL*/
-        if(xd[1]!=0) pXGI->pInt10->bx |= 0x0100;   /*TV Native mode*/
-        if(xd[2]!=0) pXGI->pInt10->bx |=0x4000;   /*multiview*/
-        pXGI->pInt10->num = 0x10;
-        xf86ExecX86int10(pXGI->pInt10);
-
-        if((pXGI->pInt10->ax & 0xFF00)!=0) return FALSE;
-        if(pXGI->pInt10->bx <= 50) return FALSE;  /* For old BIOS !!! */
-        xd=(CARD32 *)pOutBuf;
-        xd[0]=(CARD32)pXGI->pInt10->bx;        /*H-Size*/
-        xd[1]=(CARD32)pXGI->pInt10->cx;        /*V-Size*/
-        return TRUE;
-
     /* Zdu, 10/8/98, Close second view for DOS FULL Screen */
     case CLOSE_SECOND_VIEW:
         XGICloseSecondaryView(pXGI);
-        return TRUE;
-
-    case GET_AVAILABLE_BANDWIDTH:
-        x = (CARD16 *)pOutBuf;
-        x[0] = pXGI->maxBandwidth;
-        return TRUE;
-
-    case GET_MODE_VCLOCK:
-        pMode = (XGIAskModePtr)pInBuf;
-        x = (CARD16 *)pOutBuf;
-        if(pMode->condition & DEV_SUPPORT_LCD)
-            x[0] = XGIGetVClock_BandWidth(pXGI,
-                                          pXGI->lcdWidth,
-                                          pXGI->lcdHeight,
-                                          pMode->pixelSize,
-                                          (CARD16)(pXGI->lcdRefRate), 1);
-        else
-            x[0] = XGIGetVClock_BandWidth(pXGI,
-                                          pMode->width,
-                                          pMode->height,
-                                          pMode->pixelSize,
-                                          (CARD16)(pMode->refRate),
-                                          (CARD8)(pMode->condition & 0x0F));
         return TRUE;
 
     default:
@@ -2456,23 +2370,9 @@ Bool XG47BiosDTVControl(ScrnInfoPtr pScrn,
                         unsigned long * pOutBuf)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
+    const CARD16 *const piWord = (CARD16*) pInBuf;
 
-    XGIDigitalTVRec *z, *w;
-    CARD32          *x, *y, *w1;
-    CARD16          *piWord, *poWord;
-
-    x  = (CARD32*)pInBuf;
-    z  = (XGIDigitalTVRec *)(x+1);
-
-    y = (CARD32*)pOutBuf;
-    w1 = y+1;
-    w  = (XGIDigitalTVRec *)(y+1);
-
-    piWord = (CARD16*)pInBuf;
-    poWord = (CARD16*)pOutBuf;
-
-    switch(cmd)
-    {
+    switch(cmd) {
     case ENABLE_TV_DISPLAY:
         XG47ControlTVDisplay(pXGI, TRUE);
         break;
@@ -2480,41 +2380,7 @@ Bool XG47BiosDTVControl(ScrnInfoPtr pScrn,
         XG47ControlTVDisplay(pXGI, FALSE);
         break;
     case INIT_TV_SCREEN:
-        XG47InitTVScreen(pXGI, piWord[0],piWord[1],piWord[2],piWord[3]);
-        break;
-    case DETECT_TV_CONNECTION:
-        *y  = 0x01;
-        *w1 = XG47DetectTVConnection(pXGI);
-        break;
-    case CONVERT_PAL_NTSC:
-        *y = 0x01;
-        XG47ConvertTVMode(pXGI, (CARD16)x[0]);
-        break;
-    case GET_TV_SCREEN_POSITION:
-        *y = 0x01;
-        if(!XG47GetTVScreenPosition(pXGI, w, x[0]))
-            return FALSE;
-        break;
-    case SET_TV_SCREEN_POSITION:
-        *y = (CARD32)XG47SetTVScreenPosition(pXGI, z, x[0]);
-        break;
-    case GET_TV_COLOR_INFORMATION:
-        *y = 0x01;
-        if(!XG47GetTVColorInformation(pXGI, w, x[0]))
-            return FALSE;
-        break;
-    case SET_TV_COLOR_INFORMATION:
-        *y = (CARD32)XG47SetTVColorInformation(pXGI, z, x[0]);
-        break;
-    case GET_NEW_TV_INTERFACE:
-        y[0] = 1; /* Support here. */
-        break;
-    case LINE_BEATING:
-        XG47LineBeating(pXGI, (Bool)x[0]);
-        break;
-    case SAVE_PAL_NTSC_TO_CMOS:
-        *y = 0x01;
-        XG47UpdateCMOS(pXGI, (CARD16)x[0]);
+        XG47InitTVScreen(pXGI, piWord[0], piWord[1], piWord[2], piWord[3]);
         break;
     default:
         return FALSE;
