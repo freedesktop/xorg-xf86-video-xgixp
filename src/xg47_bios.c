@@ -81,40 +81,28 @@ const CARD16 XG47RefreshTable[] = {
     120,                                    /* ZVMX_INDEX_REF95 */
 };
 
-/*
- * from bios dll: refresh.c
- */
-/*
- * Convert refresh rate index to value.
- *
- * Entry : index, refresh rate index number.
- *         isInterlace, TRUE for interlace format.
- * Return: refresh rate value.
- */
-CARD8 XG47ConvertRefIndexToValue(CARD8 index, Bool isInterlace)
-{
-    CARD8 value = XG47RefreshTable[index & 0x0F];
 
-    return value;
-}
-
-/*
+/**
  * Convert refresh rate value to index.
  *
- * Entry : value, refresh rate value.
- * Return: refresh rate index number.
+ * \param value  Refresh rate value whose index is to be found.
+ *
+ * \return
+ * Index of the specificed refresh rate in the refresh rate table.
+ *
+ * \bug
+ * Zero is returned on error, but this is also a valid value.  What to do?
  */
-CARD8 XG47ConvertRefValueToIndex(CARD16 value)
+static unsigned XG47ConvertRefValueToIndex(unsigned value)
 {
-    CARD8 index;
+    unsigned index;
 
-    for (index = 0; index < VREF_MAX_NUMBER; index ++)
-    {
-        if (value == (CARD16)(XG47RefreshTable[index]))
-        {
+    for (index = 0; index < VREF_MAX_NUMBER; index++) {
+        if (value == XG47RefreshTable[index]) {
             return index;
         }
     }
+
     return 0;
 }
 
