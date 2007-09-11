@@ -88,10 +88,8 @@ const CARD16 XG47RefreshTable[] = {
  * \param value  Refresh rate value whose index is to be found.
  *
  * \return
- * Index of the specificed refresh rate in the refresh rate table.
- *
- * \bug
- * Zero is returned on error, but this is also a valid value.  What to do?
+ * Index of the specificed refresh rate in the refresh rate table, or zero
+ * on failure.
  */
 static unsigned XG47ConvertRefValueToIndex(unsigned value)
 {
