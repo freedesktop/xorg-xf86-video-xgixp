@@ -634,25 +634,16 @@ Bool XG47ModeInit(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
 	ErrorF("Jong-Debug-0-askMode[index].modeNo=0x%x--\n", askMode[index].modeNo);
 #endif
 
-	/* Jong 09/15/2006; support dual view */
-	if(g_DualViewMode)
-	{
-		/* Jong 10/04/2006; support different modes for dual view */
-		if(pXGI->FirstView)
-			g_ModeOfFirstView=askMode[index];
+    if (g_DualViewMode && pXGI->FirstView) {
+	g_ModeOfFirstView = askMode[index];
+    }
 
 #ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-Before calling XGIBiosModeInit()-0-askMode[index].modeNo=0x%x--\n", askMode[index].modeNo);
+    ErrorF("Jong-Debug-Before calling XGIBiosModeInit()-0-askMode[index].modeNo=0x%x--\n", askMode[index].modeNo);
 #endif
-		if (!XGIBiosModeInit(pScrn, &askMode, 1, 0)) return FALSE;
-	}
-	else
-	{
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-Before calling XGIBiosModeInit()-1-askMode[index].modeNo=0x%x--\n", askMode[index].modeNo);
-#endif
-		if (!XGIBiosModeInit(pScrn, &askMode, 0, 0)) return FALSE;
-	}
+    if (!XGIBiosModeInit(pScrn, askMode, (g_DualViewMode != 0))) {
+	return FALSE;
+    }
 
 #if 0
     askMode.width       = dispMode->HDisplay;
@@ -717,8 +708,8 @@ Bool XG47ModeInit(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
 	ErrorF("Jong-Debug-Before calling XGIBiosModeInit()-2-askMode[index].modeNo=0x%x--\n", askMode[index].modeNo);
 #endif
 
-    if (!XGIBiosModeInit(pScrn, &askMode, 1, 0)) return FALSE;
-    /* if (!XGIBiosModeInit(pScrn, &askMode, 0, 0)) return FALSE;*/
+    if (!XGIBiosModeInit(pScrn, &askMode, TRUE)) return FALSE;
+    /* if (!XGIBiosModeInit(pScrn, &askMode, FALSE)) return FALSE;*/
 #endif
 
 	/* Jong 10/05/2006; fix bug of supporting different modes for each view of dual view mode */

@@ -1003,22 +1003,15 @@ static Bool XGIBiosValidMode(ScrnInfoPtr pScrn, XGIAskModePtr pAskMode,
 }
 
 /* Jong 1109/2006; pMode[]->condition indicate which device needs to be open */
-Bool XGIBiosModeInit(ScrnInfoPtr pScrn,
-                     XGIAskModePtr pMode,
-                     CARD32 dualView,
-                     unsigned long device)
+Bool XGIBiosModeInit(ScrnInfoPtr pScrn, XGIAskModePtr pMode, Bool dualView)
 {
     XGIPtr          pXGI = XGIPTR(pScrn);
-    unsigned long   devices = 0;
-	int				i;
+    unsigned long   devices;
+    Bool success;
 
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-XGIBiosModeInit()-0-pMode->modeNo=0x%x--\n", pMode->modeNo);
-#endif
 
     /* Ask BIOS if the mode is supported */
-    if (!XGIBiosValidMode(pScrn, pMode, dualView))   /* not supported */
-    {
+    if (!XGIBiosValidMode(pScrn, pMode, dualView)) {
         return FALSE;
     }
 
@@ -1026,95 +1019,30 @@ Bool XGIBiosModeInit(ScrnInfoPtr pScrn,
     devices = 0xF;
     XGIBiosCloseAllDevice(pXGI, &devices);
 
-	/* Jong 09/15/2006; single view */
-    if (!dualView)
-    {
-        if (!pXGI->isNeedCleanBuf)
-        {
+    if (!dualView) {
+        if (!pXGI->isNeedCleanBuf) {
             pMode->modeNo |= 0x80;
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-XGIBiosModeInit()-1-pMode->modeNo=0x%x--\n", pMode->modeNo);
-#endif
         }
 
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-DualView-before (biosModeInit)(pScrn, pMode, 0)----\n");
-	XGIDumpRegisterValue(g_pScreen);
-#endif
         /* Single View mode. */
-		/* Jong 09/14/2006; biosModeInit() is XG47BiosModeInit() */
-        if (!(*pXGI->pBiosDll->biosModeInit)(pScrn, pMode, 0))
-        {
-            return FALSE;
-        }
-/* Jong 09/21/2006; support dual view */
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-DualView-after (biosModeInit)(pScrn, pMode, 0)----\n");
-	XGIDumpRegisterValue(g_pScreen);
-#endif
+        success = (*pXGI->pBiosDll->biosModeInit)(pScrn, pMode, 0);
 
-		/* Jong 09/14/2006; enable device pMode[0].condition */
-		/* 0x02:CRT; 0x08:DVI */
+        /* Enable device pMode[0].condition: 0x02:CRT; 0x08:DVI 
+         */
         devices = pMode[0].condition;
-
-		/* Jong 09/14/2006; why not calling when dual view? */
-        XGIBiosOpenAllDevice(pXGI, &devices);
-    }
-	/* Jong 09/15/2006; dual view */
-    else
-    {
-		/* Jong 09/15/2006; initialize first view; assume DVI */
-		if(pXGI->FirstView)
-		{
-			/* Jong 09/15/2006; ignor condition checking for test */
-			/* if (device & pMode->condition) */
-			{
-				/* Jong 09/14/2006; biosModeInit() is XG47BiosModeInit() */
-				/* argument 3 : 1 means first view of dual view mode */
-				if (!(*pXGI->pBiosDll->biosModeInit)(pScrn, pMode, 1))
-				{
-					return FALSE;
-				}
-/* Jong 09/21/2006; support dual view */
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-DualView-(biosModeInit)(pScrn, pMode, 1)----\n");
-	XGIDumpRegisterValue(g_pScreen);
-#endif
-			}
-		}
-		/* Jong 09/15/2006; initialize second view; assume CRT */
-		else
-		{
-			/* Jong 09/15/2006; ignor condition checking for test */
-			/* if (device & (pMode + 1)->condition) */
-			{
-				/* Jong 10/04/2006; support different modes for dual view */
-				/* if (!(*pXGI->pBiosDll->biosModeInit)(pScrn, &g_ModeOfFirstView, 1))
-				{
-					return FALSE;
-				} */
-
-				/* Jong 09/14/2006; biosModeInit() is XG47BiosModeInit() */
-				/* argument 3 : 2 means second view of dual view mode */
-				if (!(*pXGI->pBiosDll->biosModeInit)(pScrn, pMode, 2))
-				{
-					return FALSE;
-				} 
-
-/* Jong 09/21/2006; support dual view */
-#ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-DualView-(biosModeInit)(pScrn, pMode, 2)----\n");
-	XGIDumpRegisterValue(g_pScreen);
-#endif
-			}
-		}
-
-		/* Jong 09/15/2006; Force to open CRT and DVI for dual view in XG47OpenAllDevice() */
-		/* devices = ???; might need an accurate device open */
-        XGIBiosOpenAllDevice(pXGI, &devices);
+    } else {
+        /* argument 3 : 1 means first view of dual view mode, 2 means
+         * second view of dual view mode.
+         */
+        success = (*pXGI->pBiosDll->biosModeInit)(pScrn, pMode,
+                                                  (pXGI->FirstView) ? 1 : 2);
     }
 
-    /* Return with successful status */
+    if (!success) {
+        return FALSE;
+    }
+
+    XGIBiosOpenAllDevice(pXGI, &devices);
     return TRUE;
 }
 

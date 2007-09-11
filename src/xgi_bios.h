@@ -414,10 +414,8 @@ extern CARD16 XGIBiosCalculateClock(XGIPtr pXGI,
 
 extern Bool XGIBiosDllInit(ScrnInfoPtr pScrn);
 
-extern Bool   XGIBiosModeInit(ScrnInfoPtr pScrn,
-                              XGIAskModePtr pMode,
-                              CARD32 dualView,
-                              unsigned long device);
+extern Bool XGIBiosModeInit(ScrnInfoPtr pScrn, XGIAskModePtr pMode,
+    Bool dualView);
 
 
 extern unsigned long XGIBiosValueInit(XGIPtr pXGI);
