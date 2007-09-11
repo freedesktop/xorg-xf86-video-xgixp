@@ -403,7 +403,6 @@ extern CARD32 XGIGetDisplayAttributes(XGIPtr pXGI,
                                       CARD32 displayDevice);
 
 extern CARD32 XGIGetDisplayStatus(XGIPtr pXGI, CARD8 wno);
-extern CARD32 XGIGetCurrentDeviceStatus(XGIPtr pXGI);
 extern void XGIGetSetChipSupportDevice(XGIPtr pXGI, Bool reset_to_original);
 extern CARD16 XGIGetColorIndex(CARD16 depth);
 

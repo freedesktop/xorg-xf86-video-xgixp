@@ -121,26 +121,6 @@ CARD16 XG47GetRefreshRateByIndex(CARD8 index)
  */
 static CARD8 crtc59 = 0x80;
 
-void XG47SetDeviceHotkeyLoop(XGIPtr pXGI, CARD8 yy)
-{
-    CARD8 temp;
-
-    OUTW(0x3c4, 0x9211);
-
-    OUTB(XGI_REG_GRX,0x36);
-    temp = (CARD8)INB(XGI_REG_GRX+1);
-    temp &= ~0x04;
-    yy <<= 2;
-    temp |= yy;
-    OUTB(XGI_REG_GRX+1, temp);
-}
-
-CARD8 XG47GetDeviceHotkeyLoop(XGIPtr pXGI)
-{
-    OUTB(XGI_REG_GRX, 0x36);
-    return ((INB(XGI_REG_GRX+1) & 0x04)>>2);
-}
-
 void XG47WaitLcdPowerSequence(XGIPtr pXGI, CARD8 bNew)
 {
     CARD32 i;
