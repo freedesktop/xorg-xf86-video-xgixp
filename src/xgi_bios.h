@@ -66,7 +66,7 @@ typedef struct {
 #define TV_CHRONTEL_7009                0x10000009      /*CH7009/11*/
 #define TV_PHILIPS_7102                 0x20000001      /*PH7102*/
 #define TV_NEW_INTERFACE                0x80000000      /*TVX/TVX2 New IF*/
-
+#define TV_INVALID                      0xffffffff
 /*
  *  Digital TV Information.
  */
@@ -201,7 +201,6 @@ typedef struct {
  */
 #define CLOSE_ALL_DEVICE                20400
 #define OPEN_ALL_DEVICE                 20401
-#define CLOSE_SECOND_VIEW               20900
 
 /*
  * The following command list is defined for Digital TV

@@ -35,6 +35,9 @@
 #include "xgi_mode.h"
 #include "xg47_tv.h"
 
+static Bool XG47BiosDTVControl(XGIPtr pXGI, unsigned cmd,
+    const CARD16 *piWord);
+
 extern XGIPixelClockRec XG47ModeVClockTable[];
 extern int XG47ModeVClockTableSize;
 extern XGIPixelClockRec XG47ModeVClockTable2[];
@@ -192,7 +195,6 @@ void XG47WaitLcdPowerSequence(XGIPtr pXGI, CARD8 bNew)
 
 void XG47CloseAllDevice(XGIPtr pXGI, CARD8 device2Close)
 {
-    ScrnInfoPtr pScrn = pXGI->pScrn;
     CARD8       curr, bNew;
 
     OUTB(XGI_REG_CRX, SOFT_PAD59_INDEX);
@@ -222,13 +224,10 @@ void XG47CloseAllDevice(XGIPtr pXGI, CARD8 device2Close)
     /* TV display */
     if(device2Close & DEV_SUPPORT_TV)
     {
-        if((pXGI->biosDevSupport & DEV_SUPPORT_TV)
-         && !(pXGI->biosDevSupport & SUPPORT_CURRENT_NO_TV)
-         && (pXGI->pBiosDll->biosDtvCtrl))
-            (*pXGI->pBiosDll->biosDtvCtrl)(pScrn,
-                                           (CARD32)DISABLE_TV_DISPLAY,
-                                           (CARD32 *)NULL,
-                                           (CARD32 *)NULL);
+        if ((pXGI->biosDevSupport & DEV_SUPPORT_TV)
+            && !(pXGI->biosDevSupport & SUPPORT_CURRENT_NO_TV)) {
+            XG47BiosDTVControl(pXGI, DISABLE_TV_DISPLAY, NULL);
+        }
     }
 
     /* LCD display */
@@ -363,7 +362,6 @@ void XG47CloseAllDevice(XGIPtr pXGI, CARD8 device2Close)
 
 void XG47OpenAllDevice(XGIPtr pXGI, CARD8 device2Open)
 {
-    ScrnInfoPtr pScrn = pXGI->pScrn;
     CARD8 curr, bNew, bDPMS_status;
 
 	/* Jong 09/14/2006; get DPMS status of devices */
@@ -609,13 +607,10 @@ void XG47OpenAllDevice(XGIPtr pXGI, CARD8 device2Open)
         /* Program external de-mux */
         OUTB(XGI_REG_GRX,0x27);
         OUTB(XGI_REG_GRX+1,(int)INB(XGI_REG_GRX+1) & ~0x02);
-        if((pXGI->biosDevSupport & DEV_SUPPORT_TV)
-          && !(pXGI->biosDevSupport & SUPPORT_CURRENT_NO_TV)
-          && (pXGI->pBiosDll->biosDtvCtrl))
-            (*pXGI->pBiosDll->biosDtvCtrl)(pScrn,
-                                           (CARD32)ENABLE_TV_DISPLAY,
-                                           (CARD32 *)NULL,
-                                           (CARD32 *)NULL);
+        if ((pXGI->biosDevSupport & DEV_SUPPORT_TV)
+            && !(pXGI->biosDevSupport & SUPPORT_CURRENT_NO_TV)) {
+            XG47BiosDTVControl(pXGI, ENABLE_TV_DISPLAY, NULL);
+        }
     }
 
     pXGI->biosDllOperationFlag &= (~DEVICE_CLOSED); /* OPEN complete */
@@ -1496,15 +1491,12 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
     CARD8           want_3cf_5a, tv_ntsc_pal, b3c5_de;
     CARD16          w2_hzoom,w2_vzoom,w2_hstart,w2_hend,w2_vstart,w2_vend,w2_rowByte;
     CARD8           w2_sync;
-    CARD16          modeinfo[4], ret, modeSpec=0, temp_x, disLen;
+    CARD16          modeinfo[4], modeSpec=0, temp_x, disLen;
     CARD16          yres, xres, lineBuf;
     CARD32          condition;
 
-	int				i;
-
 	/* Jong 09/21/2006; frame buffer address for video window 2 */
 	CARD32 W2fbAddr=0;
-	CARD32 dwTemp=0;
 
     pMode0 = pMode1 = pMode;
 
@@ -2312,67 +2304,49 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         }
         modeinfo[3] = 1;                    /*only one true color format(32bit)*/
 
-        if (pXGI->pBiosDll->biosDtvCtrl)
-            (*pXGI->pBiosDll->biosDtvCtrl)(pScrn,
-                                          (unsigned long)INIT_TV_SCREEN,
-                                          (unsigned long *)&modeinfo[0],
-                                           NULL);
-
+        XG47BiosDTVControl(pXGI, INIT_TV_SCREEN, modeinfo);
     }
 
     return TRUE;
 }
 
 
-int XG47BiosSpecialFeature(ScrnInfoPtr pScrn,
-                           unsigned long cmd,
-                           unsigned long *pInBuf,
-                           unsigned long *pOutBuf)
+Bool XG47BiosSpecialFeature(ScrnInfoPtr pScrn, unsigned long cmd,
+                            const unsigned long *pInBuf)
 {
     XGIPtr          pXGI = XGIPTR(pScrn);
-    XGIAskModePtr   pMode;
-    CARD16          *x;
-    CARD32          *xd;
+    const CARD16 *const x = (const CARD16 *) pInBuf;
+
 
     switch(cmd) {
     case CLOSE_ALL_DEVICE:
-        x = (CARD16 *)pInBuf;
         OUTW(0x3C4, 0x9211);
         XG47CloseAllDevice(pXGI, (CARD8)x[0]);
         return TRUE;
 
     case OPEN_ALL_DEVICE:
-        x = (CARD16 *)pInBuf;
         OUTW(0x3C4, 0x9211);
         XG47OpenAllDevice(pXGI, (CARD8)x[0]);
         return TRUE;
 
-    /* Zdu, 10/8/98, Close second view for DOS FULL Screen */
-    case CLOSE_SECOND_VIEW:
-        XGICloseSecondaryView(pXGI);
-        return TRUE;
-
     default:
-            break;
+        if ((pXGI->biosOrgDevSupport & 0x000F0000) 
+            && (cmd >= INIT_TV_SCREEN)) {
+            return XG47BiosDTVControl(pXGI, cmd, x);
+        }
+        break;
     }
 
-    if((pXGI->biosOrgDevSupport & 0x000F0000) && cmd >= INIT_TV_SCREEN)
-    {
-        return -1; /* Which means let DTV do it! */
-    }
-    else
-        return FALSE;
+    return FALSE;
 }
 
-Bool XG47BiosDTVControl(ScrnInfoPtr pScrn,
-                        unsigned long cmd,
-                        unsigned long * pInBuf,
-                        unsigned long * pOutBuf)
+Bool XG47BiosDTVControl(XGIPtr pXGI, unsigned cmd, const CARD16 *piWord)
 {
-    XGIPtr      pXGI = XGIPTR(pScrn);
-    const CARD16 *const piWord = (CARD16*) pInBuf;
+    if (pXGI->dtvInfo == TV_INVALID) {
+        return FALSE;
+    }
 
-    switch(cmd) {
+    switch (cmd) {
     case ENABLE_TV_DISPLAY:
         XG47ControlTVDisplay(pXGI, TRUE);
         break;

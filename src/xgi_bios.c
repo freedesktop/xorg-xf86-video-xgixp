@@ -910,22 +910,15 @@ CARD16 XGIBiosCalculateClock(XGIPtr pXGI, CARD8 low, CARD8 high)
  * below is bios call
  */
 static Bool XGIBiosDllPunt(XGIPtr pXGI, unsigned long cmd,
-                           unsigned long *pInBuf, unsigned long *pOutBuf)
+                           const unsigned long *pInBuf)
 {
     ScrnInfoPtr pScrn = pXGI->pScrn;
-    int result;
 
     if (pXGI->pBiosDll->biosSpecialFeature == NULL) {
         return FALSE;
     }
 
-    result = (*pXGI->pBiosDll->biosSpecialFeature)(pScrn, cmd, pInBuf,
-                                                   pOutBuf);
-    if ((result < 0) && pXGI->pBiosDll->biosDtvCtrl) {
-        result = (*pXGI->pBiosDll->biosDtvCtrl)(pScrn, cmd, pInBuf, pOutBuf);
-    }
-
-    return result;
+    return (*pXGI->pBiosDll->biosSpecialFeature)(pScrn, cmd, pInBuf);
 }
 
 /*
@@ -943,7 +936,6 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
         pXGI->pBiosDll->biosModeInit            = XG47BiosModeInit;
         pXGI->pBiosDll->biosSpecialFeature      = XG47BiosSpecialFeature;
         pXGI->pBiosDll->biosValueInit           = XG47BiosValueInit;
-        pXGI->pBiosDll->biosDtvCtrl             = NULL;
 
         pXGI->lcdRefRate = 0x003C;    /* 60Hz */
 
@@ -964,7 +956,6 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
         pXGI->pBiosDll->biosModeInit            = NULL;
         pXGI->pBiosDll->biosSpecialFeature      = NULL;
         pXGI->pBiosDll->biosValueInit           = NULL;
-        pXGI->pBiosDll->biosDtvCtrl             = NULL;
         break;
     }
 
@@ -999,8 +990,6 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
     switch(pXGI->pInt10->bx)
     {
     case 0x0003: /* TV_TVX2 */
-        pXGI->pBiosDll->biosDtvCtrl = XG47BiosDTVControl;
-
         pXGI->pBiosDll->dtvType = DTV_TVEXPRESS_XP4E; /* TV_TVX internal */
         pXGI->dtvInfo = TV_TVXI;
 
@@ -1159,22 +1148,14 @@ unsigned long XGIBiosValueInit(XGIPtr pXGI)
     return TRUE;
 }
 
-Bool XGIBiosCloseAllDevice(XGIPtr pXGI,
-                           unsigned long* pDevices)
+Bool XGIBiosCloseAllDevice(XGIPtr pXGI, unsigned long* pDevices)
 {
-    return XGIBiosDllPunt(pXGI,
-                          CLOSE_ALL_DEVICE,
-                          pDevices,
-                          NULL);
+    return XGIBiosDllPunt(pXGI, CLOSE_ALL_DEVICE, pDevices);
 }
 
-Bool XGIBiosOpenAllDevice(XGIPtr pXGI,
-                          unsigned long* pDevices)
+Bool XGIBiosOpenAllDevice(XGIPtr pXGI, unsigned long* pDevices)
 {
-    return XGIBiosDllPunt(pXGI,
-                          OPEN_ALL_DEVICE,
-                          pDevices,
-                          NULL);
+    return XGIBiosDllPunt(pXGI, OPEN_ALL_DEVICE, pDevices);
 }
 
 /*

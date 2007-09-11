@@ -36,14 +36,9 @@ extern Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
                              XGIAskModePtr pMode,
                              CARD32 dualView);
 extern void XG47BiosValueInit(ScrnInfoPtr pScrn);
-extern int  XG47BiosSpecialFeature(ScrnInfoPtr pScrn,
-                                   unsigned long cmd,
-                                   unsigned long *pInBuf,
-                                   unsigned long *pOutBuf);
-extern Bool   XG47BiosDTVControl(ScrnInfoPtr pScrn,
-                                 unsigned long cmd,
-                                 unsigned long * pInBuf,
-                                 unsigned long * pOutBuf);
+
+extern Bool XG47BiosSpecialFeature(ScrnInfoPtr pScrn, unsigned long cmd,
+    const unsigned long *pInBuf);
 
 extern void XG47CloseAllDevice(XGIPtr pXGI, CARD8 device2Close);
 extern void XG47OpenAllDevice(XGIPtr pXGI, CARD8 device2Open);
