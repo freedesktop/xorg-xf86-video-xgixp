@@ -134,7 +134,7 @@ int XG47ModeVClockTableSize2 = sizeof(XG47ModeVClockTable2) / sizeof(XGIPixelClo
 /*
  * XG47 mode table
  */
-XGIModeRec XG47ModeTable[] = {
+static XGIModeRec XG47ModeTable[] = {
 { MODE_320x200, 320, 200,
   { VMODE_REF_75Hz+VMODE_REF_60Hz,
     VMODE_REF_70Hz,
@@ -282,7 +282,24 @@ XGIModeRec XG47ModeTable[] = {
 },
 };
 
-int XG47ModeTableSize = sizeof(XG47ModeTable) / sizeof(XGIModeRec);
+static const int XG47ModeTableSize = sizeof(XG47ModeTable) 
+    / sizeof(XGIModeRec);
+
+XGIModePtr XG47GetModeFromRes(unsigned width, unsigned height)
+{
+    int         i;
+
+
+    for (i = 0; i < XG47ModeTableSize; i++) {
+        if ((XG47ModeTable[i].width == width)
+	    && (XG47ModeTable[i].height == height)) {
+	    return & XG47ModeTable[i];
+	}
+    }
+
+    return NULL;
+}
+
 
 void XG47LoadPalette(ScrnInfoPtr pScrn, int numColors, int *indicies,
                      LOCO *colors, VisualPtr pVisual)

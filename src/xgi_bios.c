@@ -36,13 +36,12 @@
 #include "xgi_bios.h"
 #include "xgi_mode.h"
 #include "xg47_bios.h"
+#include "xg47_mode.h"
 
 extern XGIPixelClockRec XG47ModeVClockTable;
 extern int XG47ModeVClockTableSize;
 extern XGIPixelClockRec XG47ModeVClockTable2;
 extern int XG47ModeVClockTableSize2;
-extern XGIModeRec XG47ModeTable;
-extern int XG47ModeTableSize;
 
 CARD8       vclk18;
 CARD8       vclk19;
@@ -268,16 +267,9 @@ void XGIGetFramebufferSize(XGIPtr pXGI)
 
 CARD8 XGIConvertResToModeNo(CARD16 width, CARD16 height)
 {
-    XGIModePtr  pMode;
-    int         i;
+    const XGIModeRec *const pMode = XG47GetModeFromRes(width, height);
 
-    pMode = &XG47ModeTable;
-    for (i = 0; i < XG47ModeTableSize; i++)
-    {
-        if (pMode[i].width == width && pMode[i].height == height)
-            return(CARD8)(pMode[i].modeNo & 0x7F);
-    }
-    return 0;
+    return (pMode == NULL) ? 0 : pMode->modeNo;
 }
 
 void XGIWaitVerticalOnCRTC1(XGIPtr pXGI, CARD16 count)

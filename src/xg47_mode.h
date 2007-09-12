@@ -43,4 +43,6 @@ extern void XG47SetCRTCViewBaseAddr(ScrnInfoPtr pScrn, unsigned long startAddr);
 extern void XG47SetW2ViewStride(ScrnInfoPtr pScrn);
 extern void XG47SetW2ViewBaseAddr(ScrnInfoPtr pScrn, unsigned long startAddr);
 
+extern XGIModePtr XG47GetModeFromRes(unsigned width, unsigned height);
+
 #endif

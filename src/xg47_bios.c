@@ -34,19 +34,13 @@
 #include "xgi_bios.h"
 #include "xgi_mode.h"
 #include "xg47_tv.h"
+#include "xg47_mode.h"
 
 static Bool XG47BiosDTVControl(XGIPtr pXGI, unsigned cmd,
     const CARD16 *piWord);
 
 static CARD16 XGIGetRefreshSupport(XGIPtr pXGI, unsigned device, 
-    unsigned index, unsigned modeNum, unsigned colorIndex);
-
-extern XGIPixelClockRec XG47ModeVClockTable[];
-extern int XG47ModeVClockTableSize;
-extern XGIPixelClockRec XG47ModeVClockTable2[];
-extern int XG47ModeVClockTableSize2;
-extern XGIModeRec XG47ModeTable[];
-extern int XG47ModeTableSize;
+    XGIModePtr mode, unsigned colorIndex);
 
 extern CARD8       vclk18;
 extern CARD8       vclk19;
@@ -590,8 +584,7 @@ void XG47OpenAllDevice(XGIPtr pXGI, CARD8 device2Open)
 
 /*Input
  *  device:  Bit3~0: DVI/TV/CRT/LCD
- *  index:   the index to the mode table: XG47ModeTable
- *  modeNum: the BIOS mode number
+ *  mode:    Pointer to the XGIModeRec for the mode
  *  colorIndex:   the color index
  *    0x2 - 8  bpp
  *    0x6 - 16 bpp
@@ -604,8 +597,8 @@ void XG47OpenAllDevice(XGIPtr pXGI, CARD8 device2Open)
  *   (See BIOS spec: Get refresh rate support for definition)
  *
  */
-CARD16 XGIGetRefreshSupport(XGIPtr pXGI, unsigned device, unsigned index,
-                            unsigned modeNum, unsigned colorIndex)
+CARD16 XGIGetRefreshSupport(XGIPtr pXGI, unsigned device, 
+                            XGIModeRec *mode, unsigned colorIndex)
 {
     static const int dev_to_idx_table[16] = {
         ~0,  0,  1, ~0,  2, ~0, ~0, ~0,
@@ -617,12 +610,13 @@ CARD16 XGIGetRefreshSupport(XGIPtr pXGI, unsigned device, unsigned index,
         return 0;
     }
 
-    if (!XG47ModeTable[index].refBIOS[j]) {
-        XG47ModeTable[index].refBIOS[j] = 
-            XGIGetRefreshRateCapability(pXGI, modeNum, colorIndex);
+    if (mode->refBIOS[j] == 0) {
+        mode->refBIOS[j] = XGIGetRefreshRateCapability(pXGI,
+                                                       mode->modeNo & 0x7f,
+                                                       colorIndex);
     }
 
-    return XG47ModeTable[index].refBIOS[j];
+    return mode->refBIOS[j];
 }
 
 
@@ -666,44 +660,32 @@ Bool XG47GetValidMode(XGIPtr pXGI,
                       XGIAskModePtr pMode0,
                       XGIAskModePtr pMode1)
 {
-    const XGIModeRec *const pModeTable = XG47ModeTable;
-    CARD8       i;
     CARD8       tv_ntsc_pal, tv_ntsc_pal_org;
     CARD8       tv_3cf_5b, want_3cf_5a;
     CARD16      refSupport;
     CARD16      modeNo, modeSpec=0;
     CARD16      j;
-    CARD8       k;
     unsigned long   ret_value;
 
 
     XGIGetSetChipSupportDevice(pXGI, TRUE);
 
     if (pMode0) {
+        XGIModeRec *const mode = XG47GetModeFromRes(pMode0->width,
+                                                    pMode0->height);
+
         /* Check with mode index table */
         pMode0->modeNo &= ~0x7F;    /* only clear mode number */
-
-
-#ifdef XGI_DUMP_DUALVIEW
-        ErrorF("Jong-Debug-pMode0->modeNo=%d--\n", pMode0->modeNo);
-#endif
-
-        /* Jong 11/08/2006; find the mode number */
-        for (i = 0; i < XG47ModeTableSize; i++) {
-            if ((pModeTable[i].width == pMode0->width)
-                && (pModeTable[i].height == pMode0->height)) {
-                pMode0->modeNo |= pModeTable[i].modeNo & 0x7F;
-
-#ifdef XGI_DUMP_DUALVIEW
-                ErrorF("Jong-Debug-Found a supported mode-pMode0->modeNo=%d, pModeTable[i=%d]--\n", pMode0->modeNo, i);
-#endif
-                break;
-            }
-        }
-
-        if (!(pMode0->modeNo & 0x7F)) {
+        if (mode == NULL) {
             return FALSE;
         }
+
+        pMode0->modeNo |= mode->modeNo & 0x7f;
+
+#ifdef XGI_DUMP_DUALVIEW
+        ErrorF("Jong-Debug-Found a supported mode-pMode0->modeNo=%d\n",
+               pMode0->modeNo);
+#endif
 
         /* display device */
         want_3cf_5a = (CARD8)(pMode0->condition & 0x0000000F);
@@ -745,7 +727,8 @@ Bool XG47GetValidMode(XGIPtr pXGI,
             modeSpec |= (pMode0->modeNo & 0x0100) >> 7; /* 10 bits */
         }
 
-        refSupport = XGIGetRefreshSupport(pXGI, pMode0->condition, i, modeNo, modeSpec);
+        refSupport = XGIGetRefreshSupport(pXGI, pMode0->condition, mode,
+                                          modeSpec);
         /*
          * CRT, DVI device
          */
@@ -760,13 +743,13 @@ Bool XG47GetValidMode(XGIPtr pXGI,
         OUTB(XGI_REG_CRX+1, tv_ntsc_pal_org);
 
         if((CARD8)(pMode0->condition & 0x0F) == DEV_SUPPORT_CRT)
-            refSupport &= pModeTable[i].refSupport[1];
+            refSupport &= mode->refSupport[1];
         if((CARD8)(pMode0->condition & 0x0F) == DEV_SUPPORT_DVI)
-            refSupport &= pModeTable[i].refSupport[3];
+            refSupport &= mode->refSupport[3];
         if(pMode0->condition & DEV_SUPPORT_TV)
-            refSupport &= pModeTable[i].refSupport[2];
+            refSupport &= mode->refSupport[2];
         if(pMode0->condition & DEV_SUPPORT_LCD)
-            refSupport &= pModeTable[i].refSupport[0];
+            refSupport &= mode->refSupport[0];
 
         pMode0->refSupport = refSupport;
         if (!refSupport) return FALSE;
@@ -777,6 +760,9 @@ Bool XG47GetValidMode(XGIPtr pXGI,
     /* Check mode for dual view.
      */
     if (pMode1) {
+        XGIModeRec *const mode = XG47GetModeFromRes(pMode1->width,
+                                                    pMode1->height);
+
 #ifdef XGI_DUMP_DUALVIEW
         ErrorF("Jong-Debug-pMode1->modeNo=%d--\n", pMode1->modeNo);
 #endif
@@ -790,18 +776,12 @@ Bool XG47GetValidMode(XGIPtr pXGI,
         }
 
         pMode1->modeNo &= ~0x7F;
-        for (k = 0; k < XG47ModeTableSize; k++)
-        {
-            if ((pModeTable[k].width == pMode1->width)
-             && (pModeTable[k].height == pMode1->height))
-            {
-                pMode1->modeNo |= pModeTable[k].modeNo & 0x7F;
-                break;
-            }
+
+        if (mode == NULL) {
+            return FALSE;
         }
 
-        /* Jong 09/16/2006; return FALSE for second view !!! */
-        if(!(pMode1->modeNo & 0x7F))    return FALSE; 
+        pMode1->modeNo |= mode->modeNo & 0x7f;
 
         if (pMode1->condition & DEV_SUPPORT_LCD) {
             pMode1->refRate = pXGI->lcdRefRate;
@@ -817,8 +797,7 @@ Bool XG47GetValidMode(XGIPtr pXGI,
             save = INB(XGI_REG_GRX + 1);
             OUTB(XGI_REG_GRX + 1, ((save & 0xF0) | (pMode1->condition & 0x0F)));
 
-            refSupport = XGIGetRefreshSupport(pXGI, pMode1->condition, k,
-                                              (pMode1->modeNo & 0x7F),
+            refSupport = XGIGetRefreshSupport(pXGI, pMode1->condition, mode,
                                               XGIGetColorIndex(pMode1->pixelSize));
             OUTW(0x3C4, 0x9211);
             OUTB(XGI_REG_GRX, 0x5A);
