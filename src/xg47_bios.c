@@ -666,7 +666,7 @@ Bool XG47GetValidMode(XGIPtr pXGI,
                       XGIAskModePtr pMode0,
                       XGIAskModePtr pMode1)
 {
-    XGIModePtr  pModeTable;
+    const XGIModeRec *const pModeTable = XG47ModeTable;
     CARD8       i;
     CARD8       tv_ntsc_pal, tv_ntsc_pal_org;
     CARD8       tv_3cf_5b, want_3cf_5a;
@@ -676,122 +676,109 @@ Bool XG47GetValidMode(XGIPtr pXGI,
     CARD8       k;
     unsigned long   ret_value;
 
+
     XGIGetSetChipSupportDevice(pXGI, TRUE);
 
-	/* Jong 09/20/2006; must be assigned for both pMode0 and pMode1 */
-	pModeTable = XG47ModeTable; 
+    if (pMode0) {
+        /* Check with mode index table */
+        pMode0->modeNo &= ~0x7F;    /* only clear mode number */
 
-	/* Jong 09/15/2006; support dual view */
-	if(pMode0)
-	{
-		/* Check with mode index table */
-		pMode0->modeNo &= ~0x7F;    /* only clear mode number */
-
-		/* Jong 09/20/2006; must be assigned for both pMode0 and pMode1 */
-		/* pModeTable = XG47ModeTable; */
 
 #ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-pMode0->modeNo=%d--\n", pMode0->modeNo);
+        ErrorF("Jong-Debug-pMode0->modeNo=%d--\n", pMode0->modeNo);
 #endif
 
-		/* Jong 11/08/2006; find the mode number */
-		for (i=0; i < XG47ModeTableSize; i++)
-		{
-			if ((pModeTable[i].width == pMode0->width)
-			 && (pModeTable[i].height == pMode0->height))
-			{
-				pMode0->modeNo |= pModeTable[i].modeNo & 0x7F;
+        /* Jong 11/08/2006; find the mode number */
+        for (i = 0; i < XG47ModeTableSize; i++) {
+            if ((pModeTable[i].width == pMode0->width)
+                && (pModeTable[i].height == pMode0->height)) {
+                pMode0->modeNo |= pModeTable[i].modeNo & 0x7F;
 
 #ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-Found a supported mode-pMode0->modeNo=%d, pModeTable[i=%d]--\n", pMode0->modeNo, i);
+                ErrorF("Jong-Debug-Found a supported mode-pMode0->modeNo=%d, pModeTable[i=%d]--\n", pMode0->modeNo, i);
 #endif
-				break;
-			}
-		}
+                break;
+            }
+        }
 
-		/* Jong 09/12/2006; why? */
-		if (!(pMode0->modeNo & 0x7F))   return FALSE;
+        if (!(pMode0->modeNo & 0x7F)) {
+            return FALSE;
+        }
 
-		/* display device */
-		/* Jong 09/15/2006;
-			#define ST_DISP_LCD         0x00000001
-			#define ST_DISP_CRT         0x00000002
-			#define ST_DISP_TV          0x00000004
-			#define ST_DISP_DVI         0x00000008 */
-		want_3cf_5a = (CARD8)(pMode0->condition & 0x0000000F);
+        /* display device */
+        want_3cf_5a = (CARD8)(pMode0->condition & 0x0000000F);
 
-		/*
-		 * TV format
-		 */
-		OUTB(XGI_REG_CRX, 0xC0);
-		tv_ntsc_pal = (CARD8)INB(XGI_REG_CRX+1) & 0xE0;
+        /*
+         * TV format
+         */
+        OUTB(XGI_REG_CRX, 0xC0);
+        tv_ntsc_pal = (CARD8)INB(XGI_REG_CRX+1) & 0xE0;
 
-		OUTB(XGI_REG_GRX, 0x5A);
-		tv_3cf_5b = (CARD8)INB(XGI_REG_GRX+1);
+        OUTB(XGI_REG_GRX, 0x5A);
+        tv_3cf_5b = (CARD8)INB(XGI_REG_GRX+1);
 
-		if ((pMode0->condition & DEV_SUPPORT_TV))
-		{
-			tv_ntsc_pal = 0;    /* NTSC */
-			if(pMode0->condition & ZVMX_ATTRIB_NTSCJ)
-				tv_ntsc_pal = 0x20;
-			if(pMode0->condition & ZVMX_ATTRIB_PALM)
-				tv_ntsc_pal = 0x40;
-			if(pMode0->condition & ZVMX_ATTRIB_PAL)
-				tv_ntsc_pal = 0x80;
-		}
+        if ((pMode0->condition & DEV_SUPPORT_TV)) {
+            tv_ntsc_pal = 0;    /* NTSC */
+            if(pMode0->condition & ZVMX_ATTRIB_NTSCJ)
+                tv_ntsc_pal = 0x20;
+            if(pMode0->condition & ZVMX_ATTRIB_PALM)
+                tv_ntsc_pal = 0x40;
+            if(pMode0->condition & ZVMX_ATTRIB_PAL)
+                tv_ntsc_pal = 0x80;
+        }
 
-		/* Check video BIOS support or not */
+        /* Check video BIOS support or not */
 
-		/* Jong 09/14/2006; why? */
-		OUTW(0x3C4, 0x9211);
+        /* Jong 09/14/2006; why? */
+        OUTW(0x3C4, 0x9211);
 
-		OUTB(XGI_REG_GRX, 0x5A);
-		OUTB(XGI_REG_GRX+1, ((tv_3cf_5b & 0xF0) | want_3cf_5a));
-		OUTB(XGI_REG_CRX, 0xC0);
-		tv_ntsc_pal_org = (CARD8)INB(XGI_REG_CRX+1);
-		OUTB(XGI_REG_CRX + 1, ((tv_ntsc_pal_org & 0x1F) | tv_ntsc_pal));
+        OUTB(XGI_REG_GRX, 0x5A);
+        OUTB(XGI_REG_GRX+1, ((tv_3cf_5b & 0xF0) | want_3cf_5a));
+        OUTB(XGI_REG_CRX, 0xC0);
+        tv_ntsc_pal_org = (CARD8)INB(XGI_REG_CRX+1);
+        OUTB(XGI_REG_CRX + 1, ((tv_ntsc_pal_org & 0x1F) | tv_ntsc_pal));
 
-		modeNo = pMode0->modeNo & 0x7F;
-		modeSpec |= XGIGetColorIndex(pMode0->pixelSize);
-		if (modeSpec & 0x08)        /* 32 bit true color */
-		{
-			modeSpec |= (pMode0->modeNo & 0x0100) >> 7; /* 10 bits */
-		}
+        modeNo = pMode0->modeNo & 0x7F;
+        modeSpec |= XGIGetColorIndex(pMode0->pixelSize);
+        if (modeSpec & 0x08) {
+            /* 32 bit true color */
+            modeSpec |= (pMode0->modeNo & 0x0100) >> 7; /* 10 bits */
+        }
 
-		refSupport = XGIGetRefreshSupport(pXGI, pMode0->condition, i, modeNo, modeSpec);
-		/*
-		 * CRT, DVI device
-		 */
-		/* Jong 09/14/2006; why? */
-		OUTW(0x3C4, 0x9211);
+        refSupport = XGIGetRefreshSupport(pXGI, pMode0->condition, i, modeNo, modeSpec);
+        /*
+         * CRT, DVI device
+         */
+        /* Jong 09/14/2006; why? */
+        OUTW(0x3C4, 0x9211);
 
-		OUTB(XGI_REG_GRX, 0x5A);
-		OUTB(XGI_REG_GRX+1, tv_3cf_5b);
+        OUTB(XGI_REG_GRX, 0x5A);
+        OUTB(XGI_REG_GRX+1, tv_3cf_5b);
 
-		/* Jong 09/14/2006; TV Status flag 1 */
-		OUTB(XGI_REG_CRX, 0xC0);
-		OUTB(XGI_REG_CRX+1, tv_ntsc_pal_org);
+        /* Jong 09/14/2006; TV Status flag 1 */
+        OUTB(XGI_REG_CRX, 0xC0);
+        OUTB(XGI_REG_CRX+1, tv_ntsc_pal_org);
 
-		if((CARD8)(pMode0->condition & 0x0F) == DEV_SUPPORT_CRT)
-			refSupport &= pModeTable[i].refSupport[1];
-		if((CARD8)(pMode0->condition & 0x0F) == DEV_SUPPORT_DVI)
-			refSupport &= pModeTable[i].refSupport[3];
-		if(pMode0->condition & DEV_SUPPORT_TV)
-			refSupport &= pModeTable[i].refSupport[2];
-		if(pMode0->condition & DEV_SUPPORT_LCD)
-			refSupport &= pModeTable[i].refSupport[0];
+        if((CARD8)(pMode0->condition & 0x0F) == DEV_SUPPORT_CRT)
+            refSupport &= pModeTable[i].refSupport[1];
+        if((CARD8)(pMode0->condition & 0x0F) == DEV_SUPPORT_DVI)
+            refSupport &= pModeTable[i].refSupport[3];
+        if(pMode0->condition & DEV_SUPPORT_TV)
+            refSupport &= pModeTable[i].refSupport[2];
+        if(pMode0->condition & DEV_SUPPORT_LCD)
+            refSupport &= pModeTable[i].refSupport[0];
 
-		pMode0->refSupport = refSupport;
-		if (!refSupport) return FALSE;
+        pMode0->refSupport = refSupport;
+        if (!refSupport) return FALSE;
 
-      massage_refresh_rate(pMode0);
-  }
+        massage_refresh_rate(pMode0);
+    }
 
     /* Check mode for dual view.
      */
     if (pMode1) {
- #ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-pMode1->modeNo=%d--\n", pMode1->modeNo);
+#ifdef XGI_DUMP_DUALVIEW
+        ErrorF("Jong-Debug-pMode1->modeNo=%d--\n", pMode1->modeNo);
 #endif
 
         /* Check the memory requirements for this mode.  If it's larger than
@@ -813,16 +800,13 @@ Bool XG47GetValidMode(XGIPtr pXGI,
             }
         }
 
-		/* Jong 09/16/2006; return FALSE for second view !!! */
+        /* Jong 09/16/2006; return FALSE for second view !!! */
         if(!(pMode1->modeNo & 0x7F))    return FALSE; 
 
-        if (pMode1->condition & DEV_SUPPORT_LCD)
-        {
+        if (pMode1->condition & DEV_SUPPORT_LCD) {
             pMode1->refRate = pXGI->lcdRefRate;
             pMode1->refSupport =(CARD16)XG47ConvertRefValueToIndex(pXGI->lcdRefRate);
-        }
-        else
-        {
+        } else {
             /*
              * Refresh Rate for second view.
              */
