@@ -29,6 +29,8 @@
 #include "config.h"
 #endif
 
+#include <assert.h>
+
 #include "xgi.h"
 #include "xgi_regs.h"
 #include "xgi_bios.h"
@@ -118,83 +120,72 @@ CARD16 XGIGetVClock_BandWidth(XGIPtr pXGI,
 }
 
 Bool XGICheckModeSupported(XGIPtr pXGI,
-                           XGIAskModePtr pMode0,
-                           XGIAskModePtr pMode1,
-                           CARD16 refRate)
+                           const XGIAskModeRec *pMode0,
+                           const XGIAskModeRec *pMode1,
+                           unsigned refRate)
 {
-    CARD16          crtbw, w2bw;
-    CARD8           flag;
+    unsigned crtbw = 0;
+    unsigned w2bw = 0;
+    Bool flag = TRUE;
+
+
+    assert(pMode0 != NULL);
+
+    if (pMode1 != NULL) {
+        if (pMode1->condition & DEV_SUPPORT_LCD) {
+            w2bw = XGIGetVClock_BandWidth(pXGI,
+                                          pXGI->lcdWidth, pXGI->lcdHeight,
+                                          pMode1->pixelSize,
+                                          pMode1->refRate,
+                                          ST_DISP_LCD);
+
+            /* Enable interpolation if the panel does not support centering
+             * and the native resolution of the LCD, in either dimension, is
+             * larger than the resolution selected.
+             */
+            pXGI->isInterpolation = 
+                (((pMode1->condition & SUPPORT_PANEL_CENTERING) == 0)
+                 && ((pXGI->lcdWidth > pMode1->width) 
+                     || (pXGI->lcdHeight > pMode1->height)));
+        } else {
+            /* DVI on W2 */
+            w2bw = XGIGetVClock_BandWidth(pXGI,
+                                          pMode1->width, pMode1->height,
+                                          pMode1->pixelSize,
+                                          pMode1->refRate,
+                                          (pMode0->condition & 0x0F));
+        }
+
+        /* XG47 W2 can not support above 1920 modes with 32bits color under
+         * 250/250 275/275; only don't support 20x15x32 under 300/300.
+         */
+        flag = (((pXGI->lcdWidth < 1920) && (pMode1->width < 1920)) 
+                || (pMode1->pixelSize < 32));
+    }
 
     crtbw = XGIGetVClock_BandWidth(pXGI,
                                    pMode0->width, pMode0->height,
                                    pMode0->pixelSize, refRate,
-                                   (CARD8)(pMode0->condition & 0x0F));
+                                   (pMode0->condition & 0x0F))
+        * (pMode0->pixelSize / 8);
 
-    if (crtbw == 0) return FALSE;
-
-    flag = 1;
-    if (pMode1)
-    {
-        if (pMode1->condition & DEV_SUPPORT_LCD)
-        {
-            w2bw = XGIGetVClock_BandWidth(pXGI,
-                                          pXGI->lcdWidth,
-                                          pXGI->lcdHeight,
-                                          pMode1->pixelSize,
-                                          (CARD16)(pMode1->refRate),
-                                          1);
-
-            if ((pMode1->condition & SUPPORT_PANEL_CENTERING)
-                 || ((pXGI->lcdWidth <= pMode1->width) && (pXGI->lcdHeight <= pMode1->height)))
-            {
-                /* NO expansion or interpoplation */
-                pXGI->isInterpolation = FALSE;
-            }
-            else
-            {
-                /* expansion and interpolation */
-                pXGI->isInterpolation = TRUE;
-            }
-        }
-        else    /* DVI on W2 */
-        {
-
-            w2bw = XGIGetVClock_BandWidth(pXGI,
-                                          pMode1->width, pMode1->height,
-                                          pMode1->pixelSize,
-                                          (CARD16)(pMode1->refRate),
-                                          (CARD8)(pMode0->condition & 0x0F));
-            /* XG47's TMDS may support up to 165Mhz
-            if(w2bw >= 135) flag = 0;
-            */
-        }
-        /* XG47 W2 can not support above 1920 modes with 32bits color under 250/250 275/275; 
-	 * only don't support 20x15x32 under 300/300
-	 */
-        if (((pXGI->lcdWidth >= 1920) || (pMode1->width >= 1920)) && (pMode1->pixelSize == 32))
-        {
-            flag = 0;
-        }
+    if (!flag || ((crtbw == 0) && (w2bw == 0))) {
+        return FALSE;
     }
-    else
-        w2bw = 0;
 
-    if (pMode0)
-        crtbw *= (pMode0->pixelSize/8);
-
-    if (flag == 0) return FALSE;
-    if ((crtbw == 0) && (w2bw == 0)) return FALSE;
-
-    if ((crtbw + w2bw) < pXGI->maxBandwidth)
+    /* If there is sufficient bandwidth to drive both displays, we win.
+     */
+    if ((crtbw + w2bw) < pXGI->maxBandwidth) {
         return TRUE;
+    }
+
     /* Check bandwidth again with interpolation disabled on LCD display. */
-    else if (((crtbw+w2bw/2) < pXGI->maxBandwidth)
-             && (pMode1->condition & DEV_SUPPORT_LCD)
-             && pXGI->isInterpolation)
-    {
+    if (((crtbw+w2bw/2) < pXGI->maxBandwidth)
+        && (pMode1->condition & DEV_SUPPORT_LCD) && pXGI->isInterpolation) {
         pXGI->isInterpolation = FALSE;
         return TRUE;
     }
+
     return FALSE;
 }
 

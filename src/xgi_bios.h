@@ -379,10 +379,10 @@ extern CARD16 XGIGetVClock_BandWidth(XGIPtr pXGI,
                                      CARD16 depth,
                                      CARD16 refRate,
                                      CARD8 flag);
-extern Bool   XGICheckModeSupported(XGIPtr pXGI,
-                                    XGIAskModePtr pMode0,
-                                    XGIAskModePtr pMode1,
-                                    CARD16 refRate);
+
+extern Bool XGICheckModeSupported(XGIPtr pXGI, const XGIAskModeRec *pMode0,
+    const XGIAskModeRec *pMode1, unsigned refRate);
+
 extern void   XGIGetFlatPanelSize(XGIPtr pXGI);
 extern void   XGIGetFlatPanelType(XGIPtr pXGI);
 extern void   XGIGetFramebufferSize(XGIPtr pXGI);
