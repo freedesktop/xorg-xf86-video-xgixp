@@ -625,6 +625,33 @@ CARD16 XGIGetRefreshSupport(XGIPtr pXGI, unsigned device, unsigned index,
     return XG47ModeTable[index].refBIOS[j];
 }
 
+
+/**
+ * Massage the refreshrate list in the mode to one supported by the driver
+ */
+static void massage_refresh_rate(XGIAskModePtr pMode)
+{
+    int refRateIndex = XG47ConvertRefValueToIndex(pMode->refRate);
+
+    for (/* empty */; refRateIndex > 0; refRateIndex--) {
+        if (XGICheckRefreshRateSupport(pMode->refSupport, refRateIndex))
+            break;
+    }
+
+    if (refRateIndex <= 0) {
+        for (refRateIndex = 1;
+             refRateIndex <= VREF_MAX_NUMBER;
+             refRateIndex++) {
+            if (XGICheckRefreshRateSupport(pMode->refSupport, refRateIndex)) {
+                break;
+            }
+        }
+    }
+
+    pMode->refRate = XG47GetRefreshRateByIndex(refRateIndex);
+}
+
+
 /*
  * Check if the mode is supported in our chip
  * (???and get video mode extension based on given information???)
@@ -644,9 +671,7 @@ Bool XG47GetValidMode(XGIPtr pXGI,
     CARD8       tv_ntsc_pal, tv_ntsc_pal_org;
     CARD8       tv_3cf_5b, want_3cf_5a;
     CARD16      refSupport;
-    INT8        refRateIndex = 0;
     CARD16      modeNo, modeSpec=0;
-    CARD16      flag;
     CARD16      j;
     CARD8       k;
     unsigned long   ret_value;
@@ -759,42 +784,8 @@ Bool XG47GetValidMode(XGIPtr pXGI,
 		pMode0->refSupport = refSupport;
 		if (!refSupport) return FALSE;
 
-		/*
-		 * Refresh Rate
-		 */
-		flag = 1;
-		refRateIndex = XG47ConvertRefValueToIndex(pMode0->refRate);
-
-		if(!refRateIndex)
-		{
-			flag=0;
-			for(refRateIndex = 0; refRateIndex < VREF_MAX_NUMBER; refRateIndex++)
-			{
-				if((refSupport >> refRateIndex) & 0x01) break;
-			}
-		}
-		else
-		{
-			for(; refRateIndex >= 0; refRateIndex--)
-			{
-				if(XGICheckRefreshRateSupport(refSupport, (CARD8)refRateIndex))
-					break;
-			}
-			if (refRateIndex < 0)
-			{
-				flag=0;
-				for(refRateIndex = 0; refRateIndex<VREF_MAX_NUMBER; refRateIndex++)
-				{
-					if((refSupport >> refRateIndex) & 0x01)
-					{
-						refRateIndex++;
-						break;
-					}
-				}
-			}
-		}
-		pMode0->refRate = (CARD16)XG47GetRefreshRateByIndex((CARD8)refRateIndex);
-	}
+      massage_refresh_rate(pMode0);
+  }
 
     /* Check mode for dual view.
      */
@@ -812,11 +803,6 @@ Bool XG47GetValidMode(XGIPtr pXGI,
         }
 
         pMode1->modeNo &= ~0x7F;
-        /*pMode1->modeNo |= (CARD16)XGIConvertResToModeNo(pMode1->width,
-                                                        pMode1->height,
-                                                        pMode1->pixelSize);*/
-
-		/* Jong 09/16/2006; can't get valid mode from table !!! */
         for (k = 0; k < XG47ModeTableSize; k++)
         {
             if ((pModeTable[k].width == pMode1->width)
@@ -841,7 +827,6 @@ Bool XG47GetValidMode(XGIPtr pXGI,
              * Refresh Rate for second view.
              */
             CARD8 save;
-            INT8  refRateIndex2 = 0;
 
             OUTW(0x3C4, 0x9211);
             OUTB(XGI_REG_GRX, 0x5A);
@@ -858,73 +843,45 @@ Bool XG47GetValidMode(XGIPtr pXGI,
             pMode1->refSupport = refSupport;
             if (!refSupport)    return FALSE;
 
-            refRateIndex2 = XG47ConvertRefValueToIndex(pMode1->refRate);
-
-            if (!refRateIndex2)
-            {
-                for (refRateIndex2 = 0; refRateIndex2 < VREF_MAX_NUMBER; refRateIndex2++)
-                {
-                    if ((refSupport >> refRateIndex2) & 0x01)
-                    {
-                        refRateIndex2++;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                for (; refRateIndex2 >= 0; refRateIndex2--)
-                {
-                    if (XGICheckRefreshRateSupport(refSupport, (CARD8)refRateIndex2))
-                        break;
-                }
-                if (refRateIndex2 < 0)
-                {
-
-                    for (refRateIndex2 = 0; refRateIndex2 < VREF_MAX_NUMBER; refRateIndex2++)
-                    {
-                        if ((refSupport >> refRateIndex2) & 0x01)
-                        {
-                            refRateIndex2++;
-                            break;
-                        }
-                    }
-                }
-            }
-            pMode1->refRate = (CARD16)XG47GetRefreshRateByIndex((CARD8)refRateIndex2);
+            massage_refresh_rate(pMode0);
         }
-    }
-    else
-    {
-		/* Jong 09/15/2006; support dual view */
-		if(pMode0 == NULL) return FALSE;
+    } else {
+        int refRateIndex;
 
-        for(j=0; j<VREF_MAX_NUMBER; j++)
-        {
-            if((pMode0->refSupport >> j) & 0x01)
-            {
-                if(XGICheckModeSupported(pXGI, pMode0, pMode1, (CARD16)XG47GetRefreshRateByIndex((CARD8)j+1))==FALSE)
-                    pMode0->refSupport &= ~((CARD16)0x0001 << j);
+        if (pMode0 == NULL) {
+            return FALSE;
+        }
+
+        for (j = 0; j < VREF_MAX_NUMBER; j++) {
+            if ((pMode0->refSupport >> j) & 0x01) {
+                if (!XGICheckModeSupported(pXGI, pMode0, pMode1,
+                                           XG47GetRefreshRateByIndex(j+1))) {
+                    pMode0->refSupport &= ~(1U << j);
+                }
             }
         }
 
-        if (!(pMode0->refSupport & ((CARD16)0x0001 << (refRateIndex-1))))
-        {
-            /*
-             * If the current refresh rate can not be supported,
+
+        refRateIndex = XG47ConvertRefValueToIndex(pMode0->refRate);
+        if (!XGICheckRefreshRateSupport(pMode0->refSupport, refRateIndex)) {
+            /* If the current refresh rate can not be supported,
              * find lowest one.
              */
-            for (refRateIndex=0; refRateIndex<VREF_MAX_NUMBER; refRateIndex++)
-            {
-                if ((pMode0->refSupport >> refRateIndex) & 0x01)
-                {
-                    refRateIndex++;
+            for (refRateIndex = 1;
+                 refRateIndex < VREF_MAX_NUMBER;
+                 refRateIndex++) {
+                if (XGICheckRefreshRateSupport(pMode0->refSupport,
+                                               refRateIndex)) {
                     break;
                 }
             }
+
+            pMode0->refRate = XG47GetRefreshRateByIndex(refRateIndex);
         }
 
-        if (!pMode0->refRate) return FALSE;
+        if (!pMode0->refRate) {
+            return FALSE;
+        }
     }
 
     return TRUE;
