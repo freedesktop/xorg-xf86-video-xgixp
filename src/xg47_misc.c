@@ -225,3 +225,21 @@ void XG47DPMSSet(ScrnInfoPtr pScrn, int PowerManagementMode, int flags)
 
     xf86ExecX86int10(pXGI->pInt10);
 }
+
+
+/**
+ * Examine hardware to determine the size of installed memory.
+ */
+void XG47GetFramebufferSize(XGIPtr pXGI)
+{
+    /* See documentation on page 9-8 of "Volari XP10 non-3D SPG v1.0.pdf"
+     */
+    const uint8_t biascntl = IN3X5B(0x60);
+    static const unsigned s[8] = {
+	256, 128, 64, 32, 16, 0, 0, 0
+    };
+
+
+    pXGI->biosFbSize = s[biascntl & 0x07] * 0x100000;
+    pXGI->freeFbSize = pXGI->biosFbSize;
+}

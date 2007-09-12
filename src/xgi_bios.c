@@ -38,6 +38,8 @@
 #include "xg47_bios.h"
 #include "xg47_mode.h"
 
+static void XGIBiosGetFramebufferSize(XGIPtr pXGI);
+
 extern XGIPixelClockRec XG47ModeVClockTable;
 extern int XG47ModeVClockTableSize;
 extern XGIPixelClockRec XG47ModeVClockTable2;
@@ -249,7 +251,7 @@ void XGIGetFlatPanelType(XGIPtr pXGI)
     pXGI->lcdType = FPTYPE_TFT;
 }
 
-void XGIGetFramebufferSize(XGIPtr pXGI)
+void XGIBiosGetFramebufferSize(XGIPtr pXGI)
 {
     pXGI->pInt10->ax = 0x1200;
     pXGI->pInt10->bx = 0x0012;
@@ -829,8 +831,7 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
     XGIPtr  pXGI = XGIPTR(pScrn);
     CARD8   idxbak;
 
-    switch (pXGI->chipset)
-    {
+    switch (pXGI->chipset) {
     case XG47:
         pXGI->pBiosDll->biosValidMode           = XG47BiosValidMode;
         pXGI->pBiosDll->biosModeInit            = XG47BiosModeInit;
@@ -846,16 +847,16 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
         pXGI->digitalWidth = FPSIZE_UNKNOWN;
         pXGI->digitalHeight = FPSIZE_UNKNOWN;
 
-        pXGI->freeFbSize =(((CARD32)0x1)<<23);      /* 8M */
-        pXGI->biosFbSize =(((CARD32)0x1)<<23);      /* 8M */
-
         pXGI->biosDllOperationFlag  = 0;
+
+        XG47GetFramebufferSize(pXGI);
         break;
     default:
         pXGI->pBiosDll->biosValidMode           = NULL;
         pXGI->pBiosDll->biosModeInit            = NULL;
         pXGI->pBiosDll->biosSpecialFeature      = NULL;
         pXGI->pBiosDll->biosValueInit           = NULL;
+        XGIBiosGetFramebufferSize(pXGI);
         break;
     }
 
@@ -906,7 +907,6 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
      */
     XGIGetFlatPanelType(pXGI);
     XGIGetFlatPanelSize(pXGI);
-    XGIGetFramebufferSize(pXGI);
 
     XGIBiosValueInit(pXGI);
 

@@ -385,7 +385,6 @@ extern Bool XGICheckModeSupported(XGIPtr pXGI, const XGIAskModeRec *pMode0,
 
 extern void   XGIGetFlatPanelSize(XGIPtr pXGI);
 extern void   XGIGetFlatPanelType(XGIPtr pXGI);
-extern void   XGIGetFramebufferSize(XGIPtr pXGI);
 extern CARD8  XGIConvertResToModeNo(CARD16 width,
                                     CARD16 height);
 
