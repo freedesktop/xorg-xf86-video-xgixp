@@ -1074,28 +1074,17 @@ static Bool XGIPreInitInt10(ScrnInfoPtr pScrn)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-#if !defined(__alpha__)
+    if (!xf86LoadSubModule(pScrn, "vbe")
+        || !xf86LoadSubModule(pScrn, "int10")) {
+        return FALSE;
+    }
+
+    xf86LoaderReqSymLists(vbeSymbols, int10Symbols, NULL);
+
     /* int10 is broken on some Alphas */
-#ifdef VBE_INFO
-    if (pXGI->pVbeModes)
-    {
-        pXGI->pVbe = VBEInit(NULL, pXGI->pEnt->index);
-        pXGI->pInt10 = pXGI->pVbe->pInt10;
-    }
-    else
-#endif
-    {
-        if(!pXGI->pInt10)
-        {
-            if (xf86LoadSubModule(pScrn, "int10"))
-            {
-                xf86LoaderReqSymLists(int10Symbols, NULL);
-                xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Initializing int10\n");
-                pXGI->pInt10 = xf86InitInt10(pXGI->pEnt->index);
-            }
-        }
-    }
-#endif
+    pXGI->pVbe = VBEInit(NULL, pXGI->pEnt->index);
+    pXGI->pInt10 = pXGI->pVbe->pInt10;
+
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -1195,59 +1184,40 @@ static Bool XGIPreInitConfig(ScrnInfoPtr pScrn)
 static Bool XGIPreInitDDC(ScrnInfoPtr pScrn)
 {
     XGIPtr          pXGI = XGIPTR(pScrn);
-    vbeInfoPtr      pVbe;
     xf86MonPtr      pMon;
-    Bool            result;
+#ifdef VBE_INFO
+    VbeInfoBlock* vbeInfoBlockPtr;
+#endif
+
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-#if defined(__powerpc__) || defined(__alpha__)
     /* Int10 is broken on PPC and some Alphas */
-    return TRUE;
-#else
-    if (xf86LoadSubModule(pScrn, "vbe"))
-    {
-        xf86LoaderReqSymLists(vbeSymbols,NULL);
-        pVbe = VBEInit(NULL, pXGI->pEnt->index);
-        if (!pVbe) return FALSE;
+#if !defined(__powerpc__) && !defined(__alpha__)
 
-        pMon = vbeDoEDID(pVbe, NULL);
+    pMon = vbeDoEDID(pXGI->pVbe, NULL);
 
 #ifdef VBE_INFO
-        {
-            VbeInfoBlock* vbeInfoBlockPtr;
-            if ((vbeInfoBlockPtr = VBEGetVBEInfo(pVbe)))
-            {
-                pXGI->pVbeModes = VBEBuildVbeModeList(pVbe,vbeInfoBlockPtr);
-                VBEFreeVBEInfo(vbeInfoBlockPtr);
-            }
-        }
-
-        vbeFree(pVbe);
+    vbeInfoBlockPtr = VBEGetVBEInfo(pXGI->pVbe);
+    if (vbeInfoPlockPtr != NULL) {
+        pXGI->pVbeModes = VBEBuildVbeModeList(pXGI->pVbe,vbeInfoBlockPtr);
+        VBEFreeVBEInfo(vbeInfoBlockPtr);
+    }
 #endif
-        if (!xf86LoadSubModule(pScrn, "ddc")) return FALSE;
 
-		PDEBUG(ErrorF("Jong-Before-xf86LoaderReqSymLists(ddcSymbols, NULL)\n"));
-        xf86LoaderReqSymLists(ddcSymbols, NULL);
-		PDEBUG(ErrorF("Jong-After-xf86LoaderReqSymLists(ddcSymbols, NULL)\n"));
-        xf86SetDDCproperties(pScrn, xf86PrintEDID(pMon));
-		PDEBUG(ErrorF("Jong-After-xf86SetDDCproperties(pScrn, xf86PrintEDID(pMon))\n"));
+    if (!xf86LoadSubModule(pScrn, "ddc")) return FALSE;
 
-        result =  TRUE;
-    }
-    else
-    {
-        result = FALSE;
-    }
+    xf86LoaderReqSymLists(ddcSymbols, NULL);
+    xf86SetDDCproperties(pScrn, xf86PrintEDID(pMon));
+    PDEBUG(ErrorF("Jong-After-xf86SetDDCproperties(pScrn, xf86PrintEDID(pMon))\n"));
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    return result;
-
+    return TRUE;
 #endif
 }
 
@@ -1920,10 +1890,7 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
         }
     }
 
-    if (!pXGI->isFBDev && !XGIPreInitInt10(pScrn)) {
-        goto fail;
-    }
-
+    if (!XGIPreInitInt10(pScrn))            goto fail;
     if (!XGIBiosDllInit(pScrn))             goto fail;
     if (!XGIPreInitMemory(pScrn))           goto fail;
 
@@ -2271,9 +2238,6 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
     }
 
     if (!XGIMapFB(pScrn))           goto fail;
-
-    if (!XGIPreInitInt10(pScrn))    goto fail;
-
 
     /*
      * Save the current video card state. Enough state must be
