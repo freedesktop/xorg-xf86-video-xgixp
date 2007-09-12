@@ -528,9 +528,8 @@ void XG47OpenAllDevice(XGIPtr pXGI, CARD8 device2Open)
         }
     }
 
-    /*
-     * call BIOS function DeviceSwitchPosHook to
-     * let SBIOS know current device status
+    /* Call BIOS function DeviceSwitchPosHook to let BIOS know current
+     * device status.
      */
     bNew = 0x0;
 
@@ -1192,7 +1191,8 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
                       CARD32 dualView)
 {
     XGIPtr          pXGI = XGIPTR(pScrn);
-    XGIAskModePtr   pMode0, pMode1;
+    XGIAskModePtr   pMode0 = NULL;
+    XGIAskModePtr   pMode1 = NULL;
     CARD8           want_3cf_5a, tv_ntsc_pal, b3c5_de;
     CARD16          w2_hzoom,w2_vzoom,w2_hstart,w2_hend,w2_vstart,w2_vend,w2_rowByte;
     CARD8           w2_sync;
@@ -1200,29 +1200,22 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
     CARD16          yres, xres, lineBuf;
     CARD32          condition;
 
-	/* Jong 09/21/2006; frame buffer address for video window 2 */
-	CARD32 W2fbAddr=0;
+    /* Frame buffer address for video window 2 */
+    CARD32 W2fbAddr=0;
 
-    pMode0 = pMode1 = pMode;
 
-	/* Jong 09/15/2006; single view or first view of dual view */
-    if (!dualView || dualView == 0x01)
-    {
+    /* Single view or first view of dual view */
+    if (!dualView || (dualView == 0x01)) {
+        pMode0 = & pMode[0];
         condition = pMode0->condition;
-
-		/* Jong 09/20/2006; set pMode1 to invalid */
-		pMode1=NULL;
-    }
-    else /* DualView */ /* Jong 09/15/2006; second view of dual view */
-    {
-        pMode1 = pMode + 1;
+    } else {
+        /* Second view of dual view.
+         */
+        pMode1 = & pMode[1];
         condition = pMode1->condition;
-
-		/* Jong 09/20/2006; set pMode0 to invalid */
-		pMode0=NULL;
     }
 
-	/* Jong 10/04/2006; TV Status flag 2 */
+    /* Jong 10/04/2006; TV Status flag 2 */
     OUTB(XGI_REG_CRX, 0xC2);
     OUTB(XGI_REG_CRX+1, (int)(INB(XGI_REG_CRX+1) & ~0x11));
 
@@ -1233,309 +1226,261 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
 
     tv_ntsc_pal = 0;
 
-	/* Jong 09/20/2006; check pMode0 */
-	if(pMode0)
-	{
-		if(pMode0->condition & ZVMX_ATTRIB_NTSCJ)
-			tv_ntsc_pal = 0x20;
-		if(pMode0->condition & ZVMX_ATTRIB_PALM)
-			tv_ntsc_pal = 0x40;
-		if(pMode0->condition & ZVMX_ATTRIB_PAL)
-			tv_ntsc_pal = 0x80;
+    if (pMode0) {
+        if (pMode0->condition & ZVMX_ATTRIB_NTSCJ)
+            tv_ntsc_pal = 0x20;
+        if (pMode0->condition & ZVMX_ATTRIB_PALM)
+            tv_ntsc_pal = 0x40;
+        if (pMode0->condition & ZVMX_ATTRIB_PAL)
+            tv_ntsc_pal = 0x80;
+        
+        OUTB(XGI_REG_CRX, 0xC0);
+        OUTB(XGI_REG_CRX+1, ((INB(XGI_REG_CRX+1) & 0x1f) | tv_ntsc_pal));
+    }
 
-		OUTB(XGI_REG_CRX, 0xC0);
-		OUTB(XGI_REG_CRX+1, ((INB(XGI_REG_CRX+1) & 0x1f) | tv_ntsc_pal));
-	}
-
-	/* Jong 09/21/2006; single view */
-	/* Jong 09/21/2006; dualView == 0x01 indicate first view? right? */ 
-    if (!dualView || dualView == 0x01)
-    {
-        /* Changing MV to single device, need to modify some MV   */
-        /* configurations. For single device change, this is only */
-        /* dummy processing.                                      */
-
-		/* Jong 09/21/2006; single view */
-        if (!dualView)
-        {
-			/* Jong 09/21/2006; close second view (Video Window 2; W2) */
+    /* dualView == 0x01 indicate first view
+     */
+    if (!dualView || dualView == 0x01) {
+        /* Changing MV to single device, need to modify some MV 
+         * configurations. For single device change, this is only dummy
+         * processing.
+         */
+        if (!dualView) {
+            /* Close second view (Video Window 2; W2) */
             XGICloseSecondaryView(pXGI);
 
-			/* Jong 09/21/2006;  Selects normal screen operation */
+            /* Selects normal screen operation */
             OUTB(XGI_REG_SRX, 0x01);
             OUTB(XGI_REG_SRX+1, INB(XGI_REG_SRX+1) & ~0x20);
         }
 
         /* Combinate & set mode condition. */
 
-		/* Jong 09/21/2006; want_3cf_5a indicate which devices need to be enabled and decided by condition */
-        want_3cf_5a = (CARD8)(condition & 0x0000000F);
+        /* want_3cf_5a indicate which devices need to be enabled and
+         * decided by condition 
+         */
+        want_3cf_5a = (condition & 0x0000000F);
 
-		/* Jong 09/21/2006; what is this for ? */
-        if(condition & ZVMX_ATTRIB_EXPANSION)
-        {
+        if (condition & ZVMX_ATTRIB_EXPANSION) {
             modeSpec |= BIOS_EXPANSION;
-        }
-        else if(condition & ZVMX_ATTRIB_V_EXPANSION)
-        {
+        } else if (condition & ZVMX_ATTRIB_V_EXPANSION) {
             modeSpec |= BIOS_V_EXPANSION;
         }
 
-		/* Jong 09/21/2006; Protection Register; Set register 0x11 to 
-		   92H to unprotect all extended registers without regarding 3C5.0E bit 7. */
+        /* Protection Register; Set register 0x11 to 0x92 to unprotect all 
+         * extended registers without regarding 3C5.0E bit 7. 
+         */
         OUTW(0x3C4, 0x9211);
 
-		/* Jong 09/21/2006; Change of the display device can be done 
-		   by altering this scratch pad register and followed by the set mode function call. */
+        /* Change of the display device can be done by altering this scratch
+         * pad register and followed by the set mode function call.
+         */
         OUTB(XGI_REG_GRX, 0x5A);
         OUTB(XGI_REG_GRX+1, ((INB(XGI_REG_GRX+1) & 0xF0) | want_3cf_5a));
 
-		/* Jong 09/21/2006; LUT read write enable */
-        /* Write enable LUT0 */
+        /* LUT read / write enable */
         OUTB(XGI_REG_SRX, 0xDD);
         OUTB(XGI_REG_SRX+1, 0xE0);
 
-		/* Jong 09/21/2006; what is modeSpec for ? It is used by calling BIOS to set mode */
+        /* What is modeSpec for? It is used by calling BIOS to set mode.
+         */
         modeSpec |= XGIGetColorIndex(pMode0->pixelSize);
-        if (modeSpec & 0x08)        /* 32 bit true color */
-        {
+        if (modeSpec & 0x08) {
+            /* 32 bit true color */
             modeSpec |= (pMode0->modeNo & 0x0100) >> 7;        /* 10 bits */
         }
 
-		/* Jong 09/21/2006; Read information of LUT standby and gamma enable */
+        /* Read information of LUT standby and gamma enable */
         OUTB(XGI_REG_SRX, 0xDE);
         b3c5_de = INB(XGI_REG_SRX+1);
 
-        /* Jong 09/21/2006; call BIOS to set mode and refer to BIOSInterface.doc */
-        /* call BIOS */
+        /* Call BIOS to set mode.  See page 2-37 of
+         * "Volari XP10 non-3D SPG v1.0.pdf"
+         */
         pXGI->pInt10->ax = 0x1200;
         pXGI->pInt10->bx = 0x0014;
-
-		/* Jong 10/04/2006; use code segment from "dualView == 0x02" */
-        /* else if (condition & DEV_SUPPORT_DVI) */
-		/* VGA extended mode number */
-        {
-            OUTB(XGI_REG_GRX, 0x5A);
-            OUTB(XGI_REG_CRX, 0x5A);
-            if ((INB(XGI_REG_GRX+1) & 0x80) && (INB(XGI_REG_CRX+1) & 0x04))  /* single sync digital */
-            {
-                pXGI->pInt10->bx |= (CARD16)pXGI->digitalModeNo << 8;
-
-#ifdef XGI_DUMP_DUALVIEW
-				ErrorF("Jong-Debug-pXGI->pInt10->bx=0x%x--0\n", pXGI->pInt10->bx);
-#endif
-            }
-            else
-            {
-#ifdef XGI_DUMP_DUALVIEW
-				ErrorF("Jong-Debug-pMode0->width=%d, pMode0->height=%d--1\n", pMode0->width, pMode0->height);
-				ErrorF("Jong-Debug-pMode0->modeNo=%d--1\n", pMode0->modeNo);
-				ErrorF("Jong-Debug-pXGI->pInt10->bx=0x%x--1\n", pXGI->pInt10->bx);
-#endif
-
-                pXGI->pInt10->bx |= ((CARD16)XGIConvertResToModeNo(pMode0->width, pMode0->height)
-                                   | (pMode0->modeNo & 0x80)) << 8;
-
-#ifdef XGI_DUMP_DUALVIEW
-				ErrorF("Jong-Debug-pXGI->pInt10->bx=0x%x--1*\n", pXGI->pInt10->bx);
-#endif
-            }
-        }
-
-		/* Jong 10/04/2006; use code segment instead from "dualView == 0x02" */
-        /* pXGI->pInt10->bx |= ((CARD16)XGIConvertResToModeNo(pMode0->width, pMode0->height)
-                             | (pMode0->modeNo & 0x80)) << 8;*/
-
-        pXGI->pInt10->cx = (modeSpec << 8) | (pMode0->refRate & 0x01FF);
-
-        if ((pXGI->pInt10->cx & 0xFF) == 44)
-        {
-            /* for interlace mode, driver pass to DLL 44i or 48i */
-            pXGI->pInt10->cx = (pXGI->pInt10->cx & ~0xFF) | 0xD7;
-#ifdef XGI_DUMP_DUALVIEW
-				ErrorF("Jong-Debug-pXGI->pInt10->cx=0x%x--0\n", pXGI->pInt10->cx);
-#endif
-        }
-        else if((pXGI->pInt10->cx & 0xFF) == 48)
-        {
-            pXGI->pInt10->cx = (pXGI->pInt10->cx & ~0xFF) | 0xE0;
-#ifdef XGI_DUMP_DUALVIEW
-				ErrorF("Jong-Debug-pXGI->pInt10->cx=0x%x--1\n", pXGI->pInt10->cx);
-#endif
-        }
-
         pXGI->pInt10->num = 0x10;
 
-/* Jong 09/21/2006; support dual view */
+        /* VGA extended mode number */
+        OUTB(XGI_REG_GRX, 0x5A);
+        OUTB(XGI_REG_CRX, 0x5A);
+        if ((INB(XGI_REG_GRX+1) & 0x80) && (INB(XGI_REG_CRX+1) & 0x04)) {
+            /* single sync digital */
+            pXGI->pInt10->bx |= (CARD16)pXGI->digitalModeNo << 8;
+
 #ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-before XG47BiosModeInit()-xf86ExecX86int10()-0--\n");
-	XGIDumpRegisterValue(g_pScreen);
+            ErrorF("Jong-Debug-pXGI->pInt10->bx=0x%x--0\n", pXGI->pInt10->bx);
+#endif
+        } else {
+#ifdef XGI_DUMP_DUALVIEW
+            ErrorF("Jong-Debug-pMode0->width=%d, pMode0->height=%d--1\n", pMode0->width, pMode0->height);
+            ErrorF("Jong-Debug-pMode0->modeNo=%d--1\n", pMode0->modeNo);
+            ErrorF("Jong-Debug-pXGI->pInt10->bx=0x%x--1\n", pXGI->pInt10->bx);
+#endif
+
+            pXGI->pInt10->bx |= ((CARD16)XGIConvertResToModeNo(pMode0->width, pMode0->height)
+                                 | (pMode0->modeNo & 0x80)) << 8;
+
+#ifdef XGI_DUMP_DUALVIEW
+            ErrorF("Jong-Debug-pXGI->pInt10->bx=0x%x--1*\n", pXGI->pInt10->bx);
+#endif
+        }
+
+        /* The 44i and 48i rates need to be handled specially.
+         */
+        switch (pMode0->refRate & 0x0ff) {
+        case 44:
+            pXGI->pInt10->cx = (modeSpec << 8) | 0xD7;
+            break;
+        case 48:
+            pXGI->pInt10->cx = (modeSpec << 8) | 0xE0;
+            break;
+        default:
+            pXGI->pInt10->cx = (modeSpec << 8) | (pMode0->refRate & 0x01FF);
+            break;
+        }
+
+#ifdef XGI_DUMP_DUALVIEW
+        ErrorF("Jong-Debug cx=0x%x, refrate = 0x%x\n",
+               pXGI->pInt10->cx, pMode0->refRate);
+        XGIDumpRegisterValue(g_pScreen);
 #endif
 
         xf86ExecX86int10(pXGI->pInt10);
 
-		/* Jong 09/21/2006; support dual view */
 #ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-after XG47BiosModeInit()-xf86ExecX86int10()-0--\n");
-	XGIDumpRegisterValue(g_pScreen);
+        ErrorF("Jong-Debug-after XG47BiosModeInit()-xf86ExecX86int10()-0--\n");
+        XGIDumpRegisterValue(g_pScreen);
 #endif
 
-		/* Jong 09/21/2006; why need to restore b3c5_de which is saved before calling BIOS??? */
+        /* Why need to restore b3c5_de which is saved before calling BIOS? */
         OUTB(XGI_REG_SRX, 0xDE);
         OUTB(XGI_REG_SRX+1, b3c5_de);
 
         /* Set mode fail. */
-        if(pXGI->pInt10->ax & 0xFF00)   return FALSE;
+        if (pXGI->pInt10->ax & 0xFF00) {
+            return FALSE;
+        }
 
-		/* Jong 09/21/2006; what is this for ??? */
         pMode0->refRate = pXGI->pInt10->cx;
 
-		/* Jong 09/21/2006; what is this for ??? */
+
         /* Notify expansion status to system BIOS */
         pXGI->pInt10->ax = 0x120C;
         pXGI->pInt10->bx = 0x214;
         pXGI->pInt10->cx = 0;
-        if (modeSpec & BIOS_EXPANSION)
-        {
+        if (modeSpec & BIOS_EXPANSION) {
             pXGI->pInt10->cx = 1;
-        }
-        else if (modeSpec & BIOS_V_EXPANSION)
-        {
+        } else if (modeSpec & BIOS_V_EXPANSION) {
             pXGI->pInt10->cx = 2;
         }
         pXGI->pInt10->num = 0x10;
 
-/* Jong 09/21/2006; support dual view */
 #ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-before XG47BiosModeInit()-xf86ExecX86int10()-1--\n");
-	XGIDumpRegisterValue(g_pScreen);
+        ErrorF("Jong-Debug-before XG47BiosModeInit()-xf86ExecX86int10()-1--\n");
+        XGIDumpRegisterValue(g_pScreen);
 #endif
 
         xf86ExecX86int10(pXGI->pInt10);
 
-/* Jong 09/21/2006; support dual view */
 #ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-Debug-after XG47BiosModeInit()-xf86ExecX86int10()-1--\n");
-	XGIDumpRegisterValue(g_pScreen);
+        ErrorF("Jong-Debug-after XG47BiosModeInit()-xf86ExecX86int10()-1--\n");
+        XGIDumpRegisterValue(g_pScreen);
 #endif
 
-		/* Jong 09/21/2006; Working status register 0 */
-		/* indicate intended status of display device and will take effect after calling set mode of BIOS */
+        /* Working status register 0: indicate intended status of display
+         * device and will take effect after calling set mode of BIOS.
+         */
         OUTB(XGI_REG_GRX, 0x5A);
-		/* Jong 09/21/2006; System status flag 1 : indicate current status of output devices */
+
+        /* System status flag 1: indicate current status of output devices.
+         */
         OUTB(XGI_REG_CRX, 0x5A);
 
-        if(((pMode0->width == 1920) || (pMode0->width == 2048))
-           && !(((condition & DEV_SUPPORT_LCD) && (pXGI->lcdWidth <= 1600))
-           || ((condition & DEV_SUPPORT_DVI) && (INB(XGI_REG_GRX+1) & 0x80)
-           && (INB(XGI_REG_CRX+1) & 4) && (pXGI->lcdWidth <= 1600))))
-        {
-			/* Jong 09/21/2006; Disable Scaling Engine Control: Horizontal interpolation */
+        if (((pMode0->width == 1920) || (pMode0->width == 2048))
+            && !(((condition & DEV_SUPPORT_LCD) && (pXGI->lcdWidth <= 1600))
+                 || ((condition & DEV_SUPPORT_DVI) && (INB(XGI_REG_GRX+1) & 0x80)
+                     && (INB(XGI_REG_CRX+1) & 4) && (pXGI->lcdWidth <= 1600)))) {
+            /*Disable Scaling Engine Control: Horizontal interpolation */
             OUTB(XGI_REG_GRX, 0xD3);
             OUTB(XGI_REG_GRX+1, (int)(INB(XGI_REG_GRX+1) & ~0x80));
 
-			/* Jong 09/21/2006; Disable Scaling Engine Control: Vertical interpolation */
+            /* Disable Scaling Engine Control: Vertical interpolation */
             OUTB(XGI_REG_GRX,0xD5);
             OUTB(XGI_REG_GRX+1, (int)(INB(XGI_REG_GRX+1) & ~0x80));
         }
     }
 
-	/* Jong 09/20/2006; check whether it's a MHS mode */
+    /* Check whether it's a MHS mode */
     OUTB(XGI_REG_GRX, 0x36);
-    if ((INB(XGI_REG_GRX+1) & 0x02))    /* if MHS */
-    {
-        if (pXGI->isInterpolation)
-        {
-			/* Jong 09/21/2006;  Enable vertical interpolation of video Window 2 */
+    if ((INB(XGI_REG_GRX+1) & 0x02)) {
+        if (pXGI->isInterpolation) {
+            /* Enable vertical interpolation of video Window 2 */
             OUTB(0x24aa, (CARD16)INB(0x24aa) & ~0x02);
-        }
-        else
-        {
-			/* Jong 09/21/2006;  Disable vertical interpolation of video Window 2 */
+        } else {
+            /* Disable vertical interpolation of video Window 2 */
             OUTB(0x24aa, (CARD16)INB(0x24aa) | 0x02);
         }
     }
 
-	/* Jong 09/21/2006; dualView == 0x02 indicate second view? right? */ 
-    if(dualView == 0x02)
-    {
-        /*Moved to miniport*/
-        /*XGICloseSecondaryView(pXGI);*/
-
-		/* Jong 09/21/2006; what is this for ??? */
-        if(condition & SUPPORT_W2_CLOSE)
-        {
-			/* Jong 09/21/2006;  Selects normal screen operation */
+    /* dualView == 0x02 indicate second view
+     */
+    if (dualView == 0x02) {
+        if (condition & SUPPORT_W2_CLOSE) {
+            /* Selects normal screen operation */
             OUTB(XGI_REG_SRX, 0x01);
             OUTB(XGI_REG_SRX+1, INB(XGI_REG_SRX+1) & ~0x20);
             return TRUE;
         }
 
-		/* Jong 09/21/2006; used to check 0x3E4-0x5B for dual view */
+        /* Used to check 0x3E4-0x5B for dual view */
         want_3cf_5a = (CARD8)(condition & 0x0000000f) << 4;
 
-		/* Jong 09/21/2006; set flag of 0x5B for dual view */
-        /* set flag for dual view */
+        /* set flag of 0x5B for dual view */
         OUTB(XGI_REG_GRX, 0x5B);
         OUTB(XGI_REG_GRX+1, (INB(XGI_REG_GRX+1) & ~0xF0) | want_3cf_5a);
 
-		/* Jong 10/04/2006; debug different modes for dual view */
-		/*--------------------------------------------------------*/
+        /* Debug different modes for dual view */
         modeSpec |= XGIGetColorIndex(pMode1->pixelSize);
-        if (modeSpec & 0x08)        /* 32 bit true color */
-        {
+
+        /* 32 bit true color */
+        if (modeSpec & 0x08) {
             modeSpec |= (pMode1->modeNo & 0x0100) >> 7;        /* 10 bits */
         }
 
-		/* Jong 10/04/2006; test with hard code */
-		/* modeSpec = 0x8; */
-		/*--------------------------------------------------------*/
 
-		/* Jong 09/21/2006; call BIOS to set mode */
+        /* Call BIOS to set mode */
         pXGI->pInt10->ax = 0x1200;
         pXGI->pInt10->bx = 0x0014;
-        if (condition & DEV_SUPPORT_LCD)
-        {
+        if (condition & DEV_SUPPORT_LCD) {
             pXGI->pInt10->bx |= (CARD16)pXGI->lcdModeNo << 8;
-        }
-        else if (condition & DEV_SUPPORT_DVI)
-        {
+        } else if (condition & DEV_SUPPORT_DVI) {
             OUTB(XGI_REG_GRX, 0x5A);
             OUTB(XGI_REG_CRX, 0x5A);
-            if ((INB(XGI_REG_GRX+1) & 0x80) && (INB(XGI_REG_CRX+1) & 0x04))  /* single sync digital */
-            {
+            if ((INB(XGI_REG_GRX+1) & 0x80) && (INB(XGI_REG_CRX+1) & 0x04)) {
+                /* single sync digital */
                 pXGI->pInt10->bx |= (CARD16)pXGI->digitalModeNo << 8;
-            }
-            else
-            {
+            } else {
                 pXGI->pInt10->bx |= ((CARD16)XGIConvertResToModeNo(pMode1->width, pMode1->height)
                                    | (pMode1->modeNo & 0x80)) << 8;
             }
-        }
-        else if((condition & DEV_SUPPORT_TV) && (pMode1->width > 1024))
-        {
+        } else if ((condition & DEV_SUPPORT_TV) && (pMode1->width > 1024)) {
             pXGI->pInt10->bx |= (MODE_1024x768 & 0xFF00);
-        }
-        else
-        {
-			/* Jong 10/04/2006; test with hard code */
-			/* pXGI->pInt10->bx = 0x6214; */
+        } else {
             pXGI->pInt10->bx |= ((CARD16)XGIConvertResToModeNo(pMode1->width, pMode1->height)
                                | (pMode1->modeNo & 0x80)) << 8; 
         }
 
-		/* Jong 10/04/2006; D7	1: Set CRTC2 timing only*/
+        /* D7	1: Set CRTC2 timing only */
         pXGI->pInt10->cx = 0x8000 | (modeSpec << 8) | (pMode1->refRate & 0x01FF); 
 
         pXGI->pInt10->num = 0x10;
         xf86ExecX86int10(pXGI->pInt10); 
 
-        /*
-         * w2 (CRTC 2) Zoom & Position.
+        /* w2 (CRTC 2) Zoom & Position.
          */
 
-		/* Jong 09/21/2006; Get horisontal start and end position of display */
-        /* Get Horisontal Display Position */
+        /* Get horisontal start and end position of display */
         OUTB(XGI_REG_SRX, 0xC8);
         w2_hstart = (CARD16)INB(XGI_REG_SRX+1);
         OUTB(XGI_REG_SRX, 0xC9);
@@ -1546,8 +1491,7 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         OUTB(XGI_REG_SRX,0xCB);
         w2_hend |= (CARD16)INB(XGI_REG_SRX+1) << 8;
 
-		/* Jng 09/21/2006; Get vertical start and end position of display */
-        /* Get Vertical Display Position */
+        /* Get vertical start and end position of display */
         OUTB(XGI_REG_SRX,0xC4);
         w2_vstart = (CARD16)INB(XGI_REG_SRX+1);
         OUTB(XGI_REG_SRX,0xC5);
@@ -1558,7 +1502,7 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         OUTB(XGI_REG_SRX,0xC7);
         w2_vend |= (CARD16)INB(XGI_REG_SRX+1) << 8;
 
-		/* Jong 09/21/2006; CRTC2 SYNC Pulse Width */
+        /* CRTC2 SYNC Pulse Width */
         OUTB(XGI_REG_SRX,0xCC);
         w2_sync = INB(XGI_REG_SRX+1);
 
@@ -1577,53 +1521,43 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         xres = pMode1->width;
         yres = pMode1->height;
 
-        if (condition & DEV_SUPPORT_LCD) /* Panel mode */
-        {
-            if(condition & ZVMX_ATTRIB_EXPANSION)
-            {
+        if (condition & DEV_SUPPORT_LCD) {
+            /* Panel mode */
+            if (condition & ZVMX_ATTRIB_EXPANSION) {
                 /* Horizontal Zoom */
-                if (xres > pXGI->lcdWidth)
-                {
+                if (xres > pXGI->lcdWidth) {
                     xres = pXGI->lcdWidth;
                 }
 
                 w2_hzoom = (CARD16)((CARD32)(xres-1) * 1024 / (pXGI->lcdWidth - 1));
                 temp_x = (CARD16)((xres-1) * 1024 % (pXGI->lcdWidth - 1));
-                if (temp_x >= ((pXGI->lcdWidth - 1) >> 1))
-                {
+                if (temp_x >= ((pXGI->lcdWidth - 1) >> 1)) {
                     w2_hzoom++;
                     if (temp_x <= ((pXGI->lcdWidth - 1) * 9 / 10))
                         w2_hend--;
                 }
-            }
-            else
-            {
+            } else {
                 w2_hzoom = 1024;
                 disLen = (CARD16)(pXGI->lcdHeight/3)*4;
-                if ((disLen < pXGI->lcdWidth) && (xres < disLen) && (condition & ZVMX_ATTRIB_V_EXPANSION))
-                {
+                if ((disLen < pXGI->lcdWidth) 
+                    && (xres < disLen) 
+                    && (condition & ZVMX_ATTRIB_V_EXPANSION)) {
                     w2_hstart += (CARD16)((pXGI->lcdWidth - disLen)>>1);
                     w2_hend = (CARD16)(w2_hstart + disLen) -1;
                     w2_hzoom = (CARD16)((CARD32)(xres-1) * 1024 / (disLen-1));
                     temp_x = (CARD16)((xres-1) * 1024 % (disLen-1));
-                    if (temp_x >= ((disLen-1) >> 1))
-                    {
+                    if (temp_x >= ((disLen-1) >> 1)) {
                         w2_hzoom++;
-                    }
-                    else
-                    {
+                    } else {
                         w2_hend++;
                     }
-                }
-                else if (xres < pXGI->lcdWidth)
-                {
+                } else if (xres < pXGI->lcdWidth) {
                     w2_hstart += (CARD16)((pXGI->lcdWidth - xres)>>1);
                     w2_hend   -= (CARD16)((pXGI->lcdWidth - xres)>>1);
                 }
             }
 
-            if(condition & (ZVMX_ATTRIB_EXPANSION | ZVMX_ATTRIB_V_EXPANSION))
-            {
+            if (condition & (ZVMX_ATTRIB_EXPANSION | ZVMX_ATTRIB_V_EXPANSION)) {
                 /* Vertical Zoom */
                 if (yres > pXGI->lcdHeight)
                     yres = pXGI->lcdHeight;
@@ -1634,31 +1568,26 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
                 if (((CARD32)(yres-1) * 1024 % (pXGI->lcdHeight-1)) &&
                      ((CARD32)(yres-1) * 1024 % (pXGI->lcdHeight-1)) < (CARD32)((pXGI->lcdHeight-1) >> 1))
                     w2_vend--;
-            }
-            else
-            {
-                if (yres < pXGI->lcdHeight)
-                {
+            } else {
+                if (yres < pXGI->lcdHeight) {
                     w2_vstart += (CARD16)((pXGI->lcdHeight - yres)>>1);
                     w2_vend   -= (CARD16)((pXGI->lcdHeight - yres)>>1);
                 }
                 w2_vzoom = 1024;
             }
-        }
-        else if (condition & DEV_SUPPORT_DVI) /* DVI mode */
-        {
+        } else if (condition & DEV_SUPPORT_DVI) {
+            /* DVI mode */
             OUTB(XGI_REG_GRX,0x5a);
             OUTB(XGI_REG_CRX,0x5a);
-            if((INB(XGI_REG_GRX+1) & 0x80) && (INB(XGI_REG_CRX+1) & 0x04))  /* single sync digital */
-            {
+            if ((INB(XGI_REG_GRX+1) & 0x80) && (INB(XGI_REG_CRX+1) & 0x04)) {
+                /* single sync digital */
                 w2_hend--;
                 /* Horizontal Zoom */
                 if (xres > pXGI->digitalWidth)
                     xres = pXGI->digitalWidth;
 
                 w2_hzoom = (CARD16)((CARD32)(xres-1) * 1024 / (pXGI->digitalWidth - 1));
-                if (((CARD32)(xres-1) * 1024 % (pXGI->digitalWidth - 1)) >= (CARD32)((pXGI->digitalWidth - 1) >> 1))
-                {
+                if (((CARD32)(xres-1) * 1024 % (pXGI->digitalWidth - 1)) >= (CARD32)((pXGI->digitalWidth - 1) >> 1)) {
                     w2_hzoom++;
                     w2_hend--;
                 }
@@ -1673,57 +1602,42 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
                 if (((CARD32)(yres-1) * 1024 % (pXGI->digitalHeight - 1)) &&
                      ((CARD32)(yres-1) * 1024 % (pXGI->digitalHeight - 1)) < (CARD32)((pXGI->digitalHeight - 1) >> 1))
                     w2_vend--;
-            }
-            else
-            {
-                if (xres == 320 || xres == 400 || xres == 512)
-                {
+            } else {
+                if (xres == 320 || xres == 400 || xres == 512) {
                     w2_hzoom = 512;
                     w2_vzoom = 512;
-                }
-                else if (xres == 720) /* scale up to 800x600 */
-                {
+                } else if (xres == 720) {
+                    /* scale up to 800x600 */
                     w2_hzoom = 0x399;
                     if(yres == 576)
                         w2_vzoom = 0x3d7;
                     else  /* 480 */
                         w2_vzoom = 0x333;
-                }
-                else
-                {
+                } else {
                     w2_hzoom = 1024;
                     w2_vzoom = 1024;
                 }
             }
-        }
-        else if (condition & DEV_SUPPORT_CRT) /* CRT mode */
-        {
-            if (xres == 320 || xres == 400 || xres == 512)
-            {
+        } else if (condition & DEV_SUPPORT_CRT) {
+            /* CRT mode */
+            if (xres == 320 || xres == 400 || xres == 512) {
                 w2_hzoom = 512;
                 w2_vzoom = 512;
-            }
-            else
-            {
+            } else {
                 w2_hzoom = 1024;
                 w2_vzoom = 1024;
             }
-        }
-        else /* TV */
-        {
-            if (xres > 1024)
-            {
+        } else {
+            /* TV mode */
+            if (xres > 1024) {
                 xres = 1024;
                 yres = 768;
             }
 
-            if (xres == 320 || xres == 400 || xres == 512)
-            {
+            if (xres == 320 || xres == 400 || xres == 512) {
                 w2_hzoom = 512;
                 w2_vzoom = 512;
-            }
-            else
-            {
+            } else {
                 w2_hzoom = 1024;
                 w2_vzoom = 1024;
             }
@@ -1736,58 +1650,51 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
             OUTB(XGI_REG_SRX+1, w2_sync);
 
             OUTB(XGI_REG_CRX,0xc0);
-            if(!(INB(XGI_REG_CRX+1) & 0x80))
-            {
+            if (!(INB(XGI_REG_CRX+1) & 0x80)) {
                 w2_vstart -= 0x0c;
                 w2_vend -= 0x0c;
             }
         }
 
         temp_x = (CARD16)xres & 0xfff0;
-        if(((CARD16)xres & 0x000f)!=0) temp_x+=0x10;
+        if (((CARD16)xres & 0x000f) != 0)
+            temp_x += 0x10;
+
         w2_rowByte = (CARD16)(temp_x * (pMode1->pixelSize >> 3)) >> 4;
 
         lineBuf = xres >> 3;
 
-        if(pMode1->pixelSize == 8)
-        {
+        if (pMode1->pixelSize == 8) {
             lineBuf >>= 1;
-        }
-        else if(pMode1->pixelSize == 16)
-        {
+        } else if (pMode1->pixelSize == 16) {
             /* Disable dithering */
             OUTB(XGI_REG_GRX, 0x42);
             OUTB(XGI_REG_GRX+1, INB(XGI_REG_GRX+1) & ~0x08);
-        }
-        else if(pMode1->pixelSize == 32)
+        } else if (pMode1->pixelSize == 32) {
             lineBuf <<= 1;
+        }
+
         lineBuf++;
-        if(lineBuf > 0x3FF) lineBuf = 0x3FF;    /* Overflow */
+        if (lineBuf > 0x3FF)
+            lineBuf = 0x3FF;    /* Overflow */
 
         OUTW(0x3C4, 0x9211);
 
-	/* Window 2 Starting address of (Y) frame buffer.
-	 *
-	 * We need to give an different address than (0,0) if MHS is
-	 * required.  Otherwise (0,0) is correct for simultaneous and content
-	 * mode.
-	 * 
-	 * Total 25 bits is effective.
-	 */
-	W2fbAddr = pScrn->memPhysBase;
-	XG47SetW2ViewBaseAddr(pScrn, (unsigned long)W2fbAddr);
+        /* Window 2 Starting address of (Y) frame buffer.
+         *
+         * We need to give an different address than (0,0) if MHS is
+         * required.  Otherwise (0,0) is correct for simultaneous and content
+         * mode.
+         * 
+         * Total 25 bits is effective.
+         */
+        W2fbAddr = pScrn->memPhysBase;
+        XG47SetW2ViewBaseAddr(pScrn, (unsigned long)W2fbAddr);
 
-/* Jong 09/26/2006; support dual view */
 #ifdef XGI_DUMP_DUALVIEW
-	ErrorF("Jong-After calling- XG47SetW2ViewBaseAddr()-W2fbAddr=0x%x\n", W2fbAddr);
-	XGIDumpRegisterValue(pScrn);
-#endif
-
-#if 0
-        OUTW(0x2480, 0x0);
-        OUTB(0x2482, 0x0);
-		/* Jong 09/21/2006; total 25 bits for address and set them all to zero */
-        OUTB(0x2483, (CARD16)INB(0x2483) & ~0x01);
+        ErrorF("Jong-After calling- XG47SetW2ViewBaseAddr()-W2fbAddr=0x%x\n",
+               W2fbAddr);
+        XGIDumpRegisterValue(pScrn);
 #endif
 
         /* W2 zooming factor */
@@ -1813,47 +1720,37 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         OUTB(XGI_REG_GRX, 0x5D);
         modeSpec = (CARD8)INB(XGI_REG_GRX+1); /* LCD Expansion/Centering */
 
-		ErrorF("Jong-Debug-3CE-0x5D-modeSpec=0x%x\n", modeSpec);
+        ErrorF("Jong-Debug-3CE-0x5D-modeSpec=0x%x\n", modeSpec);
 
-		/* Jong 09/21/2006; set to RGB mode */
-		/* 0x24a9:[4]: W2_CSCPASS
-                    1: window2 RGB format
-                    *0: window2 YUV format
-		*/
+        /* Set to RGB mode
+         * 0x24a9:[4]: W2_CSCPASS
+         *          1: window2 RGB format
+         *          *0: window2 YUV format
+         */
         OUTB(0x24a9, ((CARD16)INB(0x24a9) & ~0x0F) | 0x1A); /* CSCPASS, RGB WINMD */
 
-        if ((!(modeSpec & GRAF_EXPANSION))||(pMode1->pixelSize == 8))
-        {
+        if ((!(modeSpec & GRAF_EXPANSION))||(pMode1->pixelSize == 8)) {
             OUTB(0x24aa, (CARD16)INB(0x24aa) | 0x01); /* HINTEN, disable */
-        }
-        else
-        {
+        } else {
             OUTB(0x24aa, (CARD16)INB(0x24aa) & ~0x01); /* HINTEN, enable */
         }
 
         OUTB(0x24aa, (CARD16)INB(0x24aa) | 0x02);
-        if ((condition & DEV_SUPPORT_LCD) && (pMode1->width < pXGI->lcdWidth))
-        {
+        if ((condition & DEV_SUPPORT_LCD)
+            && (pMode1->width < pXGI->lcdWidth)) {
             if(pXGI->isInterpolation)
                 OUTB(0x24aa, INB(0x24aa) & ~0x02);
         }
 
-        if(pMode1->pixelSize == 8)
-        {
+        if (pMode1->pixelSize == 8) {
             OUTB(0x24a8, (INB(0x24a8) & ~0x07) | 0x01);
-        }
-        else if(pMode1->pixelSize == 16)
-        {
+        } else if(pMode1->pixelSize == 16) {
             OUTB(0x24a8, (INB(0x24a8) & ~0x07) | 0x02);
-        }
-        else
-        {
-            if (pMode0->modeNo & 0x0100)    /* 10 bits */
-            {
+        } else {
+            /* 10 bits */
+            if (pMode0->modeNo & 0x0100) {
                 OUTB(0x24a8, INB(0x24a8) | 0x07);
-            }
-            else
-            {
+            } else {
                 OUTB(0x24a8, (INB(0x24a8) & ~0x07) | 0x04);
             }
         }
@@ -1884,8 +1781,7 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         OUTB(XGI_REG_SRX, 0x52);
         OUTB(XGI_REG_SRX+1, INB(XGI_REG_SRX+1) | 0x40);
 
-        if (want_3cf_5a & (DEV_SUPPORT_LCD << 4))
-        {
+        if (want_3cf_5a & (DEV_SUPPORT_LCD << 4)) {
             /* W2 on LCD */
             OUTB(XGI_REG_SRX, 0xBE);
             OUTB(XGI_REG_SRX+1,(int)INB(XGI_REG_SRX+1) | 0x08);
@@ -1895,8 +1791,7 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
             OUTB(XGI_REG_GRX+1, (INB(XGI_REG_GRX+1) & ~0x07)|(GR3CE_45 & 0x07));
         }
 
-        if (want_3cf_5a & (DEV_SUPPORT_TV << 4))
-        {
+        if (want_3cf_5a & (DEV_SUPPORT_TV << 4)) {
             /* W2 on TV */
             OUTB(XGI_REG_CRX, 0xD6);
             OUTB(XGI_REG_CRX+1, INB(XGI_REG_CRX+1) | 0x04);
@@ -1914,18 +1809,14 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
             OUTB(XGI_REG_CRX, 0xC0);
             if(INB(XGI_REG_CRX+1) & 0x80)
                 temp_x += 0x14;
-            /*else
-                temp_x += 0x04;*/
 
             OUTB(XGI_REG_CRX, 0xD2);
             OUTB(XGI_REG_CRX+1, temp_x);
             OUTB(XGI_REG_CRX, 0xD3);
             OUTB(XGI_REG_CRX+1, (INB(XGI_REG_CRX+1) & 0xF0) | (temp_x >> 8));
-
         }
 
-        if (want_3cf_5a & (DEV_SUPPORT_DVI << 4))
-        {
+        if (want_3cf_5a & (DEV_SUPPORT_DVI << 4)) {
             /* W2 on DVI, driving strength */
 
             /* TMDS Power, disable internal TMDS */
@@ -1936,11 +1827,6 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
             OUTB(XGI_REG_GRX, 0x46);
             OUTB(XGI_REG_GRX+1, (INB(XGI_REG_GRX+1) & ~0x38) | 0x28);
 
-            /* LCD2 clock polarity
-            OUTB(XGI_REG_GRX, 0x43);
-            OUTB(XGI_REG_GRX+1, INB(XGI_REG_GRX+1) & ~0x08);
-            */
-
             OUTB(XGI_REG_CRX, 0xD6);
             OUTB(XGI_REG_CRX+1, INB(XGI_REG_CRX+1) & ~0x10);
 
@@ -1948,11 +1834,12 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
             OUTB(XGI_REG_GRX+1, INB(XGI_REG_GRX+1) | 0x40);
         }
 
-		/* Jong 09/21/2006; set second view to CRT1/DVI2 with 0x3CE/0x3CF-0x2C:[6]*/
-		/* DEV_SUPPORT_CRT = 0x0002; (DEV_SUPPORT_CRT << 4) =  0x0020 */
-		/* why to check want_3cf_5a but not want_3cf_5b ??? */
-        if (want_3cf_5a & (DEV_SUPPORT_CRT << 4))
-        {
+        /* Sset second view to CRT1/DVI2 with 0x3CE/0x3CF-0x2C:[6]
+         * DEV_SUPPORT_CRT = 0x0002; (DEV_SUPPORT_CRT << 4) = 0x0020
+         *
+         * Why to check want_3cf_5a but not want_3cf_5b?
+         */
+        if (want_3cf_5a & (DEV_SUPPORT_CRT << 4)) {
             OUTB(XGI_REG_GRX, 0x2C);
             OUTB(XGI_REG_GRX+1, INB(XGI_REG_GRX+1) | 0x40);
         }
@@ -1960,54 +1847,43 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         OUTB(0x24c2,(CARD16)INB(0x24c2) | 0x20);  /* MC5 */
     }
 
-    /*
-     * TV
+    /* TV
      */
-    if((pXGI->biosDevSupport & SUPPORT_DEV_TV)
+    if ((pXGI->biosDevSupport & SUPPORT_DEV_TV)
         && !(pXGI->biosDevSupport & SUPPORT_CURRENT_NO_TV)
-        && (condition & DEV_SUPPORT_TV))
-    {
-        if (dualView == 0x02)
-        {
+        && (condition & DEV_SUPPORT_TV)) {
+        if (dualView == 0x02) {
             modeinfo[0] = (CARD16)pMode1->width;
             modeinfo[1] = (CARD16)pMode1->height;
             modeinfo[2] = (CARD16)pMode1->pixelSize;
-        }
-        else
-        {
+        } else {
             modeinfo[0] = (CARD16)pMode0->width;
             modeinfo[1] = (CARD16)pMode0->height;
             modeinfo[2] = (CARD16)pMode0->pixelSize;
         }
 
-        if(condition & SUPPORT_TV_NATIVE)
-        {
-            if (condition & ZVMX_ATTRIB_PAL)
-            {
-                if (modeinfo[0] >= 800 && modeinfo[1] > 514)
-                {
+        if (condition & SUPPORT_TV_NATIVE) {
+            if (condition & ZVMX_ATTRIB_PAL) {
+                if (modeinfo[0] >= 800 && modeinfo[1] > 514) {
                     modeinfo[0] = 800;
                     modeinfo[1] = 514;
                 }
-            }
-            else
-            {
-                if (modeinfo[0] >= 640 && modeinfo[1] > 432)
-                {
+            } else {
+                if (modeinfo[0] >= 640 && modeinfo[1] > 432) {
                     modeinfo[0] = 640;
                     modeinfo[1] = 432;
                 }
             }
-        }
-        else
-        {
-            if (modeinfo[0] >= 1024 && modeinfo[1] >= 768)
-            {
+        } else {
+            if (modeinfo[0] >= 1024 && modeinfo[1] >= 768) {
                 modeinfo[0] = 1024;
                 modeinfo[1] = 768;
             }
         }
-        modeinfo[3] = 1;                    /*only one true color format(32bit)*/
+
+        /* Only one true color format(32bit).
+         */
+        modeinfo[3] = 1;
 
         XG47BiosDTVControl(pXGI, INIT_TV_SCREEN, modeinfo);
     }

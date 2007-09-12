@@ -336,67 +336,58 @@ unsigned int XG47DDCRead(ScrnInfoPtr pScrn)
     return ( INB(0x3D5) & 0x01 );
 }
 
+
+/**
+ * Save the initial screen mode when starting the X server
+ */
 void XG47ModeSave(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
-    /*int     i = 0;*/
-    CARD8   modeNo;
+    CARD8   modeNo = IN3CFB(0x5C);
 
-/*
-    for ( i = 0; i < 0x100; i++)
-    {
-        pXGIReg->regs3C5[i] = IN3C5B(i);
-        pXGIReg->regs3X5[i] = IN3X5B(i);
-        pXGIReg->regs3CF[i] = IN3CFB(i);
-    }
-*/
-    pXGI->textModeNo = 0;
-
-    modeNo = IN3CFB(0x5C);
-    if (modeNo > MAX_VGA_MODE_NO)
-    {
+    /* 3cf:5c only stores 8-bits, but extended VESA modes can be 16-bits.
+     * If the mode is larger than the highest VGA mode, use a VESA call to
+     * get the full 16-bits of the current mode.
+     */
+    if (modeNo > MAX_VGA_MODE_NO) {
         pXGI->pInt10->ax = 0x4F03;
         pXGI->pInt10->num = 0x10;
         xf86ExecX86int10(pXGI->pInt10);
         pXGI->isVGAMode = FALSE;
         pXGI->textModeNo = pXGI->pInt10->bx;
-    }
-    else
-    {
+    } else {
         pXGI->isVGAMode  = TRUE;
         pXGI->textModeNo = modeNo;
     }
+
 }
 
+/**
+ * Restore the initial screen mode when exiting the X server
+ * 
+ * \todo
+ * Determine if the VESA call could be used for the non-VGA and VGA case.
+ */
 void XG47ModeRestore(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
 
-	/* Jong 09/28/2006; restore to single view */
+    /* Restore to single view */
     XGICloseSecondaryView(pXGI);
 
-    if (pXGI->isVGAMode)
-    {
+    /* Depending on whether the original mode was a VGA mode or an extended
+     * VESA mode, use the proper BIOS call to restore the mode.
+     */
+    if (pXGI->isVGAMode) {
         pXGI->pInt10->ax = pXGI->textModeNo;
         pXGI->pInt10->num = 0x10;
         xf86ExecX86int10(pXGI->pInt10);
-    }
-    else
-    {
+    } else {
         pXGI->pInt10->ax = 0x4F02;
         pXGI->pInt10->bx = pXGI->textModeNo;
         pXGI->pInt10->num = 0x10;
         xf86ExecX86int10(pXGI->pInt10);
     }
-/*
-    int     i = 0;
-    for (i = 0; i < 0x100; i++)
-    {
-        OUT3C5B(i, pXGIReg->regs3C5[i]);
-        OUT3X5B(i, pXGIReg->regs3X5[i]);
-        OUT3CFB(i, pXGIReg->regs3CF[i]);
-    }
-*/
 }
 
 void XG47SetCRTCViewStride(ScrnInfoPtr pScrn)
