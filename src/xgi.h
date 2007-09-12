@@ -461,8 +461,6 @@ typedef struct {
 #endif
     EntityInfoPtr       pEnt;
 
-    CARD8               chipID;
-    CARD8               chipRev;
     int                 chipset;
 
     int                 dacType;

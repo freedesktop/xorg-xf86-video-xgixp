@@ -860,15 +860,6 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
         break;
     }
 
-    /*
-     * Get Revision ID and Chip ID
-     */
-    idxbak = (CARD8)INB(0x3C4);
-    OUTB(0x3C4, 0xB);
-    pXGI->chipID = INB(0x3C5);
-    OUTB(0x3C4, 0x9);
-    pXGI->chipRev = INB(0x3C5);
-    OUTB(0x3C4, idxbak);
 
     /* check BIOS capability */
     pXGI->biosCapability = 0;
