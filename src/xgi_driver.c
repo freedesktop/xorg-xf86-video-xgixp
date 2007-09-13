@@ -1723,18 +1723,13 @@ static Bool XGIPreInitShadow(ScrnInfoPtr pScrn)
 
 static void XGIProbeDDC(ScrnInfoPtr pScrn, int index)
 {
-    vbeInfoPtr pVbe;
+    XGIPtr pXGI = XGIPTR(pScrn);
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    if (xf86LoadSubModule(pScrn, "vbe"))
-    {
-        pVbe = VBEInit(NULL,index);
-        ConfiguredMonitor = vbeDoEDID(pVbe, NULL);
-        vbeFree(pVbe);
-    }
+    ConfiguredMonitor = vbeDoEDID(pXGI->pVbe, NULL);
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
