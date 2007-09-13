@@ -297,29 +297,6 @@ void XG47CloseAllDevice(XGIPtr pXGI, CARD8 device2Close)
             XGIWaitVerticalOnCRTC1(pXGI, 20);
     }
 
-#ifdef TOPGUN
-    OUTB(XGI_REG_GRX, 0x36);
-    OUTB(XGI_REG_GRX+1, (CARD8)INB(XGI_REG_GRX+1) | 0x01);
-
-    pXGI->pInt10->ax = 0x120d;
-    pXGI->pInt10->bx = 0x0314;
-    pXGI->pInt10->cx = (CARD16)device2Close;
-    pXGI->pInt10->num = 0x10;
-    xf86ExecX86int10(pXGI->pInt10);
-
-    if(!(pXGI->pInt10->ax >> 8))
-    {
-        while(1)
-        {
-            OUTB(XGI_REG_GRX, 0x36);
-            if(!((CARD8)INB(XGI_REG_GRX+1) & 0x01))
-                break;
-        }
-    }
-    OUTB(XGI_REG_GRX, 0x36);
-    OUTB(XGI_REG_GRX+1,(CARD8)INB(XGI_REG_GRX+1) & ~0x01);
-#endif
-
     pXGI->biosDllOperationFlag |= DEVICE_CLOSED; /* close complete. */
 }
 
