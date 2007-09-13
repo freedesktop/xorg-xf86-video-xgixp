@@ -1930,9 +1930,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
         pXGI->biosBase = NULL;
     }
 
-    /* Free int10 info
-    if (pXGI->pInt10) xf86FreeInt10(pXGI->pInt10);
-    */
 
     /* Decide which operations need to be placed under resource access control.
      * The classes of operations are the frame buffer operations (RAC_FB),
@@ -1969,17 +1966,16 @@ fail:
       pXGI->biosBase = NULL;
     }
 
-    if (pXGI->pVbe)
-    {
-      vbeFree(pXGI->pVbe);
-      pXGI->pVbe = NULL;
+    if (pXGI->pVbe) {
+        vbeFree(pXGI->pVbe);
+        pXGI->pVbe = NULL;
+        pXGI->pInt10 = NULL;
     }
 
     /* Free int10 info */
-    if (pXGI->pInt10)
-    {
-      xf86FreeInt10(pXGI->pInt10);
-      pXGI->pInt10 = NULL;
+    if (pXGI->pInt10) {
+        xf86FreeInt10(pXGI->pInt10);
+        pXGI->pInt10 = NULL;
     }
     vgaHWFreeHWRec(pScrn);
 
@@ -2582,16 +2578,15 @@ fail:
     }
 
     PDEBUG(ErrorF("Jong-After-XGIInitMC-9\n"));
-    if (pXGI->pVbe)
-    {
+    if (pXGI->pVbe) {
         vbeFree(pXGI->pVbe);
         pXGI->pVbe = NULL;
+        pXGI->pInt10 = NULL;
     }
 
     PDEBUG(ErrorF("Jong-After-XGIInitMC-10\n"));
     /* Free int10 info */
-    if (pXGI->pInt10)
-    {
+    if (pXGI->pInt10) {
         xf86FreeInt10(pXGI->pInt10);
         pXGI->pInt10 = NULL;
     }
@@ -2890,14 +2885,13 @@ static Bool XGICloseScreen(int scrnIndex, ScreenPtr pScreen)
     if (pXGI->BlockHandler)
         pScreen->BlockHandler = pXGI->BlockHandler;
 
-    if (pXGI->pVbe)
-    {
+    if (pXGI->pVbe) {
         vbeFree(pXGI->pVbe);
         pXGI->pVbe = NULL;
+        pXGI->pInt10 = NULL;
     }
 
-    if (pXGI->pInt10)
-    {
+    if (pXGI->pInt10) {
         xf86FreeInt10(pXGI->pInt10);
         pXGI->pInt10 = NULL;
     }
