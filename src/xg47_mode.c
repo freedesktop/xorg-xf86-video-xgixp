@@ -463,14 +463,14 @@ void XG47SetW2ViewBaseAddr(ScrnInfoPtr pScrn, unsigned long startAddr)
 
 
 static void fill_ask_mode(ScrnInfoPtr pScrn, DisplayModePtr dispMode,
-                          XGIAskModeRec *askMode, unsigned index)
+                          XGIAskModeRec *askMode)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
     CARD8 ConnectedDevices;
 
-    askMode[index].width = dispMode->HDisplay;
-    askMode[index].height = dispMode->VDisplay; 
-    askMode[index].pixelSize = pScrn->bitsPerPixel;
+    askMode->width = dispMode->HDisplay;
+    askMode->height = dispMode->VDisplay; 
+    askMode->pixelSize = pScrn->bitsPerPixel;
 
     switch (pXGI->displayDevice) {
     case ST_DISP_LCD:
@@ -481,7 +481,7 @@ static void fill_ask_mode(ScrnInfoPtr pScrn, DisplayModePtr dispMode,
     case ST_DISP_CRT_MV:
     case ST_DISP_TV_MV:
     case ST_DISP_DVI_MV:
-        askMode[index].condition = pXGI->displayDevice;
+        askMode->condition = pXGI->displayDevice;
         break;
     default:
         /* Use IN3X5B(0x5A) to check whether device is attached
@@ -495,16 +495,16 @@ static void fill_ask_mode(ScrnInfoPtr pScrn, DisplayModePtr dispMode,
         ConnectedDevices = IN3X5B(0x5A);
         if (ConnectedDevices & 0x01) {
             /* single DVI */
-            askMode[index].condition = ST_DISP_DVI;
+            askMode->condition = ST_DISP_DVI;
         } else if ((ConnectedDevices & 0x0E) == 0x0E) {
             /* DVI + CRT */
-            askMode[index].condition = ST_DISP_CRT | ST_DISP_DVI;
+            askMode->condition = ST_DISP_CRT | ST_DISP_DVI;
         } else if (ConnectedDevices & 0x02) {
             /* single CRT */
-            askMode[index].condition = ST_DISP_CRT;
+            askMode->condition = ST_DISP_CRT;
         } else if (ConnectedDevices & 0x10) {
             /* TV : need to be verified more */
-            askMode[index].condition = ST_DISP_TV;
+            askMode->condition = ST_DISP_TV;
         }
 
         break;
@@ -516,11 +516,11 @@ static void fill_ask_mode(ScrnInfoPtr pScrn, DisplayModePtr dispMode,
     }
 
     if (((int)dispMode->VRefresh) >= 85) {
-        askMode[index].refRate = 85;
+        askMode->refRate = 85;
     } else if (((int)dispMode->VRefresh) >= 75) {
-        askMode[index].refRate = 75;
+        askMode->refRate = 75;
     } else {
-        askMode[index].refRate = 60;
+        askMode->refRate = 60;
     }
 }
 
@@ -555,7 +555,7 @@ Bool XG47ModeInit(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
     /* Use askMode[0] for single view or first view of dual view mode.
      * Use askMode[1] for second view of dual view mode.
      */
-    fill_ask_mode(pScrn, dispMode, askMode, index);
+    fill_ask_mode(pScrn, dispMode, & askMode[index]);
 
     if (g_DualViewMode && pXGI->FirstView) {
         g_ModeOfFirstView = askMode[index];
@@ -587,7 +587,7 @@ int XG47ValidMode(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
     XGIAskModeRec askMode[2];
 
 
-    fill_ask_mode(pScrn, dispMode, askMode, 0);
+    fill_ask_mode(pScrn, dispMode, & askMode[0]);
 
     /* Both askMode[0] and askMode[1] will be used in XG47BiosValidMode()
      */
