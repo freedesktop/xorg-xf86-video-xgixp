@@ -238,6 +238,7 @@ static const char *driSymbols[] = {
 
 static const char *vbeSymbols[] = {
     "VBEInit",
+    "VBEDPMSSet",
     "vbeDoEDID",
     "vbeFree",
     NULL
@@ -679,32 +680,17 @@ static void XGIFreeRec(ScrnInfoPtr pScrn)
 static void XGIDPMSSet(ScrnInfoPtr pScrn, int PowerManagementMode, int flags)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
-	ErrorF("XGI-XGIDPMSSet()...\n");
 
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
 
-    if (pXGI->isFBDev)
-    {
-	    fbdevHWDPMSSet(pScrn, PowerManagementMode, flags);
-	    return;
+    if (pXGI->isFBDev) {
+        fbdevHWDPMSSet(pScrn, PowerManagementMode, flags);
+    } else if (pXGI->pVbe) {
+	/* I don't know if the bug is in XGI's BIOS or in VBEDPMSSet, but
+	 * cx must be set to 0 here, or the mode will not be set.
+	 */
+        pXGI->pInt10->cx = 0x0000;
+        VBEDPMSSet(pXGI->pVbe, PowerManagementMode);
     }
-
-    switch(pXGI->chipset)
-    {
-    case XG47:
-		XG47DPMSSet(pScrn, PowerManagementMode, flags); /* Jong 07/24/2006 */
-		break;
-
-    default:
-        break;
-    }
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
 }
 
 /**

@@ -169,63 +169,6 @@ void XG47AdjustFrame(int scrnIndex, int x, int y, int flags)
     */
 }
 
-/* Jong 07/24/2006; implement DPMS */
-void XG47DPMSSet(ScrnInfoPtr pScrn, int PowerManagementMode, int flags)
-{
-    XGIPtr  pXGI = XGIPTR(pScrn);
-	ErrorF("XGI-XG47DPMSSet()...\n");
-
-	/* Get DPMS Capability */
-    pXGI->pInt10->ax = 0x4F10;
-    pXGI->pInt10->bx = 0x0000;
-    pXGI->pInt10->cx = 0x0000;
-    pXGI->pInt10->num = 0x10;
-    xf86ExecX86int10(pXGI->pInt10);
-
-	/* don't support DPMS power saving */
-	if(((pXGI->pInt10->bx) & 0xFF00) == 0)
-	{
-		ErrorF("XGI Don't support DPMS ..... \n");
-		return;
-	}
-
-    pXGI->pInt10->ax = 0x4F10;
-    pXGI->pInt10->bx = 0x0001;
-    pXGI->pInt10->cx = 0x0000;
-    pXGI->pInt10->num = 0x10;
-    switch (PowerManagementMode)
-    {
-		case DPMSModeOn:
-			/* Screen: On, HSync: On, VSync: On */
-			    pXGI->pInt10->bx |= 0x0000;
-				ErrorF("XGI-XG47DPMSSet()-On...\n");
-			break;
-
-		case DPMSModeStandby:
-			/* Screen: Off, HSync: Off, VSync: On */
-			    pXGI->pInt10->bx |= 0x0100;
-				ErrorF("XGI-XG47DPMSSet()-Standby...\n");
-			break;
-
-		case DPMSModeSuspend:
-			/* Screen: Off, HSync: On, VSync: Off */
-			    pXGI->pInt10->bx |= 0x0200;
-				ErrorF("XGI-XG47DPMSSet()-Suspend...\n");
-			break;
-
-		case DPMSModeOff:
-			/* Screen: Off, HSync: Off, VSync: Off */
-			    pXGI->pInt10->bx |= 0x0400;
-				ErrorF("XGI-XG47DPMSSet()-Off...\n");
-			break;
-
-		default:
-			break;
-    }
-
-    xf86ExecX86int10(pXGI->pInt10);
-}
-
 
 /**
  * Examine hardware to determine the size of installed memory.
