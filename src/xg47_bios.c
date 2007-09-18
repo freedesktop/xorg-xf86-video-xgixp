@@ -1201,24 +1201,10 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         OUTB(XGI_REG_CRX, 0x5A);
         if ((INB(XGI_REG_GRX+1) & 0x80) && (INB(XGI_REG_CRX+1) & 0x04)) {
             /* single sync digital */
-            pXGI->pInt10->bx |= (CARD16)pXGI->digitalModeNo << 8;
-
-#ifdef XGI_DUMP_DUALVIEW
-            ErrorF("Jong-Debug-pXGI->pInt10->bx=0x%x--0\n", pXGI->pInt10->bx);
-#endif
+            pXGI->pInt10->bx |= pXGI->digitalModeNo << 8;
         } else {
-#ifdef XGI_DUMP_DUALVIEW
-            ErrorF("Jong-Debug-pMode0->width=%d, pMode0->height=%d--1\n", pMode0->width, pMode0->height);
-            ErrorF("Jong-Debug-pMode0->modeNo=%d--1\n", pMode0->modeNo);
-            ErrorF("Jong-Debug-pXGI->pInt10->bx=0x%x--1\n", pXGI->pInt10->bx);
-#endif
-
-            pXGI->pInt10->bx |= ((CARD16)XGIConvertResToModeNo(pMode0->width, pMode0->height)
+            pXGI->pInt10->bx |= (XGIConvertResToModeNo(pMode0->width, pMode0->height)
                                  | (pMode0->modeNo & 0x80)) << 8;
-
-#ifdef XGI_DUMP_DUALVIEW
-            ErrorF("Jong-Debug-pXGI->pInt10->bx=0x%x--1*\n", pXGI->pInt10->bx);
-#endif
         }
 
         /* The 44i and 48i rates need to be handled specially.
