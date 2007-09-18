@@ -566,7 +566,6 @@ typedef struct {
     XGIRegRec           modeReg;
 
     I2CBusPtr           pI2C;
-    CARD32              ddcReg;
 
     CARD16              engineOperation;
     CARD32              bltScanDirection;
@@ -596,9 +595,6 @@ typedef struct {
     XAAInfoRecPtr       pXaaInfo;
 
     struct xg47_CmdList *cmdList;
-
-    unsigned int        (*ddcRead)(ScrnInfoPtr);
-    void                (*InitializeAccelerator)(ScrnInfoPtr);
 
 #ifdef XvExtension 
     void                (*VideoTimerCallback)(ScrnInfoPtr, Time);

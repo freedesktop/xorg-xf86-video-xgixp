@@ -1279,7 +1279,6 @@ static Bool XGIPreInitI2c(ScrnInfoPtr pScrn)
 
     pXGI->pI2C->BusName    = "DDC";
     pXGI->pI2C->scrnIndex  = pScrn->scrnIndex;
-    /* pXGI->ddcReg = ; */
     pXGI->pI2C->I2CPutBits = XGII2CPutBits;
     pXGI->pI2C->I2CGetBits = XGII2CGetBits;
     pXGI->pI2C->AcknTimeout = 5;
