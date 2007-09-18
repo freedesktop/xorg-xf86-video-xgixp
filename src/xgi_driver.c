@@ -1168,9 +1168,6 @@ static Bool XGIPreInitDDC(ScrnInfoPtr pScrn)
 {
     XGIPtr          pXGI = XGIPTR(pScrn);
     xf86MonPtr      pMon;
-#ifdef VBE_INFO
-    VbeInfoBlock* vbeInfoBlockPtr;
-#endif
 
 
 #if DBG_FLOW
@@ -1181,14 +1178,6 @@ static Bool XGIPreInitDDC(ScrnInfoPtr pScrn)
 #if !defined(__powerpc__) && !defined(__alpha__)
 
     pMon = vbeDoEDID(pXGI->pVbe, NULL);
-
-#ifdef VBE_INFO
-    vbeInfoBlockPtr = VBEGetVBEInfo(pXGI->pVbe);
-    if (vbeInfoPlockPtr != NULL) {
-        pXGI->pVbeModes = VBEBuildVbeModeList(pXGI->pVbe,vbeInfoBlockPtr);
-        VBEFreeVBEInfo(vbeInfoBlockPtr);
-    }
-#endif
 
     if (!xf86LoadSubModule(pScrn, "ddc")) return FALSE;
 

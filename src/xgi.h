@@ -589,9 +589,6 @@ typedef struct {
     Bool                isNeedCleanBuf;
 
     XGIHeadID           headID;
-#ifdef VBE_INFO
-    vbeModeInfoPtr      pVbeModes;
-#endif
     XAAInfoRecPtr       pXaaInfo;
 
     struct xg47_CmdList *cmdList;
