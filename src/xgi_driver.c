@@ -297,10 +297,12 @@ static SymTabRec XGIChipsets[] = {
     { -1,           NULL            }
 };
 
+#ifndef XSERVER_LIBPCIACCESS
 static PciChipsets XGIPciChipsets[] = {
     { XG47,             PCI_CHIP_0047,    RES_SHARED_VGA },
     { -1,               -1,               RES_UNDEFINED  }
 };
+#endif
 
 /* Clock Limits */
 static int PixelClockLimit8bpp[] = {
@@ -346,28 +348,6 @@ _X_EXPORT DriverRec XGI = {
     XGIPciProbe
 #endif
 };
-
-static void XGILoaderRefSymLists(void)
-{
-
-    /*
-     * Tell the loader about symbols from other modules that this module might
-     * refer to.
-     */
-    xf86LoaderRefSymLists(vgahwSymbols,
-                          ddcSymbols,
-                          i2cSymbols,
-                          fbSymbols,
-                          xaaSymbols,
-                          ramdacSymbols,
-                          drmSymbols,
-                          driSymbols,
-                          vbeSymbols,
-                          int10Symbols,
-                          shadowSymbols,
-                          NULL);
-}
-
 
 static MODULESETUPPROTO(XGISetup);
 
@@ -871,22 +851,6 @@ static void XGIUnmapMem(ScrnInfoPtr pScrn)
 
 
 /*
- * Blank screen.
- */
-static void XGIBlank(ScrnInfoPtr pScrn)
-{
-    /* XGIPtr      pXGI = XGIPTR(pScrn); */
-}
-
-/*
- * Unblank screen.
- */
-static void XGIUnblank(ScrnInfoPtr pScrn)
-{
-    /* XGIPtr      pXGI = XGIPTR(pScrn); */
-}
-
-/*
  * Compute log base 2 of val
  */
 int XGIMinBits(int val)
@@ -896,14 +860,6 @@ int XGIMinBits(int val)
     if (!val) return 1;
     for (bits = 0; val; val >>= 1, ++bits);
     return bits;
-}
-
-/*
- * Compute n/d with rounding.
- */
-static int XGIDiv(int n, int d)
-{
-    return (n + (d / 2)) / d;
 }
 
 /*
@@ -1088,8 +1044,10 @@ static Bool XGIPreInitInt10(ScrnInfoPtr pScrn)
 static Bool XGIPreInitConfig(ScrnInfoPtr pScrn)
 {
     XGIPtr          pXGI = XGIPTR(pScrn);
+#ifndef XSERVER_LIBPCIACCESS
     EntityInfoPtr   pEnt = pXGI->pEnt;
     GDevPtr         pDev  = pEnt->device;
+#endif
     MessageType     from;
 
 #if DBG_FLOW
@@ -1981,7 +1939,6 @@ static void XGIBlockHandler(int i, pointer pBlockData, pointer pTimeout, pointer
  */
 static void XGISave(ScrnInfoPtr pScrn)
 {
-    vgaHWPtr    pVgaHW = VGAHWPTR(pScrn);
     vgaRegPtr   pVgaReg = &VGAHWPTR(pScrn)->SavedReg;
     XGIPtr      pXGI = XGIPTR(pScrn);
     XGIRegPtr   pXGIReg = &pXGI->savedReg;
@@ -1990,16 +1947,13 @@ static void XGISave(ScrnInfoPtr pScrn)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    if (pXGI->isFBDev)
-    {
-    	fbdevHWSave(pScrn);
-    	return;
+    if (pXGI->isFBDev) {
+        fbdevHWSave(pScrn);
+        return;
     }
 
-    /*vgaHWUnlock(pVgaHW);*/
     vgaHWSave(pScrn, pVgaReg, VGA_SR_MODE | VGA_SR_CMAP |
                               (IsPrimaryCard ? VGA_SR_FONTS : 0));
-    /*vgaHWLock(pVgaHW);*/
 
     XGIModeSave(pScrn, pXGIReg);
 
@@ -2383,7 +2337,7 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 
             xf86DrvMsg(pScrn->scrnIndex, X_INFO,
                        "Using hardware cursor (scanline %d)\n",
-                       pXGI->cursorStart / pScrn->displayWidth);
+                       (int) pXGI->cursorStart / (int) pScrn->displayWidth);
             if (xf86QueryLargestOffscreenArea(pScreen, &width, &height,
                                               0, 0, 0))
             {
@@ -2559,8 +2513,8 @@ fail:
 Bool XGISwitchMode(int scrnIndex, DisplayModePtr mode, int flags)
 {
     ScrnInfoPtr pScrn = xf86Screens[scrnIndex];
-    XGIPtr      pXGI = XGIPTR(pScrn);
-    Bool        retVal = FALSE;
+    XGIPtr pXGI = XGIPTR(pScrn);
+    Bool retVal;
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -2573,20 +2527,9 @@ Bool XGISwitchMode(int scrnIndex, DisplayModePtr mode, int flags)
      */
     pXGI->isNeedCleanBuf = FALSE;
 
-    if (pXGI->isFBDev)
-    {
-        if (!fbdevHWModeInit(xf86Screens[scrnIndex], mode))
-            retVal = FALSE;
-        else
-            retVal = TRUE;
-    }
-    else
-    {
-        if (!XGIModeInit(xf86Screens[scrnIndex], mode))
-            retVal = FALSE;
-        else
-            retVal = TRUE;
-    }
+    retVal = (pXGI->isFBDev)
+        ? fbdevHWModeInit(xf86Screens[scrnIndex], mode)
+        : XGIModeInit(xf86Screens[scrnIndex], mode);
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -2660,8 +2603,8 @@ static Bool XGIEnterVT(int scrnIndex, int flags)
         static const struct xgi_state_info stateInfo = { 0, 1 };
 
         /* reset KD cmdlist status */
-        ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE, &stateInfo,
-                              sizeof(stateInfo));
+        ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE, 
+                              (void *) &stateInfo, sizeof(stateInfo));
         if (ret < 0) {
             return FALSE;
         }
@@ -2707,7 +2650,6 @@ static void XGILeaveVT(int scrnIndex, int flags)
 {
     ScrnInfoPtr pScrn = xf86Screens[scrnIndex];
     XGIPtr      pXGI = XGIPTR(pScrn);
-    vgaHWPtr    pVgaHW = VGAHWPTR(pScrn);
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -2745,7 +2687,7 @@ static void XGILeaveVT(int scrnIndex, int flags)
 
         /* reset KD cmdlist status */
         ret = drmCommandWrite(pXGI->drm_fd, DRM_XGI_STATE_CHANGE,
-                              &stateInfo, sizeof(stateInfo));
+                              (void *) &stateInfo, sizeof(stateInfo));
         if (ret < 0) {
             xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
                        "Notify kernel to change state (G==>C)\n");
@@ -2883,14 +2825,7 @@ static Bool XGISaveScreen(ScreenPtr pScreen, int mode)
     if (unblank)
         SetTimeSinceLastInputEvent();
 
-    if ((pScrn != NULL) && pScrn->vtSema)
-    {
-        /*
-        if (unblank)
-            XGIUnblank(pScrn);
-        else
-            XGIBlank(pScrn);
-        */
+    if ((pScrn != NULL) && pScrn->vtSema) {
         vgaHWBlankScreen(pScrn, unblank);
     }
 
