@@ -787,22 +787,14 @@ void XGICloseSecondaryView(XGIPtr pXGI)
 /*
  * from bios dll: initial.c
  */
-CARD16 XGIBiosCalculateClock(XGIPtr pXGI, CARD8 low, CARD8 high)
+unsigned XGIBiosCalculateClock(XGIPtr pXGI, unsigned low, unsigned high)
 {
-    CARD16 clock;
-    CARD16 K, M, N;
+    const unsigned N = IN3C5B(low);
+    const unsigned tmp = IN3C5B(high);
+    const unsigned K = (tmp & 0xC0) >> 6;
+    const unsigned M = (tmp & 0x3F);
 
-    OUTB(XGI_REG_SRX, low);
-    clock = INB(XGI_REG_SRX+1);
-    OUTB(XGI_REG_SRX, high);
-    clock += INB(XGI_REG_SRX+1) << 8;
-
-    K = 1 << ((clock & 0xC000) >> 14);
-    M = (clock & 0x3F00) >> 8;
-    N = (clock & 0xFF);
-    clock = (CARD16) ((1431818 * (CARD32)(N+8)) / (CARD32)(K*(M+1)) / 100000);
-
-    return clock;
+    return ((1431818 * (N + 7)) / ((M + 1) << K)) / 100000;
 }
 
 /*

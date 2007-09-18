@@ -406,9 +406,9 @@ extern void XGIGetSetChipSupportDevice(XGIPtr pXGI, Bool reset_to_original);
 extern CARD16 XGIGetColorIndex(CARD16 depth);
 
 extern Bool   XGIReadBiosData(XGIPtr pXGI, CARD8 *array);
-extern CARD16 XGIBiosCalculateClock(XGIPtr pXGI,
-                                    CARD8 low,
-                                    CARD8 high);
+
+extern unsigned XGIBiosCalculateClock(XGIPtr pXGI,unsigned low,
+    unsigned high);
 
 extern Bool XGIBiosDllInit(ScrnInfoPtr pScrn);
 
