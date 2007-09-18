@@ -110,6 +110,7 @@ static int	XGIEntityIndex = -1;
 
 #define XGI_XVMC
 
+static xf86MonPtr XGIProbeDDC(ScrnInfoPtr pScrn, int index);
 static XGIPtr XGIGetRec(ScrnInfoPtr pScrn);
 static void     XGIIdentify(int flags);
 #ifdef XSERVER_LIBPCIACCESS
@@ -145,6 +146,7 @@ static void     XGIBlockHandler(int, pointer, pointer, pointer);
 
 static const char *vgahwSymbols[] = {
     "vgaHWBlankScreen",
+    "vgaHWddc1SetSpeedWeak",
     "vgaHWFreeHWRec",
     "vgaHWGetHWRec",
     "vgaHWGetIOBase",
@@ -162,6 +164,8 @@ static const char *vgahwSymbols[] = {
 };
 
 static const char *ddcSymbols[] = {
+    "xf86DoEDID_DDC1",
+    "xf86DoEDID_DDC2",
     "xf86PrintEDID",
     "xf86SetDDCproperties",
     NULL
@@ -1166,31 +1170,12 @@ static Bool XGIPreInitConfig(ScrnInfoPtr pScrn)
 
 static Bool XGIPreInitDDC(ScrnInfoPtr pScrn)
 {
-    XGIPtr          pXGI = XGIPTR(pScrn);
-    xf86MonPtr      pMon;
+    XGIPtr pXGI = XGIPTR(pScrn);
+    xf86MonPtr pMon = XGIProbeDDC(pScrn, pXGI->pEnt->index);
 
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-    /* Int10 is broken on PPC and some Alphas */
-#if !defined(__powerpc__) && !defined(__alpha__)
-
-    pMon = vbeDoEDID(pXGI->pVbe, NULL);
-
-    if (!xf86LoadSubModule(pScrn, "ddc")) return FALSE;
-
-    xf86LoaderReqSymLists(ddcSymbols, NULL);
     xf86SetDDCproperties(pScrn, xf86PrintEDID(pMon));
-    PDEBUG(ErrorF("Jong-After-xf86SetDDCproperties(pScrn, xf86PrintEDID(pMon))\n"));
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
 
     return TRUE;
-#endif
 }
 
 /*
@@ -1218,70 +1203,63 @@ static Bool XGIPreInitGamma(ScrnInfoPtr pScrn)
  */
 static void XGII2CGetBits(I2CBusPtr b, int *clock, int *data)
 {
-    XGIPtr pXGI = ((XGIPtr)b->DriverPrivate.ptr);
-    unsigned long val;
+    XGIPtr pXGI = b->DriverPrivate.ptr;
+    const unsigned val = IN3X5B(0x37);
 
-    OUTB(0x3D4, 0x37);
-    val = INB(0x3D5);
-    *clock = (val & 0x02) != 0;
+    /* While bit-1 is used to write the first set clock, bit-6 is used to
+     * read it.  See page 9-10 of "Volari XP10 non-3D SPG v1.0.pdf".
+     */
+    *clock = (val & 0x40) != 0;
     *data  = (val & 0x01) != 0;
 }
 
 static void XGII2CPutBits(I2CBusPtr b, int clock, int data)
 {
-    XGIPtr pXGI = ((XGIPtr)b->DriverPrivate.ptr);
-    unsigned long val = 0x0C;
+    XGIPtr pXGI = b->DriverPrivate.ptr;
+    /* Enable I2C write (bit-3) on first set I2C (bit-2).
+     */
+    unsigned val = (1U << 3) | (1U << 2);
 
-    if(clock)
-    {
+    if (clock) {
         val |= 2;
     }
-    if(data)
-    {
+
+    if (data) {
         val |= 1;
     }
-    OUTB(0x3D4, 0x37);
-    OUTB(0x3D5, val);
+
+    OUT3X5B(0x37, val);
 }
 
 static Bool XGIPreInitI2c(ScrnInfoPtr pScrn)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
 
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
 
-    if (xf86LoadSubModule(pScrn, "i2c"))
-    {
-        xf86LoaderReqSymLists(i2cSymbols,NULL);
-    }
-    else
-    {
+    if (xf86LoadSubModule(pScrn, "i2c")) {
+        xf86LoaderReqSymLists(i2cSymbols, NULL);
+    } else {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
                    "Failed to load i2c module\n");
         return FALSE;
     }
 
     pXGI->pI2C = xf86CreateI2CBusRec();
-    if(!pXGI->pI2C) return FALSE;
+    if (pXGI->pI2C != NULL) {
+        pXGI->pI2C->BusName = "DDC";
+        pXGI->pI2C->scrnIndex = pScrn->scrnIndex;
+        pXGI->pI2C->I2CPutBits = XGII2CPutBits;
+        pXGI->pI2C->I2CGetBits = XGII2CGetBits;
+        pXGI->pI2C->AcknTimeout = 5;
+        pXGI->pI2C->DriverPrivate.ptr = pXGI;
 
-    pXGI->pI2C->BusName    = "DDC";
-    pXGI->pI2C->scrnIndex  = pScrn->scrnIndex;
-    pXGI->pI2C->I2CPutBits = XGII2CPutBits;
-    pXGI->pI2C->I2CGetBits = XGII2CGetBits;
-    pXGI->pI2C->AcknTimeout = 5;
-
-    if (!xf86I2CBusInit(pXGI->pI2C))
-    {
-        return FALSE;
+        if (!xf86I2CBusInit(pXGI->pI2C)) {
+            xf86DestroyI2CBusRec(pXGI->pI2C, TRUE, TRUE);
+            pXGI->pI2C = NULL;
+        }
     }
 
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-    return TRUE;
+    return (pXGI->pI2C != NULL);
 }
 
 static Bool XGIPreInitLcdSize(ScrnInfoPtr pScrn)
@@ -1692,20 +1670,35 @@ static Bool XGIPreInitShadow(ScrnInfoPtr pScrn)
     return TRUE;
 }
 
-static void XGIProbeDDC(ScrnInfoPtr pScrn, int index)
+xf86MonPtr XGIProbeDDC(ScrnInfoPtr pScrn, int index)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
+    xf86MonPtr pMon = NULL;
 
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
 
-    ConfiguredMonitor = vbeDoEDID(pXGI->pVbe, NULL);
+    if (!xf86LoadSubModule(pScrn, "ddc")) {
+        return FALSE;
+    }
 
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
+    xf86LoaderReqSymLists(ddcSymbols, NULL);
+
+
+    if (pXGI->pI2C != NULL) {
+        pMon = xf86DoEDID_DDC2(pScrn->scrnIndex, pXGI->pI2C);
+    }
+    
+    if (pMon == NULL) {
+        pMon = xf86DoEDID_DDC1(pScrn->scrnIndex, vgaHWddc1SetSpeedWeak(),
+                               XGIDDCRead);
+    }
+
+    if (pMon == NULL) {
+        pMon = vbeDoEDID(pXGI->pVbe, NULL);
+    }
+
+    return pMon;
 }
+
 
 /* XGIPreInit is called once at server startup. */
 Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
@@ -1786,8 +1779,21 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     /* Fill in the monitor field, just Set pScrn->monitor */
     pScrn->monitor = pScrn->confScreen->monitor;
 
-    if (flags & PROBE_DETECT)
-    {
+    /* Enable MMIO */
+    if (!pXGI->noMMIO) {
+        if (!XGIMapMMIO(pScrn)) {
+            goto fail;
+        }
+    }
+
+    if (!XGIPreInitInt10(pScrn))            goto fail;
+    if (!XGIPreInitI2c(pScrn)) {
+        xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
+                   "I2C initialization failed!\n");
+    }
+
+    if (flags & PROBE_DETECT) {
+        ConfiguredMonitor = XGIProbeDDC(pScrn, pXGI->pEnt->index);
         XGIProbeDDC(pScrn, pXGI->pEnt->index);
         return TRUE;
     }
@@ -1849,14 +1855,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
         pScrn->ValidMode    = fbdevHWValidMode;*/
     }
 
-    /* Enable MMIO */
-    if (!pXGI->noMMIO) {
-        if (!XGIMapMMIO(pScrn)) {
-            goto fail;
-        }
-    }
-
-    if (!XGIPreInitInt10(pScrn))            goto fail;
     if (!XGIBiosDllInit(pScrn))             goto fail;
     if (!XGIPreInitMemory(pScrn))           goto fail;
 
@@ -1875,12 +1873,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     if (!XGIPreInitCursor(pScrn))           goto fail;
 
     if (!XGIPreInitAccel(pScrn))            goto fail;
-
-    if(!XGIPreInitI2c(pScrn))
-    {
-        xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-                   "I2C initialization failed!\n");
-    }
 
     if(!XGIPreInitShadow(pScrn))
     {

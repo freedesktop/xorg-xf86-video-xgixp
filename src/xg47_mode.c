@@ -339,18 +339,16 @@ void XG47SetOverscan(ScrnInfoPtr pScrn, int overscan)
 unsigned int XG47DDCRead(ScrnInfoPtr pScrn)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
-    CARD8 temp;
 
     /* Define SDA as input */
-    OUTW(0x3D4, (0x04 << 8) | 0x37);
+    OUT3X5B(0x37, 0x04);
 
     /* Wait until vertical retrace is in progress. */
     while (INB(0x3DA) & 0x08);
     while (!(INB(0x3DA) & 0x08));
 
-    /* Get the result */
-    OUTB(0x3D4, 0x37);
-    return ( INB(0x3D5) & 0x01 );
+    /* Get the result */ 
+   return IN3X5B(0x37) & 0x01;
 }
 
 
