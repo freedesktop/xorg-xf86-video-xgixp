@@ -2960,10 +2960,9 @@ static int XGIValidMode(int scrnIndex, DisplayModePtr mode, Bool verbose, int fl
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    if (!pXGI->pInt10)
-    {
+    if (!pXGI->pInt10) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-                   "have not loade int10 module successfully!\n");
+                   "have not loaded int10 module successfully!\n");
         return (MODE_BAD);
     }
 
