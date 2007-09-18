@@ -51,8 +51,6 @@ extern CARD8       GR3CE_45_SingleView;
 
 extern CARD8       value[23];
 
-/* Jong 11/08/2006 */
-extern ScreenPtr g_pScreen;
 
 /*
  * Definition of video mode refresh rate (!!! CAN NOT BE MODIFIED !!!).
@@ -1237,18 +1235,7 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
             break;
         }
 
-#ifdef XGI_DUMP_DUALVIEW
-        ErrorF("Jong-Debug cx=0x%x, refrate = 0x%x\n",
-               pXGI->pInt10->cx, pMode0->refRate);
-        XGIDumpRegisterValue(g_pScreen);
-#endif
-
         xf86ExecX86int10(pXGI->pInt10);
-
-#ifdef XGI_DUMP_DUALVIEW
-        ErrorF("Jong-Debug-after XG47BiosModeInit()-xf86ExecX86int10()-0--\n");
-        XGIDumpRegisterValue(g_pScreen);
-#endif
 
         /* Why need to restore b3c5_de which is saved before calling BIOS? */
         OUTB(XGI_REG_SRX, 0xDE);
@@ -1273,17 +1260,8 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         }
         pXGI->pInt10->num = 0x10;
 
-#ifdef XGI_DUMP_DUALVIEW
-        ErrorF("Jong-Debug-before XG47BiosModeInit()-xf86ExecX86int10()-1--\n");
-        XGIDumpRegisterValue(g_pScreen);
-#endif
-
         xf86ExecX86int10(pXGI->pInt10);
 
-#ifdef XGI_DUMP_DUALVIEW
-        ErrorF("Jong-Debug-after XG47BiosModeInit()-xf86ExecX86int10()-1--\n");
-        XGIDumpRegisterValue(g_pScreen);
-#endif
 
         /* Working status register 0: indicate intended status of display
          * device and will take effect after calling set mode of BIOS.

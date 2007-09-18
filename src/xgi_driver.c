@@ -143,9 +143,6 @@ static Bool     XGIModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode);
 static void     XGIBlockHandler(int, pointer, pointer, pointer);
 
 
-/* Jong 07/03/2006 */
-ScreenPtr g_pScreen=NULL;
-
 static const char *vgahwSymbols[] = {
     "vgaHWBlankScreen",
     "vgaHWFreeHWRec",
@@ -2160,15 +2157,8 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
     CARD8       *pFBStart;
     int         visualMask;
 
-	int			i; /* Jong 07/14/2006 */
 
-	/* Jong 10/04/2006; debug different resolutions for dual view */
-	/* if(pScreen->myNum == 0)
-		g_pCurrentModeOfFirstView=pScrn->currentMode; */
-
-	/* Jong 07/03/2006 */
-	g_pScreen=pScrn;
-	ErrorF("XGI-XGIScreenInit()...\n");
+    ErrorF("XGI-XGIScreenInit()...\n");
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);

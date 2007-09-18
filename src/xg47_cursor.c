@@ -41,9 +41,6 @@
 #define CURSOR_WIDTH    64
 #define CURSOR_HEIGHT   64
 
-/* Jong 07/12/2006 */
-extern ScreenPtr g_pScreen;
-
 /* #undef ARGB_CURSOR */
 
 static void XG47LoadCursorImage(ScrnInfoPtr pScrn, CARD8 *src);
