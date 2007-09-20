@@ -626,7 +626,7 @@ void XGICloseSecondaryView(XGIPtr pXGI)
 {
     CARD16    i;
 
-    OUTW(0x3C4, 0x9211);
+    vAcquireRegIOProtect(pXGI);
 
     /* clear flag */
 	/* Jong 09/20/2006; Working status register 1; 0xF0 is for MV */

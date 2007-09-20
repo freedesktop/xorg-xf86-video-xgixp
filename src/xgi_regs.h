@@ -219,7 +219,7 @@ static __inline__ void xoutw3cf(XGIPtr pXGI, CARD8 index, CARD16 data)
     xoutb(pXGI, 0x3cf, data>>8);
 }
 
-static __inline__ void vAcquireRegIOProctect(XGIPtr pXGI)
+static __inline__ void vAcquireRegIOProtect(XGIPtr pXGI)
 {
     /* unprotect all register except which protected by 3c5.0e.7 */
     xoutb3c5(pXGI, 0x11, 0x92);

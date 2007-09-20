@@ -154,7 +154,7 @@ static void XG47LoadCursorImage(ScrnInfoPtr pScrn, CARD8 *src)
     pXGI->cursor_argb = FALSE;      
 #endif
 
-    vAcquireRegIOProctect(pXGI);
+    vAcquireRegIOProtect(pXGI);
 
 #ifdef CURSOR_DEBUG
     ErrorF("XG47LoadCursorImage()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
@@ -189,7 +189,7 @@ static void XG47SetCursorColors(ScrnInfoPtr pScrn, int bg, int fg)
         return;     /* not need to set color */
 #endif
 
-    vAcquireRegIOProctect(pXGI);
+    vAcquireRegIOProtect(pXGI);
     setMonoCursorColor(pXGI, bg, fg);
 
     setMonoCursorColorOfSecondView(pXGI, bg, fg);
@@ -203,7 +203,7 @@ static void XG47SetCursorPosition(ScrnInfoPtr pScrn, int x, int y)
     ErrorF("XG47SetCursorPosition()-pScrn=0x%x, x=%d, y=%d\n", pScrn, x, y);
 #endif
 
-    vAcquireRegIOProctect(pXGI);
+    vAcquireRegIOProtect(pXGI);
 
 #ifdef CURSOR_DEBUG
     ErrorF("XG47SetCursorPosition()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
@@ -231,7 +231,7 @@ static void XG47HideCursor(ScrnInfoPtr pScrn)
     ErrorF("XG47HideCursor()-pScrn=0x%x\n", pScrn);
 #endif
 
-    vAcquireRegIOProctect(pXGI);
+    vAcquireRegIOProtect(pXGI);
 
 #ifdef ARGB_CURSOR
     if (pXGI->cursor_argb) {
@@ -259,7 +259,7 @@ static void XG47ShowCursor(ScrnInfoPtr pScrn)
     ErrorF("XG47ShowCursor()-pScrn=0x%x\n", pScrn);
 #endif
 
-    vAcquireRegIOProctect(pXGI);
+    vAcquireRegIOProtect(pXGI);
 
 #ifdef ARGB_CURSOR
     if (pXGI->cursor_argb) {
@@ -386,8 +386,7 @@ void setMonoCursorPitchOfSecondView(XGIPtr pXGI, int cursorSize)
     ErrorF("setMonoCursorPitchOfSecondView()-cursorSize=%d\n", cursorSize);
 #endif
 
-    /* Jong 09/26/2006; Unprotect registers */
-    OUTW(0x3C4, 0x9211);
+    vAcquireRegIOProtect(pXGI);
 
     /*Video Alpha Cursor Pitch (128 bits alignment)*/
     OUTW(0x24D2, (CARD16)(pitch >> 4));
@@ -400,8 +399,7 @@ void setMonoCursorPatternOfSecondView(XGIPtr pXGI, CARD32 patternAddr)
     ErrorF("setMonoCursorPatternOfSecondView()-patternAddr=0x%x\n", patternAddr);
 #endif
 
-    /* Jong 09/26/2006; Unprotect registers */
-    OUTW(0x3C4, 0x9211);
+    vAcquireRegIOProtect(pXGI);
 
     /*Video Alpha Cursor Start Address (128 bits alignment)*/
     OUTDW(0x24D4,patternAddr >> 4); 
@@ -437,8 +435,7 @@ void enableMonoCursorOfSecondView(XGIPtr pXGI, Bool visible)
     /* Jong 09/28/2006; use SW cursor instead */
     return;
 
-    /* Jong 09/26/2006; Unprotect registers */
-    OUTW(0x3C4, 0x9211);
+    vAcquireRegIOProtect(pXGI);
 
     /* Jong 09/25/2006; enable cursor and select 8-8-8-8 Mode */
     OUTB(0x24D1, ((CARD8)INB(0x24D1) & 0xF8) | 0x03); /* OK */
@@ -496,8 +493,7 @@ void setMonoCursorPositionOfSecondView(XGIPtr pXGI, int x, int y)
     ErrorF("setMonoCursorPositionOfSecondView()-x=%d-y=%d\n", x,y);
 #endif
 
-    /* Jong 09/26/2006; Unprotect registers */
-    OUTW(0x3C4, 0x9211);
+    vAcquireRegIOProtect(pXGI);
 
 
     CARD8 X = (CARD8)(x & 0xFF);
@@ -546,9 +542,7 @@ void setMonoCursorSizeOfSecondView(XGIPtr pXGI, int cursorSize)
     ErrorF("setMonoCursorSizeOfSecondView()-cursorSize=%d\n", cursorSize);
 #endif
 
-    /* Jong 09/26/2006; Unprotect registers */
-    OUTW(0x3C4, 0x9211);
-
+    vAcquireRegIOProtect(pXGI);
 
     if (cursorSize == 64) {
         OUT3X5B(0x50, (IN3X5B(0x50) & 0xFC) | 0x01);

@@ -53,7 +53,7 @@ void XG47ResetVideo(ScrnInfoPtr pScrn)
     XGIPortPtr  pXGIPort = pXGI->pAdaptor->pPortPrivates[0].ptr;
 
     /* Unprotect registers */
-    OUTW(0x3C4, 0x9211);
+    vAcquireRegIOProtect(pXGI);
 
     XG47HwEnableVideo(pScrn);
     /* Wait vertical blank start signal. */
@@ -695,7 +695,7 @@ int XG47HwGetHStart(ScrnInfoPtr pScrn)
      * CRTC, CRTC Shadow, TV
      * hStart = ( hTotal - hRetraceStart - hRetraceDelay ) * 8 - hDEODelay;
      */
-    OUTW(0x3C4, 0x9211);
+    vAcquireRegIOProtect(pXGI);
 
     hDEODelay = (INB(0x242a) & 0x70) >> 4; /* D2 HDEO delay. */
 
@@ -776,7 +776,7 @@ int XG47HwGetVStart(ScrnInfoPtr pScrn)
 
     Bool        isInW2 = (pXGI->ovlAttr & OVLST_VIDEO_ON_W2) ? TRUE : FALSE;
 
-    OUTW(0x3C4, 0x9211);
+    vAcquireRegIOProtect(pXGI);
     /*
      *  For DualView, video on LCD case
      */
@@ -1151,7 +1151,7 @@ void XG47HwEnableVideo(ScrnInfoPtr pScrn)
     CARD32      frameBufLess = pXGIPort->id ? 0x2483 : 0x2403;
 
     /* Unprotect registers */
-    OUTW(0x3C4, 0x9211);
+    vAcquireRegIOProtect(pXGI);
 
     if (pXGIPort->id)
     {
@@ -1404,7 +1404,7 @@ int XG47HwSetColorKey(ScrnInfoPtr pScrn)
     CARD32      colorKeyMask;
 
     /* Unprotect registers */
-    OUTW(0x3C4, 0x9211);
+    vAcquireRegIOProtect(pXGI);
     if (pXGI->ovlAttr & OVLST_VIDEO_ON_W2)
     {
         switch (pScrn->bitsPerPixel)

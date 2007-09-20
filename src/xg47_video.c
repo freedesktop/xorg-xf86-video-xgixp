@@ -926,7 +926,7 @@ static int XG47DisplayVideoWithYV12(ScrnInfoPtr pScrn,
 
     XG47WaitForSync(pScrn);
 
-    OUTW(0x3C4, 0x9211);
+    vAcquireRegIOProtect(pXGI);
     XG47HwSetFormat(pScrn);
 
     pXGIPort->dstBox.x1 = dstBox.x1;
@@ -1125,7 +1125,7 @@ static int XG47DisplayVideoWithYUY2(ScrnInfoPtr pScrn,
 
     XG47WaitForSync(pScrn);
 
-    OUTW(0x3C4, 0x9211);
+    vAcquireRegIOProtect(pXGI);
     XG47HwSetFormat(pScrn);
 
     pXGIPort->dstBox.x1 = dstBox.x1;
@@ -1576,7 +1576,7 @@ static int XG47DisplayDVDVideo(ScrnInfoPtr pScrn,
     pXGIPort->hStart = XG47HwGetHStart(pScrn);
     pXGIPort->vStart = XG47HwGetVStart(pScrn);
 
-    OUTW(0x3C4, 0x9211);
+    vAcquireRegIOProtect(pXGI);
     XG47HwSetFormat(pScrn);
 
     pXGIPort->dstBox.x1 = dstBox.x1;
