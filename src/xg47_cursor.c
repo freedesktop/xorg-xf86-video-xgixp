@@ -58,22 +58,17 @@ static void XG47LoadCursorARGB(ScrnInfoPtr pScrn, CursorPtr pCurs);
 
 Bool XG47HWCursorInit(ScreenPtr pScreen)
 {
-    ScrnInfoPtr         pScrn           = xf86Screens[pScreen->myNum];
-    XGIPtr              pXGI            = XGIPTR(pScrn);
-    xf86CursorInfoPtr   pCursorInfo;
-    FBLinearPtr         fblinear;
-    int                 width;
-    int                 width_bytes;
-    int                 height;
-    int                 size_bytes;
+    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
+    XGIPtr pXGI = XGIPTR(pScrn);
+    xf86CursorInfoPtr pCursorInfo;
+    const unsigned size_bytes = CURSOR_WIDTH * 4 * CURSOR_HEIGHT;
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47HWCursorInit()-pScreen=0x%x, pScreen->myNum=%d\n", pScreen, pScreen->myNum);
+    ErrorF("XG47HWCursorInit()-pScreen=0x%x, pScreen->myNum=%d\n", pScreen, pScreen->myNum);
 #endif
 
     pCursorInfo = xf86CreateCursorInfoRec();
-    if(!pCursorInfo)
-    {
+    if (!pCursorInfo) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "can't create cursor\n");
         return FALSE;
     }
@@ -96,47 +91,16 @@ Bool XG47HWCursorInit(ScreenPtr pScreen)
     pCursorInfo->LoadCursorARGB    = XG47LoadCursorARGB;
 #endif
 
-	/* Jong 07/12/2006; CURSOR_WIDTH=64, CURSOR_HEIGHT=64 */
-    size_bytes          = CURSOR_WIDTH * 4 * CURSOR_HEIGHT;
-    width               = pScrn->displayWidth;
-    width_bytes         = width * (pScrn->bitsPerPixel / 8);
-    height              = (size_bytes + 4096 + width_bytes - 1) / width_bytes;
+    /* 128 bit alignment */
+    pXGI->cursorStart = ((12*1024 - 256) *1024 + 127) & 0xFFFFF80;
 
-    /*
-    fblinear = xf86AllocateOffscreenLinear(pScreen, size_bytes + 4096, 0, NULL, NULL, NULL);
-
-    if (!fblinear)
-    {
-        pXGI->cursorStart = 0;
-        xf86DrvMsg(pScrn->scrnIndex, X_WARNING,
-                   "Hardware cursor disabled"
-                   " due to insufficient offscreen memory\n");
-        return FALSE;
-    }
-    else
-    {
-        
-        CARD32 off1, off2, off3;
-        off1 = fblinear->offset;
-        off2 = fblinear->offset * pScrn->bitsPerPixel / 8;
-        off3 = (off2 + 0x3ff);
-        pXGI->cursorStart = off3 & ~0x3ff;
-        pXGI->cursorEnd = pXGI->cursorStart + size_bytes;
-        pXGI->pCursorInfo = pCursorInfo;
-    }
-
-    */
-
-    pXGI->cursorStart = ((12*1024 - 256) *1024 + 127) & 0xFFFFF80;  /* 128 bit alignment */
     pXGI->cursorEnd = pXGI->cursorStart + size_bytes;
     pXGI->pCursorInfo = pCursorInfo;
-
-	/* Jong 09/25/2006; support dual view */
-	pXGI->ScreenIndex=pScreen->myNum; 
+    pXGI->ScreenIndex = pScreen->myNum;
 
     xf86DrvMsg(pScrn->scrnIndex, X_INFO,
                "Hardware cursor LOCATES in (0x%08x-0x%08x)\n",
-               pXGI->cursorStart, pXGI->cursorEnd);		 
+               pXGI->cursorStart, pXGI->cursorEnd);
 
     return(xf86InitCursor(pScreen, pCursorInfo));
 }
@@ -145,11 +109,11 @@ void XG47HWCursorCleanup(ScreenPtr pScreen)
 {
     ScrnInfoPtr pScrn   = xf86Screens[pScreen->myNum];
     XGIPtr      pXGI    = XGIPTR(pScrn);
-    CARD32 *d = (CARD32*)(pXGI->fbBase + pXGI->cursorStart);
+    uint32_t *d = (uint32_t *)(pXGI->fbBase + pXGI->cursorStart);
     int test = 0; /* 1; */ /* Jong 09/27/2006; test */
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47HWCursorCleanup()-pScreen=0x%x\n", pScreen);
+    ErrorF("XG47HWCursorCleanup()-pScreen=0x%x\n", pScreen);
 #endif
 
 #if DBG_FLOW
@@ -161,89 +125,55 @@ void XG47HWCursorCleanup(ScreenPtr pScreen)
 #endif
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47HWCursorCleanup()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
+    ErrorF("XG47HWCursorCleanup()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
 #endif
 
-	/* Jong 09/2/52006; support dual view */
-	/* Jong 09/28/2006; use SW cursor instead */
-	/* if(pXGI->ScreenIndex == 1)
-	{
-		enableMonoCursorOfSecondView(pXGI, FALSE);
-	}
-	else */
-		enableMonoCursor(pXGI, FALSE); 
-	/* enableMonoCursor(pXGI, FALSE); */
+    enableMonoCursor(pXGI, FALSE); 
 
-
-    if (test == 1)
-    {
+    if (test == 1) {
         memset(d, 0, CURSOR_WIDTH * CURSOR_HEIGHT * 4);
     }
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
-
 }
 
 static void XG47LoadCursorImage(ScrnInfoPtr pScrn, CARD8 *src)
 { 
     XGIPtr pXGI = XGIPTR(pScrn);
-    xf86CursorInfoPtr pCursor;
-	int i; /* jong 07/12/2006 */
+    xf86CursorInfoPtr pCursor = pXGI->pCursorInfo;
+    uint32_t *d = (uint32_t *)(pXGI->fbBase + pXGI->cursorStart);
+
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47LoadCursorImage()-pScrn=0x%x\n", pScrn);
+    ErrorF("XG47LoadCursorImage()-pScrn=0x%x\n", pScrn);
 #endif
-
-    /* assert (pXGI->cursorStart != NULL) */
-    CARD32 *d = (CARD32*)(pXGI->fbBase + pXGI->cursorStart);
 
 #ifdef ARGB_CURSOR
     pXGI->cursor_argb = FALSE;      
 #endif
 
-    pCursor = pXGI->pCursorInfo;
     vAcquireRegIOProctect(pXGI);
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47LoadCursorImage()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
+    ErrorF("XG47LoadCursorImage()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
 #endif
 
-	/* Jong 09/2/52006; support dual view */
-	/* if(pXGI->ScreenIndex == 1) */
-	{
-		enableMonoCursorOfSecondView(pXGI, FALSE);
-	}
-	/*else*/
-	{
-		enableMonoCursor(pXGI, FALSE);
-	} 
-
-    /* enableMonoCursor(pXGI, FALSE); */
+    enableMonoCursorOfSecondView(pXGI, FALSE);
+    enableMonoCursor(pXGI, FALSE);
 
     memcpy((CARD8*)d, src, pCursor->MaxWidth * pCursor->MaxHeight / 4);
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47LoadCursorImage()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
+    ErrorF("XG47LoadCursorImage()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
 #endif
 
-	/* Jong 09/2/52006; support dual view */
-	/* if(pXGI->ScreenIndex == 1) */
-	{
-		setMonoCursorPatternOfSecondView(pXGI, pXGI->cursorStart);
-		setMonoCursorSizeOfSecondView(pXGI, 64);
-	    setMonoCursorPitchOfSecondView(pXGI, 64); 
-	}
-	/* else */
-	{
-		setMonoCursorPattern(pXGI, pXGI->cursorStart);
-	    setMonoCursorSize(pXGI, 64); 
-	} 
-
-	/* setMonoCursorPattern(pXGI, pXGI->cursorStart); */
-    /* setMonoCursorSize(pXGI, 64); */
-
+    setMonoCursorPatternOfSecondView(pXGI, pXGI->cursorStart);
+    setMonoCursorSizeOfSecondView(pXGI, 64);
+    setMonoCursorPitchOfSecondView(pXGI, 64); 
+    setMonoCursorPattern(pXGI, pXGI->cursorStart);
+    setMonoCursorSize(pXGI, 64); 
 }
 
 static void XG47SetCursorColors(ScrnInfoPtr pScrn, int bg, int fg)
@@ -251,19 +181,18 @@ static void XG47SetCursorColors(ScrnInfoPtr pScrn, int bg, int fg)
     XGIPtr pXGI = XGIPTR(pScrn);
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47SetCursorColors()-pScrn=0x%x, bg=%d, fg=%d\n", pScrn, bg, fg);
+    ErrorF("XG47SetCursorColors()-pScrn=0x%x, bg=%d, fg=%d\n", pScrn, bg, fg);
 #endif
 
 #ifdef ARGB_CURSOR
-    if (pXGI->cursor_argb == TRUE)
+    if (pXGI->cursor_argb)
         return;     /* not need to set color */
 #endif
 
     vAcquireRegIOProctect(pXGI);
     setMonoCursorColor(pXGI, bg, fg);
 
-	/* Jong 09/27/2006; support dual view */
-	setMonoCursorColorOfSecondView(pXGI, bg, fg);
+    setMonoCursorColorOfSecondView(pXGI, bg, fg);
 }
 
 static void XG47SetCursorPosition(ScrnInfoPtr pScrn, int x, int y)
@@ -271,33 +200,27 @@ static void XG47SetCursorPosition(ScrnInfoPtr pScrn, int x, int y)
     XGIPtr pXGI = XGIPTR(pScrn);
  
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47SetCursorPosition()-pScrn=0x%x, x=%d, y=%d\n", pScrn, x, y);
+    ErrorF("XG47SetCursorPosition()-pScrn=0x%x, x=%d, y=%d\n", pScrn, x, y);
 #endif
-	
+
     vAcquireRegIOProctect(pXGI);
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47SetCursorPosition()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
+    ErrorF("XG47SetCursorPosition()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
 #endif
 
-	/* Jong 09/2/52006; support dual view */
-	 if(pXGI->ScreenIndex == 1) 
-	{
-		/* Jong 09/25/2006; support dual view */
-		setMonoCursorPositionOfSecondView(pXGI, x, y);    
-	}
-	else
-	{
+    if (pXGI->ScreenIndex == 1) {
+        setMonoCursorPositionOfSecondView(pXGI, x, y);    
+    } else {
 #ifdef ARGB_CURSOR
-		if (pXGI->cursor_argb == TRUE)
-		{
-			setAlphaCursorPosition(pXGI, x, y);
-			return;
-		}        
+        if (pXGI->cursor_argb) {
+            setAlphaCursorPosition(pXGI, x, y);
+            return;
+        }
 #endif
 
-		setMonoCursorPosition(pXGI, x, y);    
-	}
+        setMonoCursorPosition(pXGI, x, y);    
+    }
 }
 
 static void XG47HideCursor(ScrnInfoPtr pScrn)
@@ -305,31 +228,27 @@ static void XG47HideCursor(ScrnInfoPtr pScrn)
     XGIPtr pXGI = XGIPTR(pScrn);
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47HideCursor()-pScrn=0x%x\n", pScrn);
+    ErrorF("XG47HideCursor()-pScrn=0x%x\n", pScrn);
 #endif
 
     vAcquireRegIOProctect(pXGI);
 
 #ifdef ARGB_CURSOR
-    if (pXGI->cursor_argb == TRUE)
-    {
+    if (pXGI->cursor_argb) {
         enableAlphaCursor(pXGI, FALSE);
         return;
     }        
 #endif
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47HideCursor()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
+    ErrorF("XG47HideCursor()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
 #endif
 
-	/* Jong 09/2/52006; support dual view */
-	 if(pXGI->ScreenIndex == 1) 
-	{
-		enableMonoCursorOfSecondView(pXGI, FALSE);
-	}
- 	else 
-		enableMonoCursor(pXGI, FALSE); 
-    /* enableMonoCursor(pXGI, FALSE); */
+    if (pXGI->ScreenIndex == 1) {
+        enableMonoCursorOfSecondView(pXGI, FALSE);
+    } else {
+        enableMonoCursor(pXGI, FALSE);
+    }
 }
 
 static void XG47ShowCursor(ScrnInfoPtr pScrn)
@@ -337,54 +256,37 @@ static void XG47ShowCursor(ScrnInfoPtr pScrn)
     XGIPtr pXGI = XGIPTR(pScrn);
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47ShowCursor()-pScrn=0x%x\n", pScrn);
+    ErrorF("XG47ShowCursor()-pScrn=0x%x\n", pScrn);
 #endif
 
     vAcquireRegIOProctect(pXGI);
 
 #ifdef ARGB_CURSOR
-    if (pXGI->cursor_argb == TRUE)
-    {
+    if (pXGI->cursor_argb) {
         enableAlphaCursor(pXGI, TRUE);
         return;
     }        
 #endif
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47ShowCursor()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
+    ErrorF("XG47ShowCursor()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
 #endif
 
-	/* Jong 09/2/52006; support dual view */
- 	if(pXGI->ScreenIndex == 1) 
-	{
-		enableMonoCursorOfSecondView(pXGI, TRUE);
-		enableMonoCursor(pXGI, TRUE); 
-	}
- 	else 
-		enableMonoCursor(pXGI, TRUE); 
-    /* enableMonoCursor(pXGI, TRUE); */
+    if (pXGI->ScreenIndex == 1) {
+        enableMonoCursorOfSecondView(pXGI, TRUE);
+        enableMonoCursor(pXGI, TRUE); 
+    } else {
+        enableMonoCursor(pXGI, TRUE);
+    }
 }
 
 static Bool XG47UseHWCursor(ScreenPtr pScreen, CursorPtr pCurs)
 {
     ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
     XGIPtr pXGI = XGIPTR(pScrn);
-    Bool result = FALSE;
 
-#ifdef CURSOR_DEBUG
-	ErrorF("XG47UseHWCursor()-pScreen->myNum=%d\n", pScreen->myNum);
-#endif
 
-    if ((pXGI->isHWCursor) && (pXGI->cursorStart))
-    {
-        result = TRUE;
-    }
-
-#ifdef CURSOR_DEBUG
-	ErrorF("XG47UseHWCursor()-return(%d)\n", result);
-#endif
-
-    return result;
+    return ((pXGI->isHWCursor) && (pXGI->cursorStart));
 }
 
 
@@ -395,28 +297,19 @@ static Bool XG47UseHWCursorARGB(ScreenPtr pScreen, CursorPtr pCurs)
 {
     ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
     XGIPtr pXGI = XGIPTR(pScrn);
+    Bool ret;
 
-	/* Jong 09/27/2006; use software cursor for 2nd view instead */
-	if(pScreen->myNum == 1)
-		return(FALSE);
-
-#ifdef CURSOR_DEBUG
-	ErrorF("XG47UseHWCursorARGB()-pScreen->myNum=%d\n", pScreen->myNum);
-#endif
-
-    if (pXGI->isHWCursor && pXGI->cursorStart &&
-        pCurs->bits->height <= CURSOR_HEIGHT && pCurs->bits->width <= CURSOR_WIDTH)
-    {
-#ifdef CURSOR_DEBUG
-	ErrorF("XG47UseHWCursorARGB()-return(TRUE)\n");
-#endif
-        return TRUE;
-    }
+    /* Jong 09/27/2006; use software cursor for 2nd view instead */
+    ret = (pScreen->myNum != 1) && pXGI->isHWCursor && pXGI->cursorStart
+        && (pCurs->bits->height <= CURSOR_HEIGHT)
+        && (pCurs->bits->width <= CURSOR_WIDTH);
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47UseHWCursorARGB()-return(FALSE)\n");
+    ErrorF("XG47UseHWCursorARGB() pScreen->myNum = %d, return %s\n",
+           pScreen->myNum, (ret) ? "TRUE" : "FALSE");
 #endif
-    return FALSE;
+
+    return ret;
 }
 
 static void XG47LoadCursorARGB(ScrnInfoPtr pScrn, CursorPtr pCurs)
@@ -428,69 +321,51 @@ static void XG47LoadCursorARGB(ScrnInfoPtr pScrn, CursorPtr pCurs)
     CARD32  *i;
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47LoadCursorARGB()-pScrn=0x%x, pCurs=0x%x\n", pScrn, pCurs);
+    ErrorF("XG47LoadCursorARGB()-pScrn=0x%x, pCurs=0x%x\n", pScrn, pCurs);
 #endif
 
     if (!image)
-        return;	/* XXX can't happen */
+        return; /* XXX can't happen */
 
     pXGI->cursor_argb = TRUE;
 
     w = pCurs->bits->width;
     if (w > CURSOR_WIDTH)
-    	w = CURSOR_WIDTH;
+        w = CURSOR_WIDTH;
     h = pCurs->bits->height;
     if (h > CURSOR_HEIGHT)
-    	h = CURSOR_HEIGHT;
+        h = CURSOR_HEIGHT;
 
-    for (y = 0; y < h; y++)
-    {
+    for (y = 0; y < h; y++) {
         i = image;
         image += pCurs->bits->width;
-        for (x = 0; x < w; x++)
-            /* *d++ = 0xFFFFFFFF; */ /* Jong 09/25/2006; test */
-            *d++ = *i++; 
+        for (x = 0; x < w; x++) {
+            *d++ = *i++;
+        }
 
         /* pad to the right with transparent */
-        for (; x < CURSOR_WIDTH; x++)
+        for (/* empty */; x < CURSOR_WIDTH; x++) {
             *d++ = 0;
+        }
     }
 
     /* pad below with transparent */
-    for (; y < CURSOR_HEIGHT; y++)
-    {
-    
-        for (x = 0; x < CURSOR_WIDTH; x++)
-        {
+    for (/* empty */; y < CURSOR_HEIGHT; y++) {
+        for (x = 0; x < CURSOR_WIDTH; x++) {
             *d++ = 0;
         }
     }
 
 #ifdef CURSOR_DEBUG
-	ErrorF("XG47LoadCursorARGB()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
+    ErrorF("XG47LoadCursorARGB()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
 #endif
 
-	/* Jong 09/27/2006; support dual view */
-	/* if(pXGI->ScreenIndex == 1) */
-	{
-		enableMonoCursorOfSecondView(pXGI, FALSE);
-	}
-
-	/* Jong 09/2/52006; support dual view */
-	/* if(pXGI->ScreenIndex == 1) */
-	{
-		setMonoCursorPatternOfSecondView(pXGI, pXGI->cursorStart);
-		setMonoCursorSizeOfSecondView(pXGI, 64);
-	    setMonoCursorPitchOfSecondView(pXGI, 64); 
-	}
-	/* else */
-	{
-		setAlphaCursorPattern(pXGI, pXGI->cursorStart);
-		setAlphaCursorSize(pXGI);
-	} 
-
-    /* setAlphaCursorPattern(pXGI, pXGI->cursorStart);
-    setAlphaCursorSize(pXGI); */
+    enableMonoCursorOfSecondView(pXGI, FALSE);
+    setMonoCursorPatternOfSecondView(pXGI, pXGI->cursorStart);
+    setMonoCursorSizeOfSecondView(pXGI, 64);
+    setMonoCursorPitchOfSecondView(pXGI, 64); 
+    setAlphaCursorPattern(pXGI, pXGI->cursorStart);
+    setAlphaCursorSize(pXGI);
 }
 #endif /* #ifdef ARGB_CURSOR */
 
@@ -505,63 +380,31 @@ static void XG47LoadCursorARGB(ScrnInfoPtr pScrn, CursorPtr pCurs)
 /* Jong 09/25/2006; support dual view */
 void setMonoCursorPitchOfSecondView(XGIPtr pXGI, int cursorSize)
 {
+    const unsigned pitch = (cursorSize == 128) ? 0x200 : 0x100;
+
 #ifdef CURSOR_DEBUG
-	ErrorF("setMonoCursorPitchOfSecondView()-cursorSize=%d\n", cursorSize);
+    ErrorF("setMonoCursorPitchOfSecondView()-cursorSize=%d\n", cursorSize);
 #endif
-	
+
     /* Jong 09/26/2006; Unprotect registers */
     OUTW(0x3C4, 0x9211);
 
-    unsigned int pitch =0;
-
-    if(cursorSize == 128)
-    {
-        pitch = 0x200;
-    }
-    else
-    {
-        pitch = 0x100;
-    }
-
     /*Video Alpha Cursor Pitch (128 bits alignment)*/
-    OUTW(0x24D2,(CARD16)(pitch >> 4));
-
-	/* Jong 09/25/2006; 128 bits alignment */
-	/* pitch >>= 4;
-
-    OUTB(0x24D2, (CARD8)(pitch & 0xFF));
-    OUTB(0x24D3, (CARD8)((INB(0x24D3) & 0xFC) |((pitch >> 8) & 0x3))); */
+    OUTW(0x24D2, (CARD16)(pitch >> 4));
 }
 
 /* Jong 09/25/2006; support dual view */
 void setMonoCursorPatternOfSecondView(XGIPtr pXGI, CARD32 patternAddr)
 {
 #ifdef CURSOR_DEBUG
-	ErrorF("setMonoCursorPatternOfSecondView()-patternAddr=0x%x\n", patternAddr);
+    ErrorF("setMonoCursorPatternOfSecondView()-patternAddr=0x%x\n", patternAddr);
 #endif
 
     /* Jong 09/26/2006; Unprotect registers */
     OUTW(0x3C4, 0x9211);
 
-	/* Jong 09/26/2006; test */
-	/* patternAddr = (CARD32)0x70000; */
-
     /*Video Alpha Cursor Start Address (128 bits alignment)*/
     OUTDW(0x24D4,patternAddr >> 4); 
-
-	/* Jong 09/27/2006; try another address */
-	/* patternAddr >>= 8;
-    OUT3X5B(0x44, (CARD8)(patternAddr & 0xFF));
-    OUT3X5B(0x45, (CARD8)((patternAddr >> 8) & 0xFF));
-    OUT3X5B(0x3D, (CARD8) ((IN3X5B(0x3D) & 0xF8) | ((patternAddr >> 16) & 0x07)) ); */
-
-	/* Jong 09/25/2006; 128 bits alignment */
-	/* patternAddr >>= 4;
-
-    OUTB(0x24D4, (CARD8)(patternAddr & 0xFF));
-    OUTB(0x24D5, (CARD8)((patternAddr >> 8) & 0xFF));
-    OUTB(0x24D6, (CARD8)((patternAddr >> 16) & 0xFF));
-    OUTB(0x24D7, (CARD8)((INB(0x24D7) & 0xFE) |((patternAddr >> 24) & 0x1))); */
 }
 
 void setMonoCursorPattern(XGIPtr pXGI, CARD32 patternAddr)
@@ -570,11 +413,10 @@ void setMonoCursorPattern(XGIPtr pXGI, CARD32 patternAddr)
     CARD8 data8;
     patternAddr >>= 10;
 
-    /*
-        3D5.79 and 3D5.78 define starting address bit15 - bit0.
-        The 2nd Hardware starting address 3D4/3D5.3D bit18 - bit16
-        OUT3X5W(0x78, (CARD16)patternAddr);
-    */
+    /* 3D5.79 and 3D5.78 define starting address bit15 - bit0.  The 2nd
+     * Hardware starting address 3D4/3D5.3D bit18 - bit16
+     * OUT3X5W(0x78, (CARD16)patternAddr);
+     */
     data = (CARD16)patternAddr;
     OUT3X5W(0x78, data);
 
@@ -585,50 +427,46 @@ void setMonoCursorPattern(XGIPtr pXGI, CARD32 patternAddr)
     OUT3X5B(0x3D, data8 | (CARD8)patternAddr);
 }
 
-/* Jong 09/2/52006; support dual view */
+
 void enableMonoCursorOfSecondView(XGIPtr pXGI, Bool visible)
 {
 #ifdef CURSOR_DEBUG
-	ErrorF("enableMonoCursorOfSecondView()-visible=%d\n", visible);
+    ErrorF("enableMonoCursorOfSecondView()-visible=%d\n", visible);
 #endif
 
-	/* Jong 09/28/2006; use SW cursor instead */
-	return;
+    /* Jong 09/28/2006; use SW cursor instead */
+    return;
 
     /* Jong 09/26/2006; Unprotect registers */
     OUTW(0x3C4, 0x9211);
 
-	/* Jong 09/25/2006; enable cursor and select 8-8-8-8 Mode */
+    /* Jong 09/25/2006; enable cursor and select 8-8-8-8 Mode */
     OUTB(0x24D1, ((CARD8)INB(0x24D1) & 0xF8) | 0x03); /* OK */
 
-	OUT3CFB(0x77, (IN3CFB(0x77) & 0x3F) | 0xC0);  /* OK */
+    OUT3CFB(0x77, (IN3CFB(0x77) & 0x3F) | 0xC0);  /* OK */
 
-	/* if(visible) */
-		OUT3X5B(0x50, IN3X5B(0x50) | 0x08); /* Turn on Video Hardware Cursor */ /* OK */
-		/*OUT3X5B(0x50, IN3X5B(0x50) | 0x48);*/ /* Turn on Video Hardware Cursor and select X11 */
-	/* else */
-		/* OUT3X5B(0x50, IN3X5B(0x50) & 0xF7);*/ /* Turn off Video Hardware Cursor */
+    /* if(visible) */
+    OUT3X5B(0x50, IN3X5B(0x50) | 0x08); /* Turn on Video Hardware Cursor */ /* OK */
+    /*OUT3X5B(0x50, IN3X5B(0x50) | 0x48);*/ /* Turn on Video Hardware Cursor and select X11 */
+    /* else */
+    /* OUT3X5B(0x50, IN3X5B(0x50) & 0xF7);*/ /* Turn off Video Hardware Cursor */
 
-	/* Jong 09/26/2006; Use X11 Compatible; will make second view black */
+    /* Jong 09/26/2006; Use X11 Compatible; will make second view black */
     /* OUT3X5B(0x50, IN3X5B(0x50) | 0x40); */
 }
 
 void enableMonoCursor(XGIPtr pXGI, Bool visible)
 {
-    CARD8 data;
+    const CARD8 data = IN3X5B(0x65);
 
-	data = IN3X5B(0x65);
-	if (visible)
-	{
-		OUT3X5B(0x65, (data & 0xC7) | 0xc0);
-	}
-	else
-	{
-		OUT3X5B(0x65, (data & 0xC7) & 0x7f);
-	}
+    if (visible) {
+        OUT3X5B(0x65, (data & 0xC7) | 0xc0);
+    } else {
+        OUT3X5B(0x65, (data & 0xC7) & 0x7f);
+    }
 }
 
-/* Jong 09/27/2006; support dual view */
+
 void setMonoCursorColorOfSecondView(XGIPtr pXGI, int bg, int fg)
 {
     OUT3X5B(0x48, (fg & 0x000000ff));
@@ -638,6 +476,7 @@ void setMonoCursorColorOfSecondView(XGIPtr pXGI, int bg, int fg)
     OUT3X5B(0x4D, (bg & 0x0000ff00) >> 8);
     OUT3X5B(0x4E, (bg & 0x00ff0000) >> 16);
 }
+
 
 void setMonoCursorColor(XGIPtr pXGI, int bg, int fg)
 {
@@ -650,33 +489,33 @@ void setMonoCursorColor(XGIPtr pXGI, int bg, int fg)
     OUT3X5B(0x6f, (bg & 0x00ff0000) >> 16);
 }
 
-/* Jong 09/25/2006; support dual view */
+
 void setMonoCursorPositionOfSecondView(XGIPtr pXGI, int x, int y)
 {
 #ifdef CURSOR_DEBUG
-	ErrorF("setMonoCursorPositionOfSecondView()-x=%d-y=%d\n", x,y);
+    ErrorF("setMonoCursorPositionOfSecondView()-x=%d-y=%d\n", x,y);
 #endif
 
     /* Jong 09/26/2006; Unprotect registers */
     OUTW(0x3C4, 0x9211);
 
 
-        CARD8 X = (CARD8)(x & 0xFF);
-        OUT3CFB(0x64, X);
+    CARD8 X = (CARD8)(x & 0xFF);
+    OUT3CFB(0x64, X);
 
-        CARD8 Y = (CARD8)(y & 0xFF);
-        OUT3CFB(0x66, Y);
+    CARD8 Y = (CARD8)(y & 0xFF);
+    OUT3CFB(0x66, Y);
 
-        CARD8 XY = (CARD8)((((y >> 8) << 4) & 0xf0) + ((x >> 8) & 0x0f));
-        OUT3CFB(0x65, XY);
+    CARD8 XY = (CARD8)((((y >> 8) << 4) & 0xf0) + ((x >> 8) & 0x0f));
+    OUT3CFB(0x65, XY);
 
-		/* Offset */
-        OUT3X5B(0x46, (CARD8)(X >> 16));
-        OUT3X5B(0x47, (CARD8)(Y >> 16));
+    /* Offset */
+    OUT3X5B(0x46, (CARD8)(X >> 16));
+    OUT3X5B(0x47, (CARD8)(Y >> 16));
 
-        /* Let the position setting take effect ??? Yes, spec says that ... */
-        /* OUT3X5B(0x43, IN3X5B(0x43)); */
-        OUT3X5B(0x43, 0x00);
+    /* Let the position setting take effect ??? Yes, spec says that ... */
+    /* OUT3X5B(0x43, IN3X5B(0x43)); */
+    OUT3X5B(0x43, 0x00);
 }
 
 void setMonoCursorPosition(XGIPtr pXGI, int x, int y)
@@ -700,45 +539,40 @@ void setMonoCursorPosition(XGIPtr pXGI, int x, int y)
     OUT3X5W(0x68, data);
 }
 
-/* Jong 09/25/2006; support dual view */
+
 void setMonoCursorSizeOfSecondView(XGIPtr pXGI, int cursorSize)
 {
 #ifdef CURSOR_DEBUG
-	ErrorF("setMonoCursorSizeOfSecondView()-cursorSize=%d\n", cursorSize);
+    ErrorF("setMonoCursorSizeOfSecondView()-cursorSize=%d\n", cursorSize);
 #endif
 
     /* Jong 09/26/2006; Unprotect registers */
     OUTW(0x3C4, 0x9211);
 
 
-    if(cursorSize == 64)
-    {
+    if (cursorSize == 64) {
         OUT3X5B(0x50, (IN3X5B(0x50) & 0xFC) | 0x01);
-	}
-	else
-	{
+    } else {
         OUT3X5B(0x50, (IN3X5B(0x50) & 0xFC) | 0x02);
-	} 
+    }
 }
 
 void setMonoCursorSize(XGIPtr pXGI, CARD32 cursorSize)
 {
-	/* Jong 07/12/2006 */
-	/* bits[0:1] = 1 -> 64x64 */
-	/* bits[0:1] = 2 -> 128x128 */
+    /* Jong 07/12/2006 */
+    /* bits[0:1] = 1 -> 64x64 */
+    /* bits[0:1] = 2 -> 128x128 */
     CARD8 sizeReg = 0x65;
     CARD8 data = IN3X5B(sizeReg);
 
 
-    if(cursorSize == 128)
-    {
+    if (cursorSize == 128) {
         OUT3X5B(sizeReg, (data & 0xFC) | 0x02);
-    }
-    else if(cursorSize == 64 || cursorSize == 32)
-    {
+    } else if (cursorSize == 64 || cursorSize == 32) {
         OUT3X5B(sizeReg, (data & 0xFC) | 0x01);
     }
 }
+
 
 void setAlphaCursorPosition(XGIPtr pXGI, int x, int y)
 {
@@ -752,16 +586,14 @@ void setAlphaCursorPosition(XGIPtr pXGI, int x, int y)
     OUT3X5W(0x68, (CARD16)yCursor);
 }
 
+
 void enableAlphaCursor(XGIPtr pXGI, Bool visible)
 {
-    if (visible)
-    {
+    if (visible) {
         /* Set window key, touch bit4-5 only */
         OUT3CFB(0x77, (IN3CFB(0x77) & 0xCF) | 0x20);
         OUT3X5B(0x65, (IN3X5B(0x65) & 0xBF) | 0x98);
-    }
-    else
-    {
+    } else {
         OUT3X5B(0x65, (IN3X5B(0x65) & 0xBF) & 0x7f);
     }
 }
@@ -782,4 +614,3 @@ void setAlphaCursorSize(XGIPtr pXGI)
 {
     OUT3X5B(0x65, (IN3X5B(0x65) & 0xCC) | 0x31);
 }
-
