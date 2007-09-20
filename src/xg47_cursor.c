@@ -144,6 +144,12 @@ static void XG47LoadCursorImage(ScrnInfoPtr pScrn, CARD8 *src)
     XGIPtr pXGI = XGIPTR(pScrn);
     xf86CursorInfoPtr pCursor = pXGI->pCursorInfo;
     uint32_t *d = (uint32_t *)(pXGI->fbBase + pXGI->cursorStart);
+#if X_BYTE_ORDER == X_BIG_ENDIAN
+    const uint32_t *s = (const uint32_t *)src;
+    const unsigned cursor_longs =
+        ((pCursor->MaxWidth * pCursor->MaxHeight) + 15) / 16;
+    unsigned i;
+#endif
 
 
 #ifdef CURSOR_DEBUG
@@ -163,7 +169,13 @@ static void XG47LoadCursorImage(ScrnInfoPtr pScrn, CARD8 *src)
     enableMonoCursorOfSecondView(pXGI, FALSE);
     enableMonoCursor(pXGI, FALSE);
 
-    memcpy((CARD8*)d, src, pCursor->MaxWidth * pCursor->MaxHeight / 4);
+#if X_BYTE_ORDER == X_BIG_ENDIAN
+    for (i = 0; i < cursor_longs; i++) {
+        d[i] = lswapl(s[i]);
+    }
+#else
+    memcpy(d, src, pCursor->MaxWidth * pCursor->MaxHeight / 4);
+#endif
 
 #ifdef CURSOR_DEBUG
     ErrorF("XG47LoadCursorImage()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
