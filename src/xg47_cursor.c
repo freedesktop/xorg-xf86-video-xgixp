@@ -33,6 +33,7 @@
 #include "xf86_OSproc.h"
 #include "compiler.h"
 #include "xf86fbman.h"
+#include "cursorstr.h"
 
 #include "xgi.h"
 #include "xg47_cursor.h"
@@ -49,11 +50,8 @@ static void XG47SetCursorPosition(ScrnInfoPtr pScrn, int x, int y);
 static void XG47HideCursor(ScrnInfoPtr pScrn);
 static void XG47ShowCursor(ScrnInfoPtr pScrn);
 static Bool XG47UseHWCursor(ScreenPtr pScreen, CursorPtr pCurs);
-
-#ifdef ARGB_CURSOR
 static Bool XG47UseHWCursorARGB(ScreenPtr pScreen, CursorPtr pCurs);
 static void XG47LoadCursorARGB(ScrnInfoPtr pScrn, CursorPtr pCurs);
-#endif
 
 
 Bool XG47HWCursorInit(ScreenPtr pScreen)
@@ -85,11 +83,9 @@ Bool XG47HWCursorInit(ScreenPtr pScreen)
     pCursorInfo->HideCursor        = XG47HideCursor;
     pCursorInfo->ShowCursor        = XG47ShowCursor;
     pCursorInfo->UseHWCursor       = XG47UseHWCursor;
-
-#ifdef ARGB_CURSOR
     pCursorInfo->UseHWCursorARGB   = XG47UseHWCursorARGB;
     pCursorInfo->LoadCursorARGB    = XG47LoadCursorARGB;
-#endif
+
 
     /* 128 bit alignment */
     pXGI->cursorStart = ((12*1024 - 256) *1024 + 127) & 0xFFFFF80;
@@ -120,9 +116,7 @@ void XG47HWCursorCleanup(ScreenPtr pScreen)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-#ifdef ARGB_CURSOR
     enableAlphaCursor(pXGI, FALSE);
-#endif
 
 #ifdef CURSOR_DEBUG
     ErrorF("XG47HWCursorCleanup()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
@@ -156,9 +150,7 @@ static void XG47LoadCursorImage(ScrnInfoPtr pScrn, CARD8 *src)
     ErrorF("XG47LoadCursorImage()-pScrn=0x%x\n", pScrn);
 #endif
 
-#ifdef ARGB_CURSOR
     pXGI->cursor_argb = FALSE;      
-#endif
 
     vAcquireRegIOProtect(pXGI);
 
@@ -196,10 +188,8 @@ static void XG47SetCursorColors(ScrnInfoPtr pScrn, int bg, int fg)
     ErrorF("XG47SetCursorColors()-pScrn=0x%x, bg=%d, fg=%d\n", pScrn, bg, fg);
 #endif
 
-#ifdef ARGB_CURSOR
     if (pXGI->cursor_argb)
         return;     /* not need to set color */
-#endif
 
     vAcquireRegIOProtect(pXGI);
     setMonoCursorColor(pXGI, bg, fg);
@@ -224,14 +214,11 @@ static void XG47SetCursorPosition(ScrnInfoPtr pScrn, int x, int y)
     if (pXGI->ScreenIndex == 1) {
         setMonoCursorPositionOfSecondView(pXGI, x, y);    
     } else {
-#ifdef ARGB_CURSOR
         if (pXGI->cursor_argb) {
             setAlphaCursorPosition(pXGI, x, y);
-            return;
+        } else {
+            setMonoCursorPosition(pXGI, x, y);
         }
-#endif
-
-        setMonoCursorPosition(pXGI, x, y);    
     }
 }
 
@@ -245,12 +232,10 @@ static void XG47HideCursor(ScrnInfoPtr pScrn)
 
     vAcquireRegIOProtect(pXGI);
 
-#ifdef ARGB_CURSOR
     if (pXGI->cursor_argb) {
         enableAlphaCursor(pXGI, FALSE);
         return;
     }        
-#endif
 
 #ifdef CURSOR_DEBUG
     ErrorF("XG47HideCursor()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
@@ -273,12 +258,10 @@ static void XG47ShowCursor(ScrnInfoPtr pScrn)
 
     vAcquireRegIOProtect(pXGI);
 
-#ifdef ARGB_CURSOR
     if (pXGI->cursor_argb) {
         enableAlphaCursor(pXGI, TRUE);
         return;
     }        
-#endif
 
 #ifdef CURSOR_DEBUG
     ErrorF("XG47ShowCursor()-pXGI->ScreenIndex=%d\n", pXGI->ScreenIndex);
@@ -302,9 +285,6 @@ static Bool XG47UseHWCursor(ScreenPtr pScreen, CursorPtr pCurs)
 }
 
 
-#ifdef ARGB_CURSOR
-#include "cursorstr.h"
-
 static Bool XG47UseHWCursorARGB(ScreenPtr pScreen, CursorPtr pCurs)
 {
     ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
@@ -312,9 +292,13 @@ static Bool XG47UseHWCursorARGB(ScreenPtr pScreen, CursorPtr pCurs)
     Bool ret;
 
     /* Jong 09/27/2006; use software cursor for 2nd view instead */
+#ifdef ARGB_CURSOR
     ret = (pScreen->myNum != 1) && pXGI->isHWCursor && pXGI->cursorStart
         && (pCurs->bits->height <= CURSOR_HEIGHT)
         && (pCurs->bits->width <= CURSOR_WIDTH);
+#else
+    ret = FALSE;
+#endif
 
 #ifdef CURSOR_DEBUG
     ErrorF("XG47UseHWCursorARGB() pScreen->myNum = %d, return %s\n",
@@ -379,7 +363,6 @@ static void XG47LoadCursorARGB(ScrnInfoPtr pScrn, CursorPtr pCurs)
     setAlphaCursorPattern(pXGI, pXGI->cursorStart);
     setAlphaCursorSize(pXGI);
 }
-#endif /* #ifdef ARGB_CURSOR */
 
 
 /* 
