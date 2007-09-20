@@ -365,16 +365,6 @@ typedef struct {
     CARD8       delta;              /* Delta unit */
 } XGIDigitalTVInfoRec, *XGIDigitalTVInfoPtr;
 
-typedef struct XG47_CURSOR_INFO
-{
-    xf86CursorInfoPtr   pCursorInfo;
-#ifdef ARGB_CURSOR
-    Bool                cursor_argb;
-#endif
-    unsigned long       cursorStart;
-    unsigned long       cursorEnd;
-}XG47Cursor, *XG47CursorPtr;
-
 typedef struct {
     CARD16  lcdType;
     CARD16  lcdWidth;
@@ -575,12 +565,16 @@ typedef struct {
     CARD16              linePattern;
 
     RamDacRecPtr        pRamDac;
-#ifdef ARGB_CURSOR
-    Bool                cursor_argb;
-#endif
-    xf86CursorInfoPtr   pCursorInfo;
-    unsigned long       cursorStart;
-    unsigned long       cursorEnd;
+
+    /**
+     * \name Cursor related data.
+     */
+    /*@{*/
+    Bool                cursor_argb;    /**< Is ARGB cursor in use? */
+    xf86CursorInfoPtr   pCursorInfo;    /**< Current core cursor info. */
+    uint32_t            cursorStart;    /**< Hardware cursor start addr. */
+    uint32_t            cursorEnd;      /**< Hardware cursor end addr. */
+    /*@}*/
 
     xf86Int10InfoPtr    pInt10;
     vbeInfoPtr          pVbe;
