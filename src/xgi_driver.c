@@ -1635,7 +1635,7 @@ xf86MonPtr XGIProbeDDC(ScrnInfoPtr pScrn, int index)
 
 
     if (!xf86LoadSubModule(pScrn, "ddc")) {
-        return FALSE;
+        return NULL;
     }
 
     xf86LoaderReqSymLists(ddcSymbols, NULL);
