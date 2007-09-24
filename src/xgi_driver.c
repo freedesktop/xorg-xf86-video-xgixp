@@ -105,9 +105,6 @@ static int	XGIEntityIndex = -1;
 
 #define FB_MANAGED_BY_X 12*1024*1024
 
-/* Jong 05/23/2006 */
-/* #define OPENGL_HW_ACCEL */
-
 #define XGI_XVMC
 
 static xf86MonPtr XGIProbeDDC(ScrnInfoPtr pScrn, int index);
@@ -2072,11 +2069,6 @@ Bool XGIFBManagerInit(ScreenPtr pScreen)
     return ret;
 }
 
-#ifdef OPENGL_HW_ACCEL
-static Bool (* OHAScreenInit)(ScreenPtr pScreen);
-static Bool (* OHACleanup)(ScreenPtr pScreen);
-#endif
-
 /* Called at the start of each server generation. */
 Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 {
@@ -2100,10 +2092,7 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 
     XGITRACE(("XGIScreenInit %x %d\n", pScrn->memPhysBase, pScrn->fbOffset));
 
-#ifdef OPENGL_HW_ACCEL
-    OHAScreenInit = LoaderSymbol("OHAScreenInit");
-    OHACleanup = LoaderSymbol("OHACleanup");
-#endif
+    xf86LoaderReqSymLists(driSymbols, drmSymbols, NULL);
 
     pXGI->directRenderingEnabled = XGIDRIScreenInit(pScreen);
     if (!pXGI->directRenderingEnabled) {
@@ -2450,22 +2439,9 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
     XGIDumpRegisterValue(pScrn);
 #endif
 
-    PDEBUG(ErrorF("Jong-After-XGIInitMC-4\n"));
-#ifdef OPENGL_HW_ACCEL
-    if (!OHAScreenInit(pScreen))
-    {
-        ErrorF("OHAScreenInit failed.\n");
-        goto fail;
-    }
-    PDEBUG(ErrorF("Jong-After-XGIInitMC-5\n"));
-#endif
-    PDEBUG(ErrorF("Jong-After-XGIInitMC-5-1\n"));
-
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
-
-    PDEBUG(ErrorF("Jong-After-XGIInitMC-6\n"));
 
     return TRUE;
 fail:
@@ -2789,12 +2765,6 @@ static Bool XGICloseScreen(int scrnIndex, ScreenPtr pScreen)
         pXGI->pInt10 = NULL;
     }
 
-#ifdef OPENGL_HW_ACCEL
-    if (!OHACleanup(pScreen))
-    {
-         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Close OHA failed !\n");
-    }
-#endif
 
     /* Before freeing the per-screen driver data the saved CloseScreen
      * value should be restored to pScreen->CloseScreen, and that function
