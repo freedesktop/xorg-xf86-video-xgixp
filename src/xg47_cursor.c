@@ -54,6 +54,23 @@ static Bool XG47UseHWCursor(ScreenPtr pScreen, CursorPtr pCurs);
 static Bool XG47UseHWCursorARGB(ScreenPtr pScreen, CursorPtr pCurs);
 static void XG47LoadCursorARGB(ScrnInfoPtr pScrn, CursorPtr pCurs);
 
+static void setMonoCursorPattern(XGIPtr pXGI, CARD32 patternAddr);
+static void enableMonoCursor(XGIPtr pXGI, Bool visible);
+static void setMonoCursorColor(XGIPtr pXGI, int bg, int fg);
+static void setMonoCursorPosition(XGIPtr pXGI, int x, int y);
+static void setMonoCursorSize(XGIPtr pXGI, CARD32 cursorSize);
+static void setAlphaCursorPosition(XGIPtr pXGI, int x, int y);
+static void enableAlphaCursor(XGIPtr pXGI, Bool visible);
+static void setAlphaCursorPattern(XGIPtr pXGI, CARD32 patternAddr);
+static void setAlphaCursorSize(XGIPtr pXGI);
+
+static void setMonoCursorPatternOfSecondView(XGIPtr pXGI, CARD32 patternAddr);
+static void enableMonoCursorOfSecondView(XGIPtr pXGI, Bool visible);
+static void setMonoCursorPitchOfSecondView(XGIPtr pXGI, int pitch);
+static void setMonoCursorPositionOfSecondView(XGIPtr pXGI, int x, int y);
+static void setMonoCursorSizeOfSecondView(XGIPtr pXGI, int cursorSize);
+static void setMonoCursorColorOfSecondView(XGIPtr pXGI, int bg, int fg);
+
 
 Bool XG47HWCursorInit(ScreenPtr pScreen)
 {

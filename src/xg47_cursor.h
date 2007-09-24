@@ -74,25 +74,4 @@
 extern Bool XG47HWCursorInit(ScreenPtr pScreen);
 extern void XG47HWCursorCleanup(ScreenPtr pScreen);
 
-/* Jong 06/21/2006; added for compiling error on Xorg 6.8.2 */
-/*----------------------------------------------------------*/
-void setMonoCursorPattern(XGIPtr pXGI, CARD32 patternAddr);
-void enableMonoCursor(XGIPtr pXGI, Bool visible);
-void setMonoCursorColor(XGIPtr pXGI, int bg, int fg);
-void setMonoCursorPosition(XGIPtr pXGI, int x, int y);
-void setMonoCursorSize(XGIPtr pXGI, CARD32 cursorSize);
-void setAlphaCursorPosition(XGIPtr pXGI, int x, int y);
-void enableAlphaCursor(XGIPtr pXGI, Bool visible);
-void setAlphaCursorPattern(XGIPtr pXGI, CARD32 patternAddr);
-void setAlphaCursorSize(XGIPtr pXGI);
-
-/* Jong 09/25/2006; support dual view */
-void setMonoCursorPatternOfSecondView(XGIPtr pXGI, CARD32 patternAddr);
-void enableMonoCursorOfSecondView(XGIPtr pXGI, Bool visible);
-void setMonoCursorPitchOfSecondView(XGIPtr pXGI, int pitch);
-void setMonoCursorPositionOfSecondView(XGIPtr pXGI, int x, int y);
-void setMonoCursorSizeOfSecondView(XGIPtr pXGI, int cursorSize);
-void setMonoCursorColorOfSecondView(XGIPtr pXGI, int bg, int fg);
-/*----------------------------------------------------------*/
-
 #endif
