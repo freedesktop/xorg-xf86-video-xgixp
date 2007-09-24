@@ -56,9 +56,8 @@ static void XG47LoadCursorARGB(ScrnInfoPtr pScrn, CursorPtr pCurs);
 static void setMonoCursorPattern(XGIPtr pXGI, CARD32 patternAddr);
 static void enableMonoCursor(XGIPtr pXGI, Bool visible);
 static void setMonoCursorColor(XGIPtr pXGI, int bg, int fg);
-static void setMonoCursorPosition(XGIPtr pXGI, int x, int y);
+static void setCursorPosition(XGIPtr pXGI, int x, int y);
 static void setMonoCursorSize(XGIPtr pXGI, CARD32 cursorSize);
-static void setAlphaCursorPosition(XGIPtr pXGI, int x, int y);
 static void enableAlphaCursor(XGIPtr pXGI, Bool visible);
 static void setAlphaCursorPattern(XGIPtr pXGI, CARD32 patternAddr);
 static void setAlphaCursorSize(XGIPtr pXGI);
@@ -218,11 +217,7 @@ static void XG47SetCursorPosition(ScrnInfoPtr pScrn, int x, int y)
     if (pXGI->ScreenIndex == 1) {
         setMonoCursorPositionOfSecondView(pXGI, x, y);    
     } else {
-        if (pXGI->cursor_argb) {
-            setAlphaCursorPosition(pXGI, x, y);
-        } else {
-            setMonoCursorPosition(pXGI, x, y);
-        }
+	setCursorPosition(pXGI, x, y);
     }
 }
 
@@ -502,7 +497,7 @@ void setMonoCursorPositionOfSecondView(XGIPtr pXGI, int x, int y)
     OUT3X5B(0x43, 0x00);
 }
 
-void setMonoCursorPosition(XGIPtr pXGI, int x, int y)
+void setCursorPosition(XGIPtr pXGI, int x, int y)
 {
     const unsigned xCursor = (x < 0) ? ((-x) << 16) : x;
     const unsigned yCursor = (y < 0) ? ((-y) << 16) : y;
@@ -546,21 +541,6 @@ void setMonoCursorSize(XGIPtr pXGI, CARD32 cursorSize)
     } else if (cursorSize == 64 || cursorSize == 32) {
         OUT3X5B(sizeReg, (data & 0xFC) | 0x01);
     }
-}
-
-
-void setAlphaCursorPosition(XGIPtr pXGI, int x, int y)
-{
-    const unsigned xCursor = (x < 0) ? ((-x) << 16) : x;
-    const unsigned yCursor = (y < 0) ? ((-y) << 16) : y;
-
-    OUT3X5W(0x66, xCursor);
-    OUT3X5W(0x73, xCursor >> 16);
-    OUT3X5W(0x77, yCursor >> 16);
-
-    /* 3x5.69 should be set last.
-     */
-    OUT3X5W(0x68, yCursor);
 }
 
 
