@@ -57,15 +57,14 @@ static void setCursorPattern(XGIPtr pXGI, uint32_t patternAddr);
 static void enableMonoCursor(XGIPtr pXGI, Bool visible);
 static void setMonoCursorColor(XGIPtr pXGI, int bg, int fg, unsigned base);
 static void setCursorPosition(XGIPtr pXGI, int x, int y);
-static void setMonoCursorSize(XGIPtr pXGI, CARD32 cursorSize);
+static void setCursorSize(XGIPtr pXGI, unsigned cursorSize, Bool primary,
+    Bool alpha);
 static void enableAlphaCursor(XGIPtr pXGI, Bool visible);
-static void setAlphaCursorSize(XGIPtr pXGI);
 
 static void setMonoCursorPatternOfSecondView(XGIPtr pXGI, uint32_t patternAddr);
 static void enableMonoCursorOfSecondView(XGIPtr pXGI, Bool visible);
 static void setMonoCursorPitchOfSecondView(XGIPtr pXGI, int pitch);
 static void setMonoCursorPositionOfSecondView(XGIPtr pXGI, int x, int y);
-static void setMonoCursorSizeOfSecondView(XGIPtr pXGI, int cursorSize);
 
 
 Bool XG47HWCursorInit(ScreenPtr pScreen)
@@ -178,10 +177,10 @@ static void XG47LoadCursorImage(ScrnInfoPtr pScrn, CARD8 *src)
 #endif
 
     setMonoCursorPatternOfSecondView(pXGI, pXGI->cursorStart);
-    setMonoCursorSizeOfSecondView(pXGI, 64);
+    setCursorSize(pXGI, 64, FALSE, FALSE);
     setMonoCursorPitchOfSecondView(pXGI, 64); 
     setCursorPattern(pXGI, pXGI->cursorStart);
-    setMonoCursorSize(pXGI, 64); 
+    setCursorSize(pXGI, 64, TRUE, FALSE); 
 }
 
 static void XG47SetCursorColors(ScrnInfoPtr pScrn, int bg, int fg)
@@ -345,10 +344,10 @@ static void XG47LoadCursorARGB(ScrnInfoPtr pScrn, CursorPtr pCurs)
 
     enableMonoCursorOfSecondView(pXGI, FALSE);
     setMonoCursorPatternOfSecondView(pXGI, pXGI->cursorStart);
-    setMonoCursorSizeOfSecondView(pXGI, 64);
+    setCursorSize(pXGI, 64, FALSE, FALSE);
     setMonoCursorPitchOfSecondView(pXGI, 64); 
     setCursorPattern(pXGI, pXGI->cursorStart);
-    setAlphaCursorSize(pXGI);
+    setCursorSize(pXGI, 64, TRUE, TRUE);
 }
 
 
@@ -496,35 +495,27 @@ void setCursorPosition(XGIPtr pXGI, int x, int y)
 }
 
 
-void setMonoCursorSizeOfSecondView(XGIPtr pXGI, int cursorSize)
+void setCursorSize(XGIPtr pXGI, unsigned cursor_size, Bool primary,
+		   Bool alpha)
 {
-#ifdef CURSOR_DEBUG
-    ErrorF("setMonoCursorSizeOfSecondView()-cursorSize=%d\n", cursorSize);
-#endif
+    /* bits[0:1]:
+     *    0: 32x32
+     *    1: 64x64
+     *    2: 128x128
+     *    3: reserved
+     */
+    unsigned size_bits = (alpha) ? 0x30 : 0x00;
+    const unsigned reg = (primary) ? 0x65 : 0x50;
 
-    vAcquireRegIOProtect(pXGI);
-
-    if (cursorSize == 64) {
-        OUT3X5B(0x50, (IN3X5B(0x50) & 0xFC) | 0x01);
+    if (cursor_size <= 32) {
+	size_bits = 0;
+    } else if (cursor_size <= 64) {
+	size_bits = 1;
     } else {
-        OUT3X5B(0x50, (IN3X5B(0x50) & 0xFC) | 0x02);
+	size_bits = 2;
     }
-}
 
-void setMonoCursorSize(XGIPtr pXGI, CARD32 cursorSize)
-{
-    /* Jong 07/12/2006 */
-    /* bits[0:1] = 1 -> 64x64 */
-    /* bits[0:1] = 2 -> 128x128 */
-    CARD8 sizeReg = 0x65;
-    CARD8 data = IN3X5B(sizeReg);
-
-
-    if (cursorSize == 128) {
-        OUT3X5B(sizeReg, (data & 0xFC) | 0x02);
-    } else if (cursorSize == 64 || cursorSize == 32) {
-        OUT3X5B(sizeReg, (data & 0xFC) | 0x01);
-    }
+    OUT3X5B(reg, (IN3X5B(reg) & ~3) | size_bits);
 }
 
 
@@ -537,11 +528,4 @@ void enableAlphaCursor(XGIPtr pXGI, Bool visible)
     } else {
         OUT3X5B(0x65, (IN3X5B(0x65) & 0xBF) & 0x7f);
     }
-}
-
-
-/* under linux, only support a8r8b8g8 @ 64x64 */
-void setAlphaCursorSize(XGIPtr pXGI)
-{
-    OUT3X5B(0x65, (IN3X5B(0x65) & 0xCC) | 0x31);
 }
