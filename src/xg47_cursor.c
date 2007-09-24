@@ -479,50 +479,41 @@ void setMonoCursorColor(XGIPtr pXGI, int bg, int fg)
 
 void setMonoCursorPositionOfSecondView(XGIPtr pXGI, int x, int y)
 {
+    const uint8_t X = x & 0xFF;
+    const uint8_t Y = y & 0xFF;
+    const uint8_t XY = ((y << 4) & 0xf0) | ((x >> 8) & 0x0f);
+    
 #ifdef CURSOR_DEBUG
     ErrorF("setMonoCursorPositionOfSecondView()-x=%d-y=%d\n", x,y);
 #endif
 
     vAcquireRegIOProtect(pXGI);
 
-
-    CARD8 X = (CARD8)(x & 0xFF);
     OUT3CFB(0x64, X);
-
-    CARD8 Y = (CARD8)(y & 0xFF);
     OUT3CFB(0x66, Y);
-
-    CARD8 XY = (CARD8)((((y >> 8) << 4) & 0xf0) + ((x >> 8) & 0x0f));
     OUT3CFB(0x65, XY);
 
     /* Offset */
-    OUT3X5B(0x46, (CARD8)(X >> 16));
-    OUT3X5B(0x47, (CARD8)(Y >> 16));
+    OUT3X5B(0x46, X >> 16);
+    OUT3X5B(0x47, Y >> 16);
 
-    /* Let the position setting take effect ??? Yes, spec says that ... */
-    /* OUT3X5B(0x43, IN3X5B(0x43)); */
+    /* Write to 3X5.43 to make the position setting take effect.
+     */
     OUT3X5B(0x43, 0x00);
 }
 
 void setMonoCursorPosition(XGIPtr pXGI, int x, int y)
 {
-    CARD16 data;
-    CARD8 data8;
-    CARD32 xCursor = x < 0 ? ((-x) << 16) : x;
-    CARD32 yCursor = y < 0 ? ((-y) << 16) : y;
+    const unsigned xCursor = (x < 0) ? ((-x) << 16) : x;
+    const unsigned yCursor = (y < 0) ? ((-y) << 16) : y;
 
-    data = (CARD16)xCursor;
-    OUT3X5W(0x66, data);
+    OUT3X5W(0x66, xCursor);
+    OUT3X5B(0x73, xCursor >> 16);
+    OUT3X5B(0x77, yCursor >> 16);
 
-    data8 = (CARD8)(xCursor >> 16);
-    OUT3X5B(0x73, data8);
-
-    data8 = (CARD8)(yCursor >> 16);
-    OUT3X5B(0x77, data8);
-
-    /* 3x5.69 should be set lastly. */
-    data =  (CARD16)yCursor;
-    OUT3X5W(0x68, data);
+    /* 3x5.69 should be set last.
+     */
+    OUT3X5W(0x68, yCursor);
 }
 
 
@@ -560,14 +551,16 @@ void setMonoCursorSize(XGIPtr pXGI, CARD32 cursorSize)
 
 void setAlphaCursorPosition(XGIPtr pXGI, int x, int y)
 {
-    CARD32 xCursor = x < 0 ? ((-x) << 16) : x;
-    CARD32 yCursor = y < 0 ? ((-y) << 16) : y;
+    const unsigned xCursor = (x < 0) ? ((-x) << 16) : x;
+    const unsigned yCursor = (y < 0) ? ((-y) << 16) : y;
 
-    OUT3X5W(0x66, (CARD16)xCursor);
-    OUT3X5W(0x73, (CARD8)(xCursor >> 16));
-    OUT3X5W(0x77, (CARD8)(yCursor >> 16));
-    /* 3x5.69 should be set lastly. */
-    OUT3X5W(0x68, (CARD16)yCursor);
+    OUT3X5W(0x66, xCursor);
+    OUT3X5W(0x73, xCursor >> 16);
+    OUT3X5W(0x77, yCursor >> 16);
+
+    /* 3x5.69 should be set last.
+     */
+    OUT3X5W(0x68, yCursor);
 }
 
 
