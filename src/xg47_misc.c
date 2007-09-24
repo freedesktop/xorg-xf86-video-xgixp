@@ -55,12 +55,9 @@ void XG47EnableMMIO(ScrnInfoPtr pScrn)
      */
     outb(0x3C4, 0xE);
     temp = inb(0x3C5);
-    if (temp & 0x2)
-    {
+    if (temp & 0x2) {
         outb(0x3C5, ((temp | 0x80) & 0xFC));
-    }
-    else
-    {
+    } else {
         outb(0x3C5, ((temp | 0x80) | 0x2));
     }
 
@@ -86,6 +83,7 @@ void XG47EnableMMIO(ScrnInfoPtr pScrn)
     OUTB(0x3C5, protect);
 }
 
+
 void XG47DisableMMIO(ScrnInfoPtr pScrn)
 {
     CARD8   temp = 0, protect = 0;
@@ -109,28 +107,21 @@ void XG47DisableMMIO(ScrnInfoPtr pScrn)
     outb(pXGI->PIOBase + 0x3C5, protect);
 }
 
+
 void XG47AdjustFrame(int scrnIndex, int x, int y, int flags)
 {
     ScrnInfoPtr     pScrn = xf86Screens[scrnIndex];
     XGIPtr          pXGI = XGIPTR(pScrn);
-
     unsigned long   base = y * pScrn->displayWidth + x;
 
 #if DBG_FLOW
     ErrorF("(II) XGI (0) ++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    switch (pScrn->bitsPerPixel)
-    {
+    switch (pScrn->bitsPerPixel) {
     case 8:
-        if (pScrn->progClock)
-        {
-            base = (base & 0xFFFFFFF8) >> 2;
-        }
-        else
-        {
-            base = (base & 0xFFFFFFF8) >> 3;
-        }
+        base &= 0xFFFFFFF8;
+        base >>= (pScrn->progClock) ? 2 : 3;
         break;
     case 16:
         base >>= 1;
@@ -142,31 +133,14 @@ void XG47AdjustFrame(int scrnIndex, int x, int y, int flags)
         break;
     }
 
-    /* CRT bits 0-15 */
-    OUTW(0x3D4, (base & 0x00FF00) | 0x0C);
-    OUTW(0x3D4, ((base & 0x0000FF) << 8) | 0x0D);
-
-    /* CRT bits 16-23 */
-    OUTW(0x3D4, ((base & 0xFF0000) >> 8) | 0x8C);
-
-    /* CRT bits 24-26 */
-    OUTW(0x3D4, ((base & 0xFF000000) >> 16) | 0x8D);
+    OUT3X5B(0x0d, (base & 0x000000FF) >> 0x00);
+    OUT3X5B(0x0c, (base & 0x0000FF00) >> 0x08);
+    OUT3X5B(0x8c, (base & 0x00FF0000) >> 0x10);
+    OUT3X5B(0x8d, (base & 0xFF000000) >> 0x18);
 
 #if DBG_FLOW
     ErrorF("(II) XGI (0) -- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
-
-    /*
-    unsigned long   startAddr = (y * pScrn->displayWidth + x)
-                             * (pScrn->bitsPerPixel >> 3);
-    XG47SetCRTCViewBaseAddr(pScrn, startAddr);
-
-    startAddr >>= 2;
-    OUT3X5B(0x0d, (CARD8)startAddr);
-    OUT3X5B(0x0c, (CARD8)(startAddr >> 0x08));
-    OUT3X5B(0x8C, (CARD8)(startAddr >> 0x10));
-    OUT3X5B(0x8D, (CARD8)(startAddr >> 0x18));
-    */
 }
 
 
