@@ -794,7 +794,7 @@ unsigned XGIBiosCalculateClock(XGIPtr pXGI, unsigned low, unsigned high)
     const unsigned K = (tmp & 0xC0) >> 6;
     const unsigned M = (tmp & 0x3F);
 
-    return ((1431818 * (N + 7)) / ((M + 1) << K)) / 100000;
+    return ((1431818 * (N + 8)) / ((M + 1) << K)) / 100000;
 }
 
 /*
