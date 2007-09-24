@@ -687,7 +687,7 @@ Bool XG47GetValidMode(XGIPtr pXGI,
         /* Check video BIOS support or not */
 
         /* Jong 09/14/2006; why? */
-        OUTW(0x3C4, 0x9211);
+        vAcquireRegIOProtect(pXGI);
 
         OUTB(XGI_REG_GRX, 0x5A);
         OUTB(XGI_REG_GRX+1, ((tv_3cf_5b & 0xF0) | want_3cf_5a));
@@ -708,7 +708,7 @@ Bool XG47GetValidMode(XGIPtr pXGI,
          * CRT, DVI device
          */
         /* Jong 09/14/2006; why? */
-        OUTW(0x3C4, 0x9211);
+        vAcquireRegIOProtect(pXGI);
 
         OUTB(XGI_REG_GRX, 0x5A);
         OUTB(XGI_REG_GRX+1, tv_3cf_5b);
@@ -767,14 +767,14 @@ Bool XG47GetValidMode(XGIPtr pXGI,
              */
             CARD8 save;
 
-            OUTW(0x3C4, 0x9211);
+            vAcquireRegIOProtect(pXGI);
             OUTB(XGI_REG_GRX, 0x5A);
             save = INB(XGI_REG_GRX + 1);
             OUTB(XGI_REG_GRX + 1, ((save & 0xF0) | (pMode1->condition & 0x0F)));
 
             refSupport = XGIGetRefreshSupport(pXGI, pMode1->condition, mode,
                                               XGIGetColorIndex(pMode1->pixelSize));
-            OUTW(0x3C4, 0x9211);
+            vAcquireRegIOProtect(pXGI);
             OUTB(XGI_REG_GRX, 0x5A);
             OUTB(XGI_REG_GRX+1, save);
 
@@ -1165,7 +1165,7 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         /* Protection Register; Set register 0x11 to 0x92 to unprotect all 
          * extended registers without regarding 3C5.0E bit 7. 
          */
-        OUTW(0x3C4, 0x9211);
+        vAcquireRegIOProtect(pXGI);
 
         /* Change of the display device can be done by altering this scratch
          * pad register and followed by the set mode function call.
@@ -1539,7 +1539,7 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
         if (lineBuf > 0x3FF)
             lineBuf = 0x3FF;    /* Overflow */
 
-        OUTW(0x3C4, 0x9211);
+        vAcquireRegIOProtect(pXGI);
 
         /* Window 2 Starting address of (Y) frame buffer.
          *
@@ -1760,14 +1760,14 @@ Bool XG47BiosSpecialFeature(ScrnInfoPtr pScrn, unsigned long cmd,
     const CARD16 *const x = (const CARD16 *) pInBuf;
 
 
-    switch(cmd) {
+    switch (cmd) {
     case CLOSE_ALL_DEVICE:
-        OUTW(0x3C4, 0x9211);
+        vAcquireRegIOProtect(pXGI);
         XG47CloseAllDevice(pXGI, (CARD8)x[0]);
         return TRUE;
 
     case OPEN_ALL_DEVICE:
-        OUTW(0x3C4, 0x9211);
+        vAcquireRegIOProtect(pXGI);
         XG47OpenAllDevice(pXGI, (CARD8)x[0]);
         return TRUE;
 
