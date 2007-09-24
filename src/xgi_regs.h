@@ -30,193 +30,111 @@
 
 #include "compiler.h"
 
-static __inline__ CARD8 xinb(XGIPtr pXGI, CARD32 index)
+#if X_BYTE_ORDER == X_BIG_ENDIAN
+# define BE_SWAP32(v) (lswapl(v))
+# define BE_SWAP16(v) (lswaps(v))
+#else
+# define BE_SWAP32(v) (v)
+# define BE_SWAP16(v) (v)
+#endif
+
+
+static __inline__ uint8_t xinb(XGIPtr pXGI, unsigned index)
 {
-    CARD8 reg;
-    if(pXGI->noMMIO)
-    {
-        reg = inb(pXGI->PIOBase + index);
-    }
-    else
-    {
-        reg = MMIO_IN8(pXGI->IOBase, index);
-    }
+    const uint8_t reg = (pXGI->noMMIO)
+        ? inb(pXGI->PIOBase + index)
+        : MMIO_IN8(pXGI->IOBase, index);
+
     return reg;
 }
 
-static __inline__ CARD16 xinw(XGIPtr pXGI, CARD32 index)
+static __inline__ uint16_t xinw(XGIPtr pXGI, unsigned index)
 {
-    CARD16 reg;
-    if(pXGI->noMMIO)
-    {
-        reg = inw(pXGI->PIOBase + index);
-    }
-    else
-    {
-        reg = MMIO_IN16(pXGI->IOBase, index);
-    }
-    return reg;
+    const uint16_t reg = (pXGI->noMMIO)
+        ? inw(pXGI->PIOBase + index)
+        : MMIO_IN16(pXGI->IOBase, index);
+
+    return BE_SWAP16(reg);
 }
 
-static __inline__ CARD32 xinl(XGIPtr pXGI, CARD32 index)
+static __inline__ uint32_t xinl(XGIPtr pXGI, unsigned index)
 {
-    CARD32 reg;
-    if(pXGI->noMMIO)
-    {
-        reg = inl(pXGI->PIOBase + index);
-    }
-    else
-    {
-        reg = MMIO_IN32(pXGI->IOBase, index);
-    }
-    return reg;
+    const uint32_t reg = (pXGI->noMMIO)
+        ? inl(pXGI->PIOBase + index)
+        : MMIO_IN32(pXGI->IOBase, index);
+
+    return BE_SWAP32(reg);
 }
 
-static __inline__ void xoutb(XGIPtr pXGI, CARD32 index, CARD8 data)
+static __inline__ void xoutb(XGIPtr pXGI, unsigned index, uint8_t data)
 {
-    if(pXGI->noMMIO)
-    {
+    if (pXGI->noMMIO) {
         outb(pXGI->PIOBase + index, data);
-    }
-    else
-    {
+    } else {
         MMIO_OUT8(pXGI->IOBase, index, data);
     }
 }
 
-static __inline__ void xoutw(XGIPtr pXGI, CARD32 index, CARD16 data)
+static __inline__ void xoutw(XGIPtr pXGI, unsigned index, uint16_t data)
 {
-    if(pXGI->noMMIO)
-    {
-        outw(pXGI->PIOBase + index, data);
-    }
-    else
-    {
-        MMIO_OUT16(pXGI->IOBase, index, data);
+    if (pXGI->noMMIO) {
+        outw(pXGI->PIOBase + index, BE_SWAP16(data));
+    } else {
+        MMIO_OUT16(pXGI->IOBase, index, BE_SWAP16(data));
     }
 }
 
-static __inline__ void xoutl(XGIPtr pXGI, CARD32 index, CARD32 data)
+static __inline__ void xoutl(XGIPtr pXGI, unsigned index, uint32_t data)
 {
-    if(pXGI->noMMIO)
-    {
-        outl(pXGI->PIOBase + index, data);
-    }
-    else
-    {
-        MMIO_OUT32(pXGI->IOBase, index, data);
+    if (pXGI->noMMIO) {
+        outl(pXGI->PIOBase + index, BE_SWAP32(data));
+    } else {
+        MMIO_OUT32(pXGI->IOBase, index, BE_SWAP32(data));
     }
 }
 
-static __inline__ CARD8 xinb3x5(XGIPtr pXGI, CARD8 index)
+static __inline__ uint8_t xinb3x5(XGIPtr pXGI, unsigned index)
 {
-    volatile CARD8 data=0;
-
     xoutb(pXGI, 0x3d4, index);
-    data = xinb(pXGI, 0x3d5);
-
-    return data;
+    return xinb(pXGI, 0x3d5);
 }
 
-static __inline__ void xoutb3x5(XGIPtr pXGI, CARD8 index, CARD8 data)
+static __inline__ void xoutb3x5(XGIPtr pXGI, unsigned index, uint8_t data)
 {
     xoutb(pXGI, 0x3d4, index);
     xoutb(pXGI, 0x3d5, data);
 }
 
-static __inline__ CARD8 xinb3c5(XGIPtr pXGI, CARD8 index)
+static __inline__ uint8_t xinb3c5(XGIPtr pXGI, unsigned index)
 {
-    volatile CARD8 data=0;
-
     xoutb(pXGI, 0x3c4, index);
-    data = xinb(pXGI, 0x3c5);
-
-    return data;
+    return xinb(pXGI, 0x3c5);
 }
 
-static __inline__ void xoutb3c5(XGIPtr pXGI, CARD8 index, CARD8 data)
+static __inline__ void xoutb3c5(XGIPtr pXGI, unsigned index, uint8_t data)
 {
     xoutb(pXGI, 0x3c4, index);
     xoutb(pXGI, 0x3c5, data);
 }
 
-static __inline__ CARD8 xinb3cf(XGIPtr pXGI, CARD8 index)
+static __inline__ uint8_t xinb3cf(XGIPtr pXGI, unsigned index)
 {
-    volatile CARD8 data=0;
-
     xoutb(pXGI, 0x3ce, index);
-    data = xinb(pXGI, 0x3cf);
-
-    return data;
+    return xinb(pXGI, 0x3cf);
 }
 
-static __inline__ void xoutb3cf(XGIPtr pXGI, CARD8 index, CARD8 data)
+static __inline__ void xoutb3cf(XGIPtr pXGI, unsigned index, uint8_t data)
 {
     xoutb(pXGI, 0x3ce, index);
     xoutb(pXGI, 0x3cf, data);
 }
 
-static __inline__ CARD16 xinw3x5(XGIPtr pXGI, CARD8 index)
-{
-    volatile CARD16 data=0;
-
-    xoutb(pXGI, 0x3d4, index);
-    data = xinb(pXGI, 0x3d5);
-
-    xoutb(pXGI, 0x3d4, index+1);
-    data += xinb(pXGI, 0x3d5) << 8;
-
-    return data;
-}
-
-static __inline__ void xoutw3x5(XGIPtr pXGI, CARD8 index, CARD16 data)
+static __inline__ void xoutw3x5(XGIPtr pXGI, unsigned index, uint16_t data)
 {
     xoutb(pXGI, 0x3d4, index);
-    xoutb(pXGI, 0x3d5, (CARD8)data);
+    xoutb(pXGI, 0x3d5, (uint8_t)data);
     xoutb(pXGI, 0x3d4, index+1);
-    xoutb(pXGI, 0x3d5, (CARD8)(data>>8));
-}
-
-static __inline__ CARD16 xinw3c5(XGIPtr pXGI, CARD8 index)
-{
-    volatile CARD16 data=0;
-
-    xoutb(pXGI, 0x3c4, index);
-    data = xinb(pXGI, 0x3c5);
-
-    xoutb(pXGI, 0x3c4, index+1);
-    data += xinb(pXGI, 0x3c5) << 8;
-
-    return data;
-}
-
-static __inline__ void xoutw3c5(XGIPtr pXGI, CARD8 index, CARD16 data)
-{
-    xoutb(pXGI, 0x3c4, index);
-    xoutb(pXGI, 0x3c5, data);
-    xoutb(pXGI, 0x3c4, index+1);
-    xoutb(pXGI, 0x3c5, data>>8);
-}
-
-static __inline__ CARD16 xinw3cf(XGIPtr pXGI, CARD8 index)
-{
-    volatile CARD16 data=0;
-
-    xoutb(pXGI, 0x3ce, index);
-    data = xinb(pXGI, 0x3cf);
-
-    xoutb(pXGI, 0x3ce, index+1);
-    data += xinb(pXGI, 0x3cf) << 8;
-
-    return data;
-}
-
-static __inline__ void xoutw3cf(XGIPtr pXGI, CARD8 index, CARD16 data)
-{
-    xoutb(pXGI, 0x3ce, index);
-    xoutb(pXGI, 0x3cf, data);
-    xoutb(pXGI, 0x3ce, index+1);
-    xoutb(pXGI, 0x3cf, data>>8);
+    xoutb(pXGI, 0x3d5, (uint8_t)(data>>8));
 }
 
 static __inline__ void vAcquireRegIOProtect(XGIPtr pXGI)
@@ -235,15 +153,10 @@ static __inline__ void vAcquireRegIOProtect(XGIPtr pXGI)
 #define OUT3X5B(index, data)    xoutb3x5(pXGI, index, data)
 #define OUT3X5W(index, data)    xoutw3x5(pXGI, index, data)
 #define OUT3C5B(index, data)    xoutb3c5(pXGI, index, data)
-#define OUT3C5W(index, data)    xoutw3c5(pXGI, index, data)
 #define OUT3CFB(index, data)    xoutb3cf(pXGI, index, data)
-#define OUT3CFW(index, data)    xoutw3cf(pXGI, index, data)
 
 #define IN3C5B(index)           xinb3c5(pXGI, index)
-#define IN3C5W(index)           xinw3c5(pXGI, index)
 #define IN3X5B(index)           xinb3x5(pXGI, index)
-#define IN3X5W(index)           xinw3x5(pXGI, index)
 #define IN3CFB(index)           xinb3cf(pXGI, index)
-#define IN3CFW(index)           xinw3cf(pXGI, index)
 
 #endif
