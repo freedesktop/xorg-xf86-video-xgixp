@@ -819,28 +819,28 @@ static void SetROP3(int rop)
 static void SetFGColor(XGIPtr pXGI, CARD32 color)
 {
     XGIDebug(DBG_FUNCTION, "[DBG] Enter SetFGColor()\n");
-    xg47_SendGECommand(pXGI->cmdList, ENG_FGCOLOR, color);
+    xg47_SendGECommand(pXGI->cmdList, ENG_FGCOLOR, BE_SWAP32(color));
     XGIDebug(DBG_FUNCTION, "[DBG] Leave SetFGColor()\n");
 }
 
 static void SetPatFGColor(XGIPtr pXGI, CARD32 color)
 {
     XGIDebug(DBG_FUNCTION, "[DBG] Enter SetPatFGColor()\n");
-    xg47_SendGECommand(pXGI->cmdList, ENG_PATTERN_FG, color);
+    xg47_SendGECommand(pXGI->cmdList, ENG_PATTERN_FG, BE_SWAP32(color));
     XGIDebug(DBG_FUNCTION, "[DBG] Leave SetPatFGColor()\n");
 }
 
 static void SetPatBKColor(XGIPtr pXGI, CARD32 color)
 {
     XGIDebug(DBG_FUNCTION, "[DBG] Enter SetPatBKColor()\n");
-    xg47_SendGECommand(pXGI->cmdList, ENG_PATTERN_BG, color);
+    xg47_SendGECommand(pXGI->cmdList, ENG_PATTERN_BG, BE_SWAP32(color));
     XGIDebug(DBG_FUNCTION, "[DBG] Leave SetPatBKColor()\n");
 }
 
 static void SetDstColorKey(XGIPtr pXGI, CARD32 color)
 {
     XGIDebug(DBG_FUNCTION, "[DBG] Enter SetDstColorKey()\n");
-    xg47_SendGECommand(pXGI->cmdList, ENG_DEST_COLORKEY, color);
+    xg47_SendGECommand(pXGI->cmdList, ENG_DEST_COLORKEY, BE_SWAP32(color));
     XGIDebug(DBG_FUNCTION, "[DBG] Leave SetDstColorKey()\n");
 }
 
