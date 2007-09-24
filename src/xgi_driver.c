@@ -1647,7 +1647,7 @@ xf86MonPtr XGIProbeDDC(ScrnInfoPtr pScrn, int index)
     
     if (pMon == NULL) {
         pMon = xf86DoEDID_DDC1(pScrn->scrnIndex, vgaHWddc1SetSpeedWeak(),
-                               XGIDDCRead);
+                               XG47DDCRead);
     }
 
     if (pMon == NULL) {

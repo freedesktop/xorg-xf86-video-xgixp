@@ -76,6 +76,5 @@ extern void XGIModeRestore(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg);
 extern void XGILoadPalette(ScrnInfoPtr pScrn, int numColors, int *indicies,
                            LOCO *colors, VisualPtr pVisual);
 extern void XGISetOverscan(ScrnInfoPtr pScrn, int overscan);
-extern unsigned int XGIDDCRead(ScrnInfoPtr pScrn);
 
 #endif

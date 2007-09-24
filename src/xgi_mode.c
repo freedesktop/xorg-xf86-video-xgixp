@@ -96,21 +96,3 @@ void XGISetOverscan(ScrnInfoPtr pScrn, int overscan)
         break;
     }
 }
-
-unsigned int XGIDDCRead(ScrnInfoPtr pScrn)
-{
-    XGIPtr pXGI = XGIPTR(pScrn);
-    int    ret = 0;
-
-    switch(pXGI->chipset)
-    {
-    case XG47:
-        ret = XG47DDCRead(pScrn);
-        break;
-    default:
-        break;
-    }
-
-    return ret;
-}
-
