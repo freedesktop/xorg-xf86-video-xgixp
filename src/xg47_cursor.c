@@ -55,7 +55,7 @@ static void XG47LoadCursorARGB(ScrnInfoPtr pScrn, CursorPtr pCurs);
 
 static void setMonoCursorPattern(XGIPtr pXGI, CARD32 patternAddr);
 static void enableMonoCursor(XGIPtr pXGI, Bool visible);
-static void setMonoCursorColor(XGIPtr pXGI, int bg, int fg);
+static void setMonoCursorColor(XGIPtr pXGI, int bg, int fg, unsigned base);
 static void setCursorPosition(XGIPtr pXGI, int x, int y);
 static void setMonoCursorSize(XGIPtr pXGI, CARD32 cursorSize);
 static void enableAlphaCursor(XGIPtr pXGI, Bool visible);
@@ -67,7 +67,6 @@ static void enableMonoCursorOfSecondView(XGIPtr pXGI, Bool visible);
 static void setMonoCursorPitchOfSecondView(XGIPtr pXGI, int pitch);
 static void setMonoCursorPositionOfSecondView(XGIPtr pXGI, int x, int y);
 static void setMonoCursorSizeOfSecondView(XGIPtr pXGI, int cursorSize);
-static void setMonoCursorColorOfSecondView(XGIPtr pXGI, int bg, int fg);
 
 
 Bool XG47HWCursorInit(ScreenPtr pScreen)
@@ -198,9 +197,8 @@ static void XG47SetCursorColors(ScrnInfoPtr pScrn, int bg, int fg)
         return;     /* not need to set color */
 
     vAcquireRegIOProtect(pXGI);
-    setMonoCursorColor(pXGI, bg, fg);
-
-    setMonoCursorColorOfSecondView(pXGI, bg, fg);
+    setMonoCursorColor(pXGI, bg, fg, 0x6a);
+    setMonoCursorColor(pXGI, bg, fg, 0x48);
 }
 
 static void XG47SetCursorPosition(ScrnInfoPtr pScrn, int x, int y)
@@ -449,26 +447,21 @@ void enableMonoCursor(XGIPtr pXGI, Bool visible)
 }
 
 
-void setMonoCursorColorOfSecondView(XGIPtr pXGI, int bg, int fg)
+/**
+ * Set the color of the mono cursor
+ * 
+ * \param bg    Background color
+ * \param fg    Foreground color
+ * \param base  Either 0x6a for primary view or 0x48 for secondary view
+ */
+void setMonoCursorColor(XGIPtr pXGI, int bg, int fg, unsigned base)
 {
-    OUT3X5B(0x48, (fg & 0x000000ff));
-    OUT3X5B(0x49, (fg & 0x0000ff00) >> 8);
-    OUT3X5B(0x4A, (fg & 0x00ff0000) >> 16);
-    OUT3X5B(0x4C, (bg & 0x000000ff));
-    OUT3X5B(0x4D, (bg & 0x0000ff00) >> 8);
-    OUT3X5B(0x4E, (bg & 0x00ff0000) >> 16);
-}
-
-
-void setMonoCursorColor(XGIPtr pXGI, int bg, int fg)
-{
-    /* set HC2 foreground and background color for mono */
-    OUT3X5B(0x6a, (fg & 0x000000ff));
-    OUT3X5B(0x6b, (fg & 0x0000ff00) >> 8);
-    OUT3X5B(0x6c, (fg & 0x00ff0000) >> 16);
-    OUT3X5B(0x6d, (bg & 0x000000ff));
-    OUT3X5B(0x6e, (bg & 0x0000ff00) >> 8);
-    OUT3X5B(0x6f, (bg & 0x00ff0000) >> 16);
+    OUT3X5B(base + 0, (fg & 0x000000ff));
+    OUT3X5B(base + 1, (fg & 0x0000ff00) >> 8);
+    OUT3X5B(base + 2, (fg & 0x00ff0000) >> 16);
+    OUT3X5B(base + 3, (bg & 0x000000ff));
+    OUT3X5B(base + 4, (bg & 0x0000ff00) >> 8);
+    OUT3X5B(base + 5, (bg & 0x00ff0000) >> 16);
 }
 
 
