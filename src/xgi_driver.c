@@ -107,7 +107,7 @@ static int	XGIEntityIndex = -1;
 
 #define XGI_XVMC
 
-static xf86MonPtr XGIProbeDDC(ScrnInfoPtr pScrn, int index);
+static xf86MonPtr get_configured_monitor(ScrnInfoPtr pScrn, int index);
 static XGIPtr XGIGetRec(ScrnInfoPtr pScrn);
 static void     XGIIdentify(int flags);
 #ifdef XSERVER_LIBPCIACCESS
@@ -386,26 +386,22 @@ static pointer XGISetup(pointer module,
 
     /* This module should be loaded only once, but check to be sure. */
 
-    if (!isInited)
-    {
+    if (!isInited) {
         /*
          * Modules that this driver always requires may be loaded
          * here by calling LoadSubModule().
          */
         isInited = TRUE;
         xf86AddDriver(&XGI, module, 1);
-        LoaderRefSymLists(vgahwSymbols, fbSymbols, i2cSymbols, vbeSymbols,
-                          ramdacSymbols, int10Symbols, xaaSymbols, shadowSymbols,
-                          fbdevHWSymbols, NULL);
+        LoaderRefSymLists(vgahwSymbols, fbSymbols, i2cSymbols, ramdacSymbols,
+                          xaaSymbols, shadowSymbols, fbdevHWSymbols, NULL);
 
         /*
          * The return value must be non-NULL on success even though
          * there is no TearDownProc.
          */
         result = (pointer)TRUE;
-    }
-    else
-    {
+    } else {
         if (errorMajor)
             *errorMajor = LDR_ONCEONLY;
         result = NULL;
@@ -1123,14 +1119,12 @@ static Bool XGIPreInitConfig(ScrnInfoPtr pScrn)
     return TRUE;
 }
 
-static Bool XGIPreInitDDC(ScrnInfoPtr pScrn)
+static void XGIPreInitDDC(ScrnInfoPtr pScrn)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
-    xf86MonPtr pMon = XGIProbeDDC(pScrn, pXGI->pEnt->index);
+    xf86MonPtr pMon = get_configured_monitor(pScrn, pXGI->pEnt->index);
 
     xf86SetDDCproperties(pScrn, xf86PrintEDID(pMon));
-
-    return TRUE;
 }
 
 /*
@@ -1625,11 +1619,16 @@ static Bool XGIPreInitShadow(ScrnInfoPtr pScrn)
     return TRUE;
 }
 
-xf86MonPtr XGIProbeDDC(ScrnInfoPtr pScrn, int index)
+xf86MonPtr get_configured_monitor(ScrnInfoPtr pScrn, int index)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
     xf86MonPtr pMon = NULL;
 
+
+    if (!XGIPreInitI2c(pScrn)) {
+        xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
+                   "I2C initialization failed!\n");
+    }
 
     if (!xf86LoadSubModule(pScrn, "ddc")) {
         return NULL;
@@ -1641,13 +1640,13 @@ xf86MonPtr XGIProbeDDC(ScrnInfoPtr pScrn, int index)
     if (pXGI->pI2C != NULL) {
         pMon = xf86DoEDID_DDC2(pScrn->scrnIndex, pXGI->pI2C);
     }
-    
+
     if (pMon == NULL) {
         pMon = xf86DoEDID_DDC1(pScrn->scrnIndex, vgaHWddc1SetSpeedWeak(),
                                XG47DDCRead);
     }
 
-    if (pMon == NULL) {
+    if ((pMon == NULL) || (pXGI->pVbe != NULL)) {
         pMon = vbeDoEDID(pXGI->pVbe, NULL);
     }
 
@@ -1734,22 +1733,8 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     /* Fill in the monitor field, just Set pScrn->monitor */
     pScrn->monitor = pScrn->confScreen->monitor;
 
-    /* Enable MMIO */
-    if (!pXGI->noMMIO) {
-        if (!XGIMapMMIO(pScrn)) {
-            goto fail;
-        }
-    }
-
-    if (!XGIPreInitInt10(pScrn))            goto fail;
-    if (!XGIPreInitI2c(pScrn)) {
-        xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-                   "I2C initialization failed!\n");
-    }
-
     if (flags & PROBE_DETECT) {
-        ConfiguredMonitor = XGIProbeDDC(pScrn, pXGI->pEnt->index);
-        XGIProbeDDC(pScrn, pXGI->pEnt->index);
+        get_configured_monitor(pScrn, pXGI->pEnt->index);
         return TRUE;
     }
 
@@ -1810,6 +1795,14 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
         pScrn->ValidMode    = fbdevHWValidMode;*/
     }
 
+    /* Enable MMIO */
+    if (!pXGI->noMMIO) {
+        if (!XGIMapMMIO(pScrn)) {
+            goto fail;
+        }
+    }
+
+    if (!XGIPreInitInt10(pScrn))            goto fail;
     if (!XGIBiosDllInit(pScrn))             goto fail;
     if (!XGIPreInitMemory(pScrn))           goto fail;
 
@@ -1818,9 +1811,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
 
     if (!XGIMapFB(pScrn))                   goto fail;
 
-    /* Don't fail on this one */
-    if (!XGIPreInitDDC(pScrn))              goto fail;
-
     if (!XGIPreInitLcdSize(pScrn))          goto fail;
 
     if (!XGIPreInitModes(pScrn))            goto fail;
@@ -1828,6 +1818,8 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     if (!XGIPreInitCursor(pScrn))           goto fail;
 
     if (!XGIPreInitAccel(pScrn))            goto fail;
+
+    XGIPreInitDDC(pScrn);
 
     if(!XGIPreInitShadow(pScrn))
     {
