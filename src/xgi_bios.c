@@ -893,13 +893,6 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
     return TRUE;
 }
 
-static Bool XGIBiosValidMode(ScrnInfoPtr pScrn, XGIAskModePtr pAskMode,
-			     CARD32 dualView)
-{
-    XGIPtr      pXGI = XGIPTR(pScrn);
-
-    return (pXGI->pBiosDll->biosValidMode)(pScrn, pAskMode, dualView);
-}
 
 /* Jong 1109/2006; pMode[]->condition indicate which device needs to be open */
 Bool XGIBiosModeInit(ScrnInfoPtr pScrn, XGIAskModePtr pMode, Bool dualView)
@@ -907,10 +900,14 @@ Bool XGIBiosModeInit(ScrnInfoPtr pScrn, XGIAskModePtr pMode, Bool dualView)
     XGIPtr          pXGI = XGIPTR(pScrn);
     unsigned long   devices;
     Bool success;
+    ModeStatus status;
 
 
     /* Ask BIOS if the mode is supported */
-    if (!XGIBiosValidMode(pScrn, pMode, dualView)) {
+    status = (*pXGI->pBiosDll->biosValidMode)(pScrn, pMode, dualView);
+    if (status != MODE_OK) {
+	xf86DrvMsg(pXGI->pScrn->scrnIndex, X_ERROR,
+		   "%s:%u: mode failed %d\n", __func__, __LINE__, status);
         return FALSE;
     }
 
