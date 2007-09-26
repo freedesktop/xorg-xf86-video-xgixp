@@ -2869,7 +2869,7 @@ static int XGIValidMode(int scrnIndex, DisplayModePtr mode, Bool verbose, int fl
     if (!pXGI->pInt10) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
                    "have not loaded int10 module successfully!\n");
-        return (MODE_BAD);
+        return MODE_ERROR;
     }
 
     switch(pXGI->chipset)

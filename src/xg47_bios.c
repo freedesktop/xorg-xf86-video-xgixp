@@ -631,9 +631,8 @@ static void massage_refresh_rate(XGIAskModePtr pMode)
  * Return: TRUE  - The mode is supported
  *         FALSE - The mode is NOT supported
 */
-Bool XG47GetValidMode(XGIPtr pXGI,
-                      XGIAskModePtr pMode0,
-                      XGIAskModePtr pMode1)
+static ModeStatus XG47GetValidMode(XGIPtr pXGI, XGIAskModePtr pMode0,
+                                   XGIAskModePtr pMode1)
 {
     CARD8       tv_ntsc_pal, tv_ntsc_pal_org;
     CARD8       tv_3cf_5b, want_3cf_5a;
@@ -642,6 +641,10 @@ Bool XG47GetValidMode(XGIPtr pXGI,
     CARD16      j;
     unsigned long   ret_value;
 
+
+    if ((pMode0 == NULL) && (pMode1 == NULL)) {
+        return MODE_ERROR;
+    }
 
     XGIGetSetChipSupportDevice(pXGI, TRUE);
 
@@ -652,7 +655,7 @@ Bool XG47GetValidMode(XGIPtr pXGI,
         /* Check with mode index table */
         pMode0->modeNo &= ~0x7F;    /* only clear mode number */
         if (mode == NULL) {
-            return FALSE;
+            return MODE_NOMODE;
         }
 
         pMode0->modeNo |= mode->modeNo & 0x7f;
@@ -704,6 +707,13 @@ Bool XG47GetValidMode(XGIPtr pXGI,
 
         refSupport = XGIGetRefreshSupport(pXGI, pMode0->condition, mode,
                                           modeSpec);
+        if (!refSupport) {
+            xf86DrvMsg(pXGI->pScrn->scrnIndex, X_ERROR,
+                       "%s:%u: refSupport = 0, pMode0->condition = 0x%x\n",
+                       __func__, __LINE__, pMode0->condition);
+            return MODE_BAD;
+        }
+
         /*
          * CRT, DVI device
          */
@@ -727,7 +737,17 @@ Bool XG47GetValidMode(XGIPtr pXGI,
             refSupport &= mode->refSupport[0];
 
         pMode0->refSupport = refSupport;
-        if (!refSupport) return FALSE;
+        if (!refSupport) {
+            xf86DrvMsg(pXGI->pScrn->scrnIndex, X_ERROR,
+                       "%s:%u: refSupport = 0, pMode0->condition = 0x%x\n",
+                       __func__, __LINE__, pMode0->condition);
+            xf86DrvMsg(pXGI->pScrn->scrnIndex, X_INFO,
+                       "%s:%u: mode->refSupport[0..3] = 0x%04x 0x%04x 0x%04x 0x%04x\n",
+                       __func__, __LINE__, 
+                       mode->refSupport[0], mode->refSupport[1],
+                       mode->refSupport[2], mode->refSupport[3]);
+            return MODE_BAD;
+        }
 
         massage_refresh_rate(pMode0);
     }
@@ -747,13 +767,13 @@ Bool XG47GetValidMode(XGIPtr pXGI,
          */
         ret_value = (pMode1->width * pMode1->height * (pMode1->pixelSize/8));
         if (ret_value > pXGI->freeFbSize) {
-            return FALSE;
+            return MODE_MEM;
         }
 
         pMode1->modeNo &= ~0x7F;
 
         if (mode == NULL) {
-            return FALSE;
+            return MODE_NOMODE;
         }
 
         pMode1->modeNo |= mode->modeNo & 0x7f;
@@ -779,16 +799,17 @@ Bool XG47GetValidMode(XGIPtr pXGI,
             OUTB(XGI_REG_GRX+1, save);
 
             pMode1->refSupport = refSupport;
-            if (!refSupport)    return FALSE;
+            if (!refSupport) {
+                xf86DrvMsg(pXGI->pScrn->scrnIndex, X_ERROR,
+                           "%s:%u: pMode1->refSupport = 0, pMode1->condition = 0x%x\n",
+                           __func__, __LINE__, pMode1->condition);
+                return MODE_BAD;
+            }
 
             massage_refresh_rate(pMode0);
         }
     } else {
         int refRateIndex;
-
-        if (pMode0 == NULL) {
-            return FALSE;
-        }
 
         for (j = 0; j < VREF_MAX_NUMBER; j++) {
             if ((pMode0->refSupport >> j) & 0x01) {
@@ -818,11 +839,11 @@ Bool XG47GetValidMode(XGIPtr pXGI,
         }
 
         if (!pMode0->refRate) {
-            return FALSE;
+            return MODE_V_ILLEGAL;
         }
     }
 
-    return TRUE;
+    return MODE_OK;
 }
 
 void XG47BiosValueInit(ScrnInfoPtr pScrn)
@@ -1229,6 +1250,9 @@ Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
 
         /* Set mode fail. */
         if (pXGI->pInt10->ax & 0xFF00) {
+            xf86DrvMsg(pXGI->pScrn->scrnIndex, X_ERROR,
+                       "%s:%u: ax = 0x%04x\n",
+                       __func__, __LINE__, pXGI->pInt10->ax);
             return FALSE;
         }
 

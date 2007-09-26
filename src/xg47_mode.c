@@ -583,25 +583,27 @@ int XG47ValidMode(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
     XGIAskModeRec askMode[2];
+    ModeStatus status;
 
 
     fill_ask_mode(pScrn, dispMode, & askMode[0]);
 
     /* Both askMode[0] and askMode[1] will be used in XG47BiosValidMode()
      */
-    if (!pXGI->pBiosDll->biosValidMode(pScrn, askMode, 0)) {
-        return MODE_BAD;
+    status = pXGI->pBiosDll->biosValidMode(pScrn, askMode, 0);
+    if (status != MODE_OK) {
+        return status;
     }
 
     /* judge the mode on LCD */
     if ((pXGI->displayDevice & ST_DISP_LCD)
         || (IN3CFB(0x5B) & ST_DISP_LCD)) {
         if ((pXGI->lcdWidth == 1600) && (dispMode->HDisplay == 1400)) {
-            return MODE_BAD;
+            return MODE_PANEL;
         }
 
         if (dispMode->HDisplay > pXGI->lcdWidth) {
-            return MODE_BAD;
+            return MODE_PANEL;
         }
     }
 
@@ -611,7 +613,7 @@ int XG47ValidMode(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
         || (pXGI->displayDevice & ST_DISP_DVI)
         || (IN3CFB(0x5B) & ST_DISP_DVI)) {
         if (dispMode->HDisplay == 1400) {
-            return MODE_BAD;
+            return MODE_PANEL;
         }
     }
 

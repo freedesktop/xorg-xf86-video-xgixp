@@ -29,9 +29,9 @@
 #define _XG47_BIOS_H_
 
 /* xg47_bios.c */
-extern Bool XG47BiosValidMode(ScrnInfoPtr pScrn,
-                              XGIAskModePtr pMode,
-                              CARD32 dualView);
+extern ModeStatus XG47BiosValidMode(ScrnInfoPtr pScrn, XGIAskModePtr pMode,
+    CARD32 dualView);
+
 extern Bool XG47BiosModeInit(ScrnInfoPtr pScrn,
                              XGIAskModePtr pMode,
                              CARD32 dualView);

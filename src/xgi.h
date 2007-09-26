@@ -330,7 +330,7 @@ typedef struct {
     CARD32  condition;
 } XGIAskModeRec, *XGIAskModePtr;
 
-typedef Bool (*FUN_XGIBiosValidMode)(ScrnInfoPtr, XGIAskModePtr, CARD32);
+typedef ModeStatus (*FUN_XGIBiosValidMode)(ScrnInfoPtr, XGIAskModePtr, CARD32);
 typedef Bool (*FUN_XGIBiosModeInit)(ScrnInfoPtr, XGIAskModePtr, CARD32);
 typedef Bool (*FUN_XGIBiosSpecialFeature)(ScrnInfoPtr, unsigned long,
     const unsigned long*);
