@@ -151,7 +151,7 @@ static const char *vgahwSymbols[] = {
     "vgaHWInit",
     "vgaHWLock",
     "vgaHWMapMem",
-    "vgapVgaHWrotect",
+    "vgaHWProtect",
     "vgaHWRestore",
     "vgaHWSave",
     "vgaHWSaveScreen",
