@@ -37,9 +37,6 @@
 /* Jong 09/15/2006; support dual view; default is single mode */
 int		g_DualViewMode=0;
 
-/* Jong 10/04/2006; support different modes for dual view */
-XGIAskModeRec	g_ModeOfFirstView;
-
 /*
  * Pixel(Video) clock information.
  */
@@ -554,11 +551,6 @@ Bool XG47ModeInit(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
      * Use askMode[1] for second view of dual view mode.
      */
     fill_ask_mode(pScrn, dispMode, & askMode[index]);
-
-    if (g_DualViewMode && pXGI->FirstView) {
-        g_ModeOfFirstView = askMode[index];
-    }
-
     if (!XGIBiosModeInit(pScrn, askMode, (g_DualViewMode != 0))) {
         return FALSE;
     }

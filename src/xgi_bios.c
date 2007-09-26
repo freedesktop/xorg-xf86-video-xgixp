@@ -52,9 +52,6 @@ CARD8       GR3CE_45;
 CARD8       GR3CE_45_SingleView;
 CARD8       value[23];
 
-/* Jong 10/04/2006; support different modes for dual view */
-extern XGIAskModeRec	g_ModeOfFirstView;
-
 /*
  * from bios dll: Basefunc.c
  */
