@@ -951,53 +951,38 @@ static Bool XGIPreInitVisual(ScrnInfoPtr pScrn)
     return TRUE;
 }
 
-/*
- * This is called by XGIPreInit to handle all color weight issues.
+/**
+ * Called by \c XGIPreInit to handle all color weight issues
  */
 static Bool XGIPreInitWeight(ScrnInfoPtr pScrn)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
 
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
 
-    /*
-     * Save flag for 6 bit DAC to use for
-     * setting CRTC registers.  Otherwise use
-     * an 8 bit DAC, even if xf86SetWeight sets
-     * pScrn->rgbBits to some value other than 8.
+    /* Save flag for 6 bit DAC to use for setting CRTC registers.  Otherwise
+     * use an 8 bit DAC, even if xf86SetWeight sets pScrn->rgbBits to some
+     * value other than 8.
      */
-    pXGI->isDac8bits = FALSE;
 
-    if (pScrn->depth > 8)
-    {
+    if (pScrn->depth > 8) {
         /* The defaults are OK for us */
         rgb defaultWeight = {0, 0, 0};
         rgb defaultMask = {0, 0, 0};
 
-        if (!xf86SetWeight(pScrn, defaultWeight, defaultMask))
-        {
+	pXGI->isDac8bits = FALSE;
+
+        if (!xf86SetWeight(pScrn, defaultWeight, defaultMask)) {
             return FALSE;
         }
-    }
-    else
-    {
-        pScrn->rgbBits = 6;
-        if (xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_DAC_8BIT, FALSE))
-        {
-            pScrn->rgbBits = 8;
-            pXGI->isDac8bits = TRUE;
-        }
+    } else {
+	pXGI->isDac8bits = xf86ReturnOptValBool(pXGI->pOptionInfo,
+						OPTION_DAC_8BIT, FALSE);
+        pScrn->rgbBits = (pXGI->isDac8bits) ? 8 : 6;
     }
 
     xf86DrvMsg(pScrn->scrnIndex, X_INFO,
                "Using %d bits per RGB (%d bit DAC)\n",
                pScrn->rgbBits, pXGI->isDac8bits ? 8 : 6);
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
 
     return TRUE;
 }
@@ -2351,19 +2336,13 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After pXGI->isHWCursor()\n");
 
-    /*
-     * Initialise the default colourmap
-     * If using the vgahw module,
-     * vgaHandleColormaps would usually be called here.
+    /* Colormap setup
      */
     if (!miCreateDefColormap(pScreen)) return FALSE;
-    XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After miCreateDefColormap()\n");
-
     if (!xf86HandleColormaps(pScreen, 256, pXGI->isDac8bits ? 8 : 6,
-                             XGILoadPalette,
-                             XGISetOverscan,
-                             CMAP_RELOAD_ON_MODE_SWITCH | CMAP_PALETTED_TRUECOLOR))
-    {
+                             XGILoadPalette, XGISetOverscan,
+                             (CMAP_RELOAD_ON_MODE_SWITCH 
+			      | CMAP_PALETTED_TRUECOLOR))) {
         return FALSE;
     }
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After xf86HandleColormaps()\n");
