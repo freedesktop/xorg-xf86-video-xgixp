@@ -1813,13 +1813,13 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
 
     if (!XGIPreInitLcdSize(pScrn))          goto fail;
 
+    XGIPreInitDDC(pScrn);
+
     if (!XGIPreInitModes(pScrn))            goto fail;
 
     if (!XGIPreInitCursor(pScrn))           goto fail;
 
     if (!XGIPreInitAccel(pScrn))            goto fail;
-
-    XGIPreInitDDC(pScrn);
 
     if(!XGIPreInitShadow(pScrn))
     {
