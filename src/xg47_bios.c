@@ -1000,6 +1000,10 @@ void XG47BiosValueInit(ScrnInfoPtr pScrn)
     OUTB(XGI_REG_CRX+1, (INB(XGI_REG_CRX+1) | 0x80));
 }
 
+#define ALL_TV_FORMATS \
+    (ZVMX_ATTRIB_NTSCJ | ZVMX_ATTRIB_NTSC \
+     | ZVMX_ATTRIB_PALM | ZVMX_ATTRIB_PAL)
+
 /*
  * Validate Video Mode.
  *
@@ -1009,44 +1013,39 @@ void XG47BiosValueInit(ScrnInfoPtr pScrn)
  * Return: video mode information if none zero value, otherwise does not
  *         support this mode.
  */
-Bool XG47BiosValidMode(ScrnInfoPtr pScrn,
-                       XGIAskModePtr pMode,
-                       CARD32 dualView)
+ModeStatus XG47BiosValidMode(ScrnInfoPtr pScrn, XGIAskModePtr pMode,
+                             CARD32 dualView)
 {
     XGIPtr          pXGI = XGIPTR(pScrn);
     XGIAskModePtr   pMode0, pMode1;
     CARD32          temp;
+    CARD32 test=~0xF0;
 
     XGIGetSetChipSupportDevice(pXGI, FALSE);
     pMode0 = pMode;
 
-	/* Jong 09/12/2006; test */
-	CARD32 test=~0xF0;
 
-	/* Jong 09/15/2006; single view or first view of dual view mode */
-    if (!dualView || (pXGI->FirstView)) /* single view */
-    {
+    /* Single view or first view of dual view mode */
+    if (!dualView || pXGI->FirstView) {
         pMode1 = NULL;
         pMode0->condition &= test;
-    }
-    else /* dual view */
-    {
-		/* Jong 09/12/2006; pMode1 has wrong data; seems not to initialize */
+    } else {
+        /* dual view */
+        /* pMode1 has wrong data; seems not to initialize */
         pMode1 = pMode0 + 1;
-		/* Jong 09/12/2006; why not to &= ~0x0F */
+
+        /* Jong 09/12/2006; why not to &= ~0x0F */
         pMode1->condition &= test;
 
-		pMode0=NULL;
+        pMode0=NULL;
     }
 
 #if 0
-    if (!dualView) /* single view */
-    {
+    if (!dualView) {
         pMode1 = NULL;
         pMode0->condition &= ~0xF0;
-    }
-    else /* dual view */
-    {
+    } else {
+        /* dual view */
         pMode1 = pMode0 + 1; 
         pMode1->condition &= ~0xF0;
     }
@@ -1055,39 +1054,48 @@ Bool XG47BiosValidMode(ScrnInfoPtr pScrn,
     /* get current all display device status and information */
     temp = XGIGetDisplayStatus(pXGI, 0);
 
-	/* Jong 09/15/2006; support dual view */
-	if(pMode0)
-	{
-		/* check 1st display device input data */
-		if (!(pMode0->condition & 0x0F))
-			pMode0->condition |= (temp & 0x0F);
+    if (pMode0) {
+        /* check 1st display device input data */
+        if (!(pMode0->condition & 0x0F))
+            pMode0->condition |= (temp & 0x0F);
 
-		/* Check LCD information (Expansion/Centering) */
-		if (!(pMode0->condition & 0x0001C00))
-			pMode0->condition |= (temp & 0x0001C00);
+        /* Check LCD information (Expansion/Centering) */
+        if (!(pMode0->condition & 0x0001C00))
+            pMode0->condition |= (temp & 0x0001C00);
 
-		/* Check TV format information */
-		if (!(pMode0->condition & (ZVMX_ATTRIB_NTSCJ | ZVMX_ATTRIB_PALM | ZVMX_ATTRIB_PAL | ZVMX_ATTRIB_NTSC)))
-		{
-			pMode0->condition |= (temp & (ZVMX_ATTRIB_NTSCJ | ZVMX_ATTRIB_PALM | ZVMX_ATTRIB_PAL | ZVMX_ATTRIB_NTSC));
-		}
-		/* Check TV Overscan/Underscan mode info */
-		if (!(pMode0->condition & 0x00C0000))
-			pMode0->condition |= (temp & 0x00C0000);
+        /* Check TV format information */
+        if (!(pMode0->condition & ALL_TV_FORMATS)) {
+            pMode0->condition |= (temp & ALL_TV_FORMATS);
+        }
 
-		/* check valid 1st display device */
-		if ((pMode0->condition & 0x0F) != (pXGI->biosDevSupport & (pMode0->condition & 0x0F)))
-			return FALSE;
-	}
+        /* Check TV Overscan/Underscan mode info */
+        if (!(pMode0->condition & 0x00C0000))
+            pMode0->condition |= (temp & 0x00C0000);
 
-    if (pMode1)
-    {
+        /* check valid 1st display device */
+        if ((pMode0->condition & 0x0F) != 
+            (pXGI->biosDevSupport & (pMode0->condition & 0x0F))) {
+            xf86DrvMsg(pXGI->pScrn->scrnIndex, X_ERROR,
+                       "1st display device not supported by BIOS: 0x%02x 0x%02x\n",
+                       (pMode0->condition & 0x0f), 
+                       (pXGI->biosDevSupport & 0x0f));
+            return FALSE;
+        }
+    }
+
+    if (pMode1) {
         if (!(pMode1->condition & 0x0000C00))
             pMode1->condition |= (temp & 0x0000C00);
 
         /* check valid 2nd display device */
-        if ((pMode1->condition & 0x0F) != (pXGI->biosDevSupport & (pMode1->condition & 0x0F)))
+        if ((pMode1->condition & 0x0F) 
+            != (pXGI->biosDevSupport & (pMode1->condition & 0x0F))) {
+            xf86DrvMsg(pXGI->pScrn->scrnIndex, X_ERROR,
+                       "2nd display device not supported by BIOS: 0x%02x 0x%02x\n",
+                       (pMode1->condition & 0x0f), 
+                       (pXGI->biosDevSupport & 0x0f));
             return FALSE;
+        }
     }
 
     return XG47GetValidMode(pXGI, pMode0, pMode1);
