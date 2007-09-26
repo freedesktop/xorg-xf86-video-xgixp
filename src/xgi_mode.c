@@ -29,6 +29,8 @@
 #include "config.h"
 #endif
 
+#include "fbdevhw.h"
+
 #include "xgi.h"
 #include "xgi_regs.h"
 #include "xgi_mode.h"
