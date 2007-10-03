@@ -86,7 +86,7 @@ void XG47EnableMMIO(ScrnInfoPtr pScrn)
 
 void XG47DisableMMIO(ScrnInfoPtr pScrn)
 {
-    CARD8   temp = 0, protect = 0;
+    uint8_t protect = 0;
     XGIPtr  pXGI = XGIPTR(pScrn);
 
     if (pXGI->IOBase == 0) {
