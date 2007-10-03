@@ -1961,9 +1961,7 @@ static void XGISave(ScrnInfoPtr pScrn)
 
 static void XGIRestore(ScrnInfoPtr pScrn)
 {
-    vgaHWPtr    pVgaHW = VGAHWPTR(pScrn);
     XGIPtr      pXGI = XGIPTR(pScrn);
-    vgaRegPtr   pVgaReg = &pVgaHW->SavedReg;
     XGIRegPtr   pXGIReg = &pXGI->savedReg;
 
 #if DBG_FLOW
@@ -1971,13 +1969,7 @@ static void XGIRestore(ScrnInfoPtr pScrn)
 #endif
 
     XGIModeRestore(pScrn, pXGIReg);
-/*
-    vgaHWUnlock(pVgaHW);
 
-    vgaHWRestore(pScrn, pVgaReg, VGA_SR_MODE | VGA_SR_CMAP |
-                                 (IsPrimaryCard ? VGA_SR_FONTS : 0));
-    vgaHWLock(pVgaHW);
-*/
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
