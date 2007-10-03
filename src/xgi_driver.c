@@ -2380,10 +2380,7 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 
     /* DPMS setup */
 #ifdef DPMSExtension
-	ErrorF("XGI-Define DPMSExtension...\n");
-
-        xf86DPMSInit(pScreen, (DPMSSetProcPtr)XGIDPMSSet, 0);
-		ErrorF("XGI-xf86DPMSInit(pScreen, (DPMSSetProcPtr)XGIDPMSSet, 0)...\n");
+    xf86DPMSInit(pScreen, (DPMSSetProcPtr)XGIDPMSSet, 0);
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After DPMSExtension\n");
 #endif
 
