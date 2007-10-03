@@ -1644,7 +1644,7 @@ xf86MonPtr get_configured_monitor(ScrnInfoPtr pScrn, int index)
                                XG47DDCRead);
     }
 
-    if ((pMon == NULL) || (pXGI->pVbe != NULL)) {
+    if ((pMon == NULL) && (pXGI->pVbe != NULL)) {
         pMon = vbeDoEDID(pXGI->pVbe, NULL);
     }
 
