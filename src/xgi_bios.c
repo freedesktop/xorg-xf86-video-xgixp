@@ -50,7 +50,6 @@ CARD8       vclk19;
 CARD8       vclk28;
 CARD8       GR3CE_45;
 CARD8       GR3CE_45_SingleView;
-CARD8       value[23];
 
 /*
  * from bios dll: Basefunc.c
@@ -604,16 +603,13 @@ Bool XGIReadBiosData(XGIPtr pXGI, CARD8 *array)
     pXGI->pInt10->num = 0x10;
     xf86ExecX86int10(pXGI->pInt10);
 
-    if (pXGI->pInt10->ax >> 8)           /* If success, ah = 0 */
+    /* If success, ah = 0 */
+    if ((pXGI->pInt10->ax >> 8) || (pXGI->biosBase != NULL)) {
         return FALSE;
-
-    if (pXGI->biosBase)
-    {
-        memcpy(array, (pXGI->biosBase + pXGI->pInt10->di), pXGI->pInt10->cx);
-        return TRUE;
     }
-    else
-        return FALSE;
+
+    memcpy(array, (pXGI->biosBase + pXGI->pInt10->di), pXGI->pInt10->cx);
+    return TRUE;
 }
 
 /*

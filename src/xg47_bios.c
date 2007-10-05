@@ -49,8 +49,6 @@ extern CARD8       vclk28;
 extern CARD8       GR3CE_45;
 extern CARD8       GR3CE_45_SingleView;
 
-extern CARD8       value[23];
-
 
 /*
  * Definition of video mode refresh rate (!!! CAN NOT BE MODIFIED !!!).
@@ -850,6 +848,8 @@ void XG47BiosValueInit(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
     CARD16      engineClock, memClock;
+    CARD8       value[23];
+
 
     /*
      * Default Display Device Info
