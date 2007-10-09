@@ -149,11 +149,11 @@ void XG47AdjustFrame(int scrnIndex, int x, int y, int flags)
  */
 void XG47GetFramebufferSize(XGIPtr pXGI)
 {
-    /* See documentation on page 9-8 of "Volari XP10 non-3D SPG v1.0.pdf"
+    /* See documentation on page 9-17 of "Volari XP10 non-3D SPG v1.0.pdf"
      */
     const uint8_t biascntl = IN3X5B(0x60);
     static const unsigned s[8] = {
-	256, 128, 64, 32, 16, 0, 0, 0
+        256, 128, 64, 32, 16, 0, 0, 0
     };
 
 
