@@ -1509,7 +1509,7 @@ static Bool XGIPreInitMemory(ScrnInfoPtr pScrn)
         from = X_PROBED;
     }
 
-    xf86DrvMsg(pScrn->scrnIndex, from, "VideoRAM: %x KByte\n",
+    xf86DrvMsg(pScrn->scrnIndex, from, "VideoRAM: %u KByte\n",
                pScrn->videoRam);
 
     /* memory clock */
