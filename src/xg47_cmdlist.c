@@ -31,6 +31,7 @@
 
 #include "xf86.h"
 #include "xgi.h"
+#include "xgi_regs.h"
 #include "xg47_regs.h"
 #include "xgi_driver.h"
 #include "xg47_cmdlist.h"
@@ -240,8 +241,12 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, unsigned int req_size)
 
 
     /* Prepare next begin */
-    memcpy(pCmdList->current.end, s_emptyBegin, sizeof(s_emptyBegin));
-    pCmdList->current.end += AGPCMDLIST_BEGIN_SIZE;
+    pCmdList->current.end[0] = BE_SWAP32(s_emptyBegin[0]);
+    pCmdList->current.end[1] = BE_SWAP32(s_emptyBegin[1]);
+    pCmdList->current.end[2] = BE_SWAP32(s_emptyBegin[2]);
+    pCmdList->current.end[3] = BE_SWAP32(s_emptyBegin[3]);
+    pCmdList->current.end += 4;
+
     pCmdList->current.data_count = AGPCMDLIST_BEGIN_SIZE;
     pCmdList->current.type = BTYPE_2D;
     pCmdList->_bunch[0] = 0x7f000000;
@@ -269,10 +274,10 @@ void emit_bunch(struct xg47_CmdList *pCmdList)
     /* Copy the commands from _bunch to the command buffer and advance the
      * command buffer write pointer.
      */
-    pCmdList->current.end[0] = pCmdList->_bunch[0];
-    pCmdList->current.end[1] = pCmdList->_bunch[1];
-    pCmdList->current.end[2] = pCmdList->_bunch[2];
-    pCmdList->current.end[3] = pCmdList->_bunch[3];
+    pCmdList->current.end[0] = BE_SWAP32(pCmdList->_bunch[0]);
+    pCmdList->current.end[1] = BE_SWAP32(pCmdList->_bunch[1]);
+    pCmdList->current.end[2] = BE_SWAP32(pCmdList->_bunch[2]);
+    pCmdList->current.end[3] = BE_SWAP32(pCmdList->_bunch[3]);
     pCmdList->current.end += 4;
 
     /* Reset _bunch.
