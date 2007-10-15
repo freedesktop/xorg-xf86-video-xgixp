@@ -404,14 +404,14 @@ void XG47ModeRestore(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg)
 
 void XG47SetCRTCViewStride(ScrnInfoPtr pScrn)
 {
-    XGIPtr          pXGI = XGIPTR(pScrn);
-    unsigned long   screenStride = 0;
-
-    /* displayWidth * BPP / 8 */
-    screenStride = ((pScrn->displayWidth * (pScrn->bitsPerPixel >> 3)) >> 3);
-
-    OUT3X5B(0x13, (CARD8) screenStride);
-    OUT3X5B(0x8B, (IN3X5B(0x8B) & 0xC0) | (CARD8)((screenStride >> 8) & 0x3F));
+    XGIPtr pXGI = XGIPTR(pScrn);
+ 
+    /* display width * bytes-per-pixel / 8 */
+    const unsigned stride =
+        (pScrn->displayWidth * (pScrn->bitsPerPixel >> 3)) >> 3;
+ 
+    OUT3X5B(0x13, stride);
+    OUT3X5B(0x8B, (IN3X5B(0x8B) & 0xC0) | ((stride >> 8) & 0x3F));
 }
 
 void XG47SetCRTCViewBaseAddr(ScrnInfoPtr pScrn, unsigned long startAddr)
