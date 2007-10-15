@@ -38,36 +38,49 @@
 #include "xgi_misc.h"
 #include "xgi_debug.h"
 
+/**
+ * Track a batch of commands to be sent to hardware.
+ */
 struct xg47_batch {
-    enum xgi_batch_type type;
-    unsigned int data_count;        /* DWORDs */
-    unsigned int request_size;      /* DWORDs */
-    uint32_t *  begin;              /* The begin of current batch. */
-    uint32_t *  data_begin;         /* The begin of data */
-    uint32_t *  end;                /* current writing ptr */
+    enum xgi_batch_type type;   /**< Command engine to receive commands. */
+    unsigned int request_size;  /**< Number of 32-bit words requested for this
+				 * batch. 
+				 */
+    uint32_t *  begin;          /**< Pointer to first command of batch. */
+    uint32_t *  end;            /**< Pointer for writing next coomand */
 };
 
+
+/**
+ * Track buffer allocated from DRM for sending commands to hardware.
+ */
 struct xg47_buffer {
-    uint32_t *    ptr;
-    uint32_t      hw_addr;
-    unsigned long bus_addr;
-    unsigned int  size;            /* DWORDs */
+    uint32_t *    ptr;          /**< CPU pointer to buffer base. */
+    uint32_t      hw_addr;      /**< Buffer base address from hardware point
+				 * of view. 
+				 */
+    unsigned long bus_addr;     /**< Handle used to release buffer. */
+    unsigned int  size;         /**< Size of buffer in 32-bit words. */
 };
 
 struct xg47_CmdList
 {
-    struct xg47_batch current;
-    struct xg47_batch previous;
+    struct xg47_batch current;  /**< Active command buffer. */
+    struct xg47_batch previous; /**< Previous buffer sent to hardware. */
+    struct xg47_buffer command; /**< Memory allocated from DRM. */
 
-    unsigned int _sendDataLength;            /* record the filled data size */
+    /**
+     * \name 2D Command bunch
+     * 
+     * Buffer indiviual 2D command register writes.
+     */
+    /*@{*/
+    unsigned bunch_count;       /**< Number of commands pending in \c bunch. */
+    uint32_t bunch[4];          /**< Register write data. */
+    /*@}*/
 
-    struct xg47_buffer command;
 
-    /* 2d cmd holder */
-    uint32_t _bunch[4];
-
-    /* fd number */
-    int		_fd;
+    int		_fd;            /**< DRM file handle. */
     
     struct _drmFence  top_fence;
     int top_fence_set;
@@ -154,13 +167,12 @@ void xg47_Reset(struct xg47_CmdList *s_pCmdList)
 {
     s_pCmdList->previous.begin = s_pCmdList->command.ptr;
     s_pCmdList->previous.end = s_pCmdList->command.ptr;
-    s_pCmdList->_sendDataLength = 0;
     s_pCmdList->current.end = 0;
 }
 
 /* Implementation Part*/
-static int submit2DBatch(struct xg47_CmdList * pCmdList);
-static void sendRemainder2DCommand(struct xg47_CmdList * pCmdList);
+static void emit_bunch(struct xg47_CmdList *pCmdList);
+static void reset_bunch(struct xg47_CmdList *pCmdList);
 
 #ifdef DUMP_COMMAND_BUFFER
 static void dumpCommandBuffer(struct xg47_CmdList * pCmdList);
@@ -238,58 +250,64 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, unsigned int req_size)
     pCmdList->current.begin = begin_cmd;
     pCmdList->current.end = pCmdList->current.begin;
     pCmdList->current.request_size = size;
+    pCmdList->current.type = BTYPE_2D;
 
 
     /* Prepare next begin */
-    pCmdList->current.end[0] = BE_SWAP32(s_emptyBegin[0]);
-    pCmdList->current.end[1] = BE_SWAP32(s_emptyBegin[1]);
-    pCmdList->current.end[2] = BE_SWAP32(s_emptyBegin[2]);
-    pCmdList->current.end[3] = BE_SWAP32(s_emptyBegin[3]);
-    pCmdList->current.end += 4;
+    xg47_EmitRawCommand(pCmdList, s_emptyBegin);
+    reset_bunch(pCmdList);
 
-    pCmdList->current.data_count = AGPCMDLIST_BEGIN_SIZE;
-    pCmdList->current.type = BTYPE_2D;
-    pCmdList->_bunch[0] = 0x7f000000;
-    pCmdList->_bunch[1] = 0x00000000;
-    pCmdList->_bunch[2] = 0x00000000;
-    pCmdList->_bunch[3] = 0x00000000;
 
     XGIDebug(DBG_CMDLIST, "[DEBUG] Leave beginCmdList.\n");
     return 1;
 }
 
 
-void xg47_EndCmdList(struct xg47_CmdList *pCmdList)
+/**
+ * Copy raw command data into the command buffer.
+ *
+ * \param pCmdList  Command list control structure.
+ * \param cmd       Pointer to 4 32-bit commands.
+ *
+ * \note
+ * This function performs byte-swapping on each 32-bit value on big-endian
+ * architectures.
+ */
+void xg47_EmitRawCommand(struct xg47_CmdList *pCmdList, const uint32_t *cmd)
 {
-    XGIDebug(DBG_FUNCTION,"[DBG-Jong] endCmdList-1\n");
-    sendRemainder2DCommand(pCmdList);
+    pCmdList->current.end[0] = BE_SWAP32(cmd[0]);
+    pCmdList->current.end[1] = BE_SWAP32(cmd[1]);
+    pCmdList->current.end[2] = BE_SWAP32(cmd[2]);
+    pCmdList->current.end[3] = BE_SWAP32(cmd[3]);
+    pCmdList->current.end += 4;
+}
 
-    XGIDebug(DBG_FUNCTION,"[DBG-Jong] endCmdList-2\n");
-    submit2DBatch(pCmdList);
+
+/**
+ * Reset the 2D register-write data.
+ *
+ * \param pCmdList  Command list control structure.
+ */
+void reset_bunch(struct xg47_CmdList *pCmdList)
+{
+    pCmdList->bunch[0] = 0x7f000000;
+    pCmdList->bunch[1] = 0x00000000;
+    pCmdList->bunch[2] = 0x00000000;
+    pCmdList->bunch[3] = 0x00000000;
+    pCmdList->bunch_count = 0;
 }
 
 
 void emit_bunch(struct xg47_CmdList *pCmdList)
 {
-    /* Copy the commands from _bunch to the command buffer and advance the
+    /* Copy the commands from bunch to the command buffer and advance the
      * command buffer write pointer.
      */
-    pCmdList->current.end[0] = BE_SWAP32(pCmdList->_bunch[0]);
-    pCmdList->current.end[1] = BE_SWAP32(pCmdList->_bunch[1]);
-    pCmdList->current.end[2] = BE_SWAP32(pCmdList->_bunch[2]);
-    pCmdList->current.end[3] = BE_SWAP32(pCmdList->_bunch[3]);
-    pCmdList->current.end += 4;
+    xg47_EmitRawCommand(pCmdList, pCmdList->bunch);
 
-    /* Reset _bunch.
+    /* Reset bunch.
      */
-    pCmdList->_bunch[0] = 0x7f000000;
-    pCmdList->_bunch[1] = 0x00000000;
-    pCmdList->_bunch[2] = 0x00000000;
-    pCmdList->_bunch[3] = 0x00000000;
-
-    /* Advance data_count to the next 128-bit boundary.
-     */
-    pCmdList->current.data_count = (pCmdList->current.data_count + 3) & ~3;
+    reset_bunch(pCmdList);
 }
 
 
@@ -297,24 +315,15 @@ void xg47_SendGECommand(struct xg47_CmdList *pCmdList, uint32_t addr,
                         uint32_t cmd)
 {
     /* Encrypt the command for AGP. */
-    const unsigned int shift = (pCmdList->current.data_count++) & 0x00000003;
+    const unsigned shift = pCmdList->bunch_count;
     const uint32_t reg = (addr & 0x00ff);
 
-    pCmdList->_bunch[0] |= (reg | 1) << (shift << 3);
-    pCmdList->_bunch[shift + 1]  = cmd;
+    pCmdList->bunch[0] |= (reg | 1) << (shift << 3);
+    pCmdList->bunch[shift + 1]  = cmd;
 
     /* Bunch finished, Send to HW. */
-    if (2 == shift) {
-        emit_bunch(pCmdList);
-    }
-}
-
-
-static void sendRemainder2DCommand(struct xg47_CmdList * pCmdList)
-{
-    /* If there are any pending commands in _bunch, emit the whole batch.
-     */
-    if (0x7f000000 != pCmdList->_bunch[0]) {
+    pCmdList->bunch_count++;
+    if (pCmdList->bunch_count == 3) {
         emit_bunch(pCmdList);
     }
 }
@@ -343,16 +352,28 @@ void dumpCommandBuffer(struct xg47_CmdList * pCmdList)
 #endif /* DUMP_COMMAND_BUFFER */
 
 
-static int submit2DBatch(struct xg47_CmdList * pCmdList)
+void xg47_EndCmdList(struct xg47_CmdList *pCmdList)
 {
     uint32_t beginHWAddr;
     struct xgi_cmd_info submitInfo;
     int err;
+    size_t data_count;
 
     XGIDebug(DBG_FUNCTION, "%s: enter\n", __func__);
 
-    if (0 == pCmdList->current.data_count) {
-        return 0;
+    /* If there are any pending commands in bunch, emit the whole batch.
+     */
+    if (pCmdList->bunch_count != 0) {
+        emit_bunch(pCmdList);
+    }
+
+
+    /* Calculate data counter *after* flushing the 2D register-write batch as
+     * the flush may change the data count.
+     */
+    data_count = pCmdList->current.end - pCmdList->current.begin;
+    if (data_count == 0) {
+        return;
     }
 
     beginHWAddr = pCmdList->command.hw_addr
@@ -361,7 +382,7 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
 
     submitInfo.type = pCmdList->current.type;
     submitInfo.hw_addr = beginHWAddr;
-    submitInfo.size = pCmdList->current.data_count;
+    submitInfo.size = data_count;
 
     XGIDebug(DBG_FUNCTION, "%s: calling ioctl XGI_IOCTL_SUBMIT_CMDLIST\n", 
              __func__);
@@ -387,12 +408,11 @@ static int submit2DBatch(struct xg47_CmdList * pCmdList)
             drmFenceEmit(pCmdList->_fd, 0, & pCmdList->top_fence, 0);
             pCmdList->top_fence_set = 1;
         }
-    }
-    else {
+    } else {
         ErrorF("[2D] ioctl -- cmdList error (%d, %s)!\n",
                -err, strerror(-err));
     }
 
     XGIDebug(DBG_FUNCTION, "%s: exit\n", __func__);
-    return err;
+    return;
 }
