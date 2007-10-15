@@ -2218,18 +2218,6 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 
     /* Override the default mask/offset settings */
     if (pScrn->bitsPerPixel > 8) {
-#if X_BYTE_ORDER == X_BIG_ENDIAN
-	if (pScrn->bitsPerPixel == 32) {
-	    pScrn->offset.red = 24 - pScrn->offset.red;
-	    pScrn->offset.green = 24 - pScrn->offset.green;
-	    pScrn->offset.blue = 24 - pScrn->offset.blue;
-
-	    pScrn->mask.red = (0x0ff << pScrn->offset.red);
-	    pScrn->mask.green = (0x0ff << pScrn->offset.green);
-	    pScrn->mask.blue = (0x0ff << pScrn->offset.blue);
-	}
-#endif
-
         /* Fixup RGB ordering */
         pVisual = pScreen->visuals + pScreen->numVisuals;
         while (--pVisual >= pScreen->visuals) {
