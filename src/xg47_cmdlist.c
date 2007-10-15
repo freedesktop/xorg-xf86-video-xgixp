@@ -376,6 +376,12 @@ void xg47_EndCmdList(struct xg47_CmdList *pCmdList)
         return;
     }
 
+    if (data_count > pCmdList->current.request_size) {
+        ErrorF("Too much data written written to command buffer! %u vs. %u\n",
+	       data_count, pCmdList->current.request_size);
+    }
+
+
     beginHWAddr = pCmdList->command.hw_addr
 	+ ((intptr_t) pCmdList->current.begin
 	   - (intptr_t) pCmdList->command.ptr);
