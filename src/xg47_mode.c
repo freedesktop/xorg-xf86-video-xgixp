@@ -349,6 +349,7 @@ unsigned int XG47DDCRead(ScrnInfoPtr pScrn)
 }
 
 
+#ifndef NATIVE_MODE_SETTING
 /**
  * Save the initial screen mode when starting the X server
  */
@@ -401,6 +402,7 @@ void XG47ModeRestore(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg)
         xf86ExecX86int10(pXGI->pInt10);
     }
 }
+#endif
 
 void XG47SetCRTCViewStride(ScrnInfoPtr pScrn)
 {
@@ -414,6 +416,7 @@ void XG47SetCRTCViewStride(ScrnInfoPtr pScrn)
     OUT3X5B(0x8B, (IN3X5B(0x8B) & 0xC0) | ((stride >> 8) & 0x3F));
 }
 
+#ifndef NATIVE_MODE_SETTING
 void XG47SetCRTCViewBaseAddr(ScrnInfoPtr pScrn, unsigned long startAddr)
 {
     XGIPtr       pXGI = XGIPTR(pScrn);
@@ -564,6 +567,7 @@ Bool XG47ModeInit(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
 
     return TRUE;
 }
+#endif
 
 
 /**
@@ -574,6 +578,7 @@ Bool XG47ModeInit(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
 int XG47ValidMode(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
 {
     XGIPtr pXGI = XGIPTR(pScrn);
+#ifndef NATIVE_MODE_SETTING
     XGIAskModeRec askMode[2];
     ModeStatus status;
 
@@ -598,6 +603,7 @@ int XG47ValidMode(ScrnInfoPtr pScrn, DisplayModePtr dispMode)
             return MODE_PANEL;
         }
     }
+#endif
 
     /* judge the mode on CRT, DVI */
     if ((pXGI->displayDevice & ST_DISP_CRT) 

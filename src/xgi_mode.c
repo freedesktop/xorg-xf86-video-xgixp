@@ -36,6 +36,7 @@
 #include "xgi_mode.h"
 #include "xg47_mode.h"
 
+#ifndef NATIVE_MODE_SETTING
 void XGIModeSave(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg)
 {
     XGIPtr  pXGI = XGIPTR(pScrn);
@@ -63,6 +64,7 @@ void XGIModeRestore(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg)
         break;
     }
 }
+#endif
 
 void XGILoadPalette(ScrnInfoPtr pScrn, int numColors, int *indicies,
                     LOCO *colors, VisualPtr pVisual)
