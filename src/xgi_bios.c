@@ -183,6 +183,7 @@ Bool XGICheckModeSupported(XGIPtr pXGI,
     return FALSE;
 }
 
+#ifndef NATIVE_MODE_SETTING
 /*
  *
  */
@@ -776,6 +777,7 @@ void XGICloseSecondaryView(XGIPtr pXGI)
         }
     }
 }
+#endif
 
 /*
  * from bios dll: initial.c
@@ -790,6 +792,7 @@ unsigned XGIBiosCalculateClock(XGIPtr pXGI, unsigned low, unsigned high)
     return ((1431818 * (N + 8)) / ((M + 1) << K)) / 100000;
 }
 
+#ifndef NATIVE_MODE_SETTING
 /*
  * below is bios call
  */
@@ -804,6 +807,7 @@ static Bool XGIBiosDllPunt(XGIPtr pXGI, unsigned long cmd,
 
     return (*pXGI->pBiosDll->biosSpecialFeature)(pScrn, cmd, pInBuf);
 }
+#endif
 
 /*
  * Init bios dll
@@ -813,12 +817,16 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
     XGIPtr  pXGI = XGIPTR(pScrn);
     CARD8   idxbak;
 
+    (void) memset(pXGI->pBiosDll, 0, sizeof(*pXGI->pBiosDll));
+
     switch (pXGI->chipset) {
     case XG47:
+#ifndef NATIVE_MODE_SETTING
         pXGI->pBiosDll->biosValidMode           = XG47BiosValidMode;
         pXGI->pBiosDll->biosModeInit            = XG47BiosModeInit;
         pXGI->pBiosDll->biosSpecialFeature      = XG47BiosSpecialFeature;
         pXGI->pBiosDll->biosValueInit           = XG47BiosValueInit;
+#endif
 
         pXGI->lcdRefRate = 0x003C;    /* 60Hz */
 
@@ -834,11 +842,9 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
         XG47GetFramebufferSize(pXGI);
         break;
     default:
-        pXGI->pBiosDll->biosValidMode           = NULL;
-        pXGI->pBiosDll->biosModeInit            = NULL;
-        pXGI->pBiosDll->biosSpecialFeature      = NULL;
-        pXGI->pBiosDll->biosValueInit           = NULL;
+#ifndef NATIVE_MODE_SETTING
         XGIBiosGetFramebufferSize(pXGI);
+#endif
         break;
     }
 
@@ -846,6 +852,7 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
     /* check BIOS capability */
     pXGI->biosCapability = 0;
 
+#ifndef NATIVE_MODE_SETTING
     pXGI->pInt10->ax = 0x1290;
     pXGI->pInt10->bx = 0x0014;
     pXGI->pInt10->dx = 0;
@@ -882,11 +889,15 @@ Bool XGIBiosDllInit(ScrnInfoPtr pScrn)
     XGIGetFlatPanelSize(pXGI);
 
     XGIBiosValueInit(pXGI);
+#else
+    pXGI->dtvInfo = 0xFFFFFFFF;
+#endif
 
     return TRUE;
 }
 
 
+#ifndef NATIVE_MODE_SETTING
 /* Jong 1109/2006; pMode[]->condition indicate which device needs to be open */
 Bool XGIBiosModeInit(ScrnInfoPtr pScrn, XGIAskModePtr pMode, Bool dualView)
 {
@@ -955,3 +966,4 @@ Bool XGIBiosOpenAllDevice(XGIPtr pXGI, unsigned long* pDevices)
 {
     return XGIBiosDllPunt(pXGI, OPEN_ALL_DEVICE, pDevices);
 }
+#endif
