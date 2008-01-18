@@ -196,7 +196,8 @@ uint32_t s_emptyBegin[AGPCMDLIST_BEGIN_SIZE] =
  * \returns
  * 1 -- success 0 -- false
  */
-int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, unsigned int req_size)
+int xg47_BeginCmdListType(struct xg47_CmdList *pCmdList, unsigned req_size,
+                          unsigned type)
 {
     /* Pad the commmand list to 128-bit alignment and add the begin header.
      */
@@ -250,7 +251,7 @@ int xg47_BeginCmdList(struct xg47_CmdList *pCmdList, unsigned int req_size)
     pCmdList->current.begin = begin_cmd;
     pCmdList->current.end = pCmdList->current.begin;
     pCmdList->current.request_size = size;
-    pCmdList->current.type = BTYPE_2D;
+    pCmdList->current.type = type;
 
 
     /* Prepare next begin */

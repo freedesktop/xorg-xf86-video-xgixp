@@ -31,7 +31,8 @@
 struct xg47_CmdList;
 
 /* cmdList size in dword */
-extern int  xg47_BeginCmdList(struct xg47_CmdList *, unsigned int size);
+extern int  xg47_BeginCmdListType(struct xg47_CmdList *, unsigned size,
+    unsigned type);
 extern void xg47_EndCmdList(struct xg47_CmdList *);
 extern void xg47_SendGECommand(struct xg47_CmdList *, uint32_t addr,
     uint32_t cmd);
@@ -42,6 +43,8 @@ extern struct xg47_CmdList *xg47_Initialize(ScrnInfoPtr pScrn,
     unsigned int cmdBufSize, int fd);
 extern void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList);
 extern void xg47_Reset(struct xg47_CmdList *);
+
+#define xg47_BeginCmdList(l, s) xg47_BeginCmdListType(l, s, BTYPE_2D)
 
 typedef enum
 {
