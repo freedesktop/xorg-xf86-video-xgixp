@@ -41,12 +41,14 @@ xgixp_drv_la_SOURCES = \
 	xg47_misc.h \
 	xg47_mode.c \
 	xg47_mode.h \
+	xg47_regs.h \
 	xg47_tv.c \
 	xg47_tv.h \
 	xg47_video.c \
 	xg47_video.h \
 	xg47_videohw.c \
 	xg47_videohw.h \
+	xgi.h \
 	xgi_bios.c \
 	xgi_bios.h \
 	xgi_cursor.c \
@@ -54,6 +56,7 @@ xgixp_drv_la_SOURCES = \
 	xgi_dga.c \
 	xgi_dga.h \
 	xgi_dri.c \
+	xgi_dri.h \
 	xgi_driver.c \
 	xgi_driver.h \
 	xgi_hwmc.c \
