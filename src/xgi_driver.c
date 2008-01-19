@@ -89,6 +89,10 @@
 #include "xg47_regs.h"
 #include "xg47_cmdlist.h"
 
+extern void XG47_NativeModeSave(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg);
+extern void XG47_NativeModeRestore(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg);
+extern Bool XG47_NativeModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode);
+
 /* Jong 09/20/2006; support dual view */
 extern int		g_DualViewMode;
 
@@ -1015,9 +1019,11 @@ static Bool XGIPreInitInt10(ScrnInfoPtr pScrn)
 
     xf86LoaderReqSymLists(vbeSymbols, int10Symbols, NULL);
 
+#ifndef NATIVE_MODE_SETTING
     /* int10 is broken on some Alphas */
     pXGI->pVbe = VBEInit(NULL, pXGI->pEnt->index);
     pXGI->pInt10 = pXGI->pVbe->pInt10;
+#endif /* NATIVE_MODE_SETTING */
 
 
 #if DBG_FLOW
@@ -1942,7 +1948,11 @@ static void XGISave(ScrnInfoPtr pScrn)
     vgaHWSave(pScrn, pVgaReg, VGA_SR_MODE | VGA_SR_CMAP |
                               (IsPrimaryCard ? VGA_SR_FONTS : 0));
 
+#ifndef NATIVE_MODE_SETTING
     XGIModeSave(pScrn, pXGIReg);
+#else
+    XG47_NativeModeSave(pScrn, pXGIReg);
+#endif
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -1968,7 +1978,11 @@ static void XGIRestore(ScrnInfoPtr pScrn)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
+#ifndef NATIVE_MODE_SETTING
     XGIModeRestore(pScrn, pXGIReg);
+#else
+    XG47_NativeModeRestore(pScrn, pXGIReg);
+#endif
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -2835,16 +2849,22 @@ static int XGIValidMode(int scrnIndex, DisplayModePtr mode, Bool verbose, int fl
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
+#ifndef NATIVE_MODE_SETTING
     if (!pXGI->pInt10) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
                    "have not loaded int10 module successfully!\n");
         return MODE_ERROR;
     }
+#endif
 
     switch(pXGI->chipset)
     {
     case XG47:
         ret = XG47ValidMode(pScrn, mode);
+
+        /* This driver only uses the programmable clock mode.
+         */
+        mode->ClockIndex = 0x02;
         break;
     default:
         break;
@@ -2875,7 +2895,11 @@ static Bool XGIModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode)
     switch(pXGI->chipset)
     {
     case XG47:
+#ifndef NATIVE_MODE_SETTING
         ret = XG47ModeInit(pScrn, mode);
+#else
+	ret = XG47_NativeModeInit(pScrn, mode);
+#endif
         break;
     default:
         break;
