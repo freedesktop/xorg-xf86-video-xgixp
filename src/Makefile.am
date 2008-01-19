@@ -41,6 +41,7 @@ xgixp_drv_la_SOURCES = \
 	xg47_misc.h \
 	xg47_mode.c \
 	xg47_mode.h \
+	xg47_native_mode.c \
 	xg47_regs.h \
 	xg47_tv.c \
 	xg47_tv.h \

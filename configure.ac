@@ -47,6 +47,12 @@ AC_ARG_WITH(xorg-module-dir,
             [moduledir="$withval"],
             [moduledir="$libdir/xorg/modules"])
 
+AC_ARG_WITH(native-mode-setting,
+            AC_HELP_STRING([--with-native-mode-setting],
+                           [Use native mode setting instead of BIOS calls]),
+            [native_mode_setting="yes"],
+            [native_mode_setting="no"])
+
 # Checks for extensions
 XORG_DRIVER_CHECK_EXT(RANDR, randrproto)
 XORG_DRIVER_CHECK_EXT(RENDER, renderproto)
@@ -72,6 +78,10 @@ AC_CHECK_FILE([${sdkdir}/dristruct.h],
 
 AC_DEFINE(XF86DRI,1,[Enable DRI driver support])
 AC_DEFINE(XF86DRI_DEVEL,1,[Enable developmental DRI driver support])
+
+if test "x$native_mode_setting" = xyes; then
+	CFLAGS="$CFLAGS -DNATIVE_MODE_SETTING"
+fi
 
 save_CFLAGS="$CFLAGS"
 CFLAGS="$XORG_CFLAGS"
