@@ -288,6 +288,10 @@ typedef struct {
     unsigned char regsDAC[0x01];
     unsigned char regsClock[0x03];
     unsigned char dacRegs[0x300];
+    unsigned char regs3C6;
+    unsigned char regs3D8;
+    unsigned char regs3D9;
+    unsigned char regs3DB;
 } XGIRegRec, *XGIRegPtr;
 
 /* modeNo:
