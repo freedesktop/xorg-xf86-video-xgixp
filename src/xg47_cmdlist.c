@@ -146,8 +146,8 @@ void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList)
             drmFenceWait(s_pCmdList->_fd, 0, & s_pCmdList->bottom_fence, 0);
         }
 
-        drmFenceDestroy(s_pCmdList->_fd, & s_pCmdList->top_fence);
-        drmFenceDestroy(s_pCmdList->_fd, & s_pCmdList->bottom_fence);
+        drmFenceUnreference(s_pCmdList->_fd, & s_pCmdList->top_fence);
+        drmFenceUnreference(s_pCmdList->_fd, & s_pCmdList->bottom_fence);
 
         if (s_pCmdList->command.bus_addr) {
             XGIDebug(DBG_CMDLIST, "[DBG Free]cmdBuf VAddr=0x%x  HAddr=0x%x\n",
