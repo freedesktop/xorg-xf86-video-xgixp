@@ -88,6 +88,7 @@
 #include "xg47_cursor.h"
 #include "xg47_regs.h"
 #include "xg47_cmdlist.h"
+#include "xg47_i2c.h"
 
 extern void XG47_NativeModeSave(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg);
 extern void XG47_NativeModeRestore(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg);
@@ -1151,69 +1152,6 @@ static Bool XGIPreInitGamma(ScrnInfoPtr pScrn)
     return TRUE;
 }
 
-/*
- * This is called by XGIPreInit to initialize I2C bus.
- */
-static void XGII2CGetBits(I2CBusPtr b, int *clock, int *data)
-{
-    XGIPtr pXGI = b->DriverPrivate.ptr;
-    const unsigned val = IN3X5B(0x37);
-
-    /* While bit-1 is used to write the first set clock, bit-6 is used to
-     * read it.  See page 9-10 of "Volari XP10 non-3D SPG v1.0.pdf".
-     */
-    *clock = (val & 0x40) != 0;
-    *data  = (val & 0x01) != 0;
-}
-
-static void XGII2CPutBits(I2CBusPtr b, int clock, int data)
-{
-    XGIPtr pXGI = b->DriverPrivate.ptr;
-    /* Enable I2C write (bit-3) on first set I2C (bit-2).
-     */
-    unsigned val = (1U << 3) | (1U << 2);
-
-    if (clock) {
-        val |= 2;
-    }
-
-    if (data) {
-        val |= 1;
-    }
-
-    OUT3X5B(0x37, val);
-}
-
-static Bool XGIPreInitI2c(ScrnInfoPtr pScrn)
-{
-    XGIPtr pXGI = XGIPTR(pScrn);
-
-
-    if (xf86LoadSubModule(pScrn, "i2c")) {
-        xf86LoaderReqSymLists(i2cSymbols, NULL);
-    } else {
-        xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-                   "Failed to load i2c module\n");
-        return FALSE;
-    }
-
-    pXGI->pI2C = xf86CreateI2CBusRec();
-    if (pXGI->pI2C != NULL) {
-        pXGI->pI2C->BusName = "DDC";
-        pXGI->pI2C->scrnIndex = pScrn->scrnIndex;
-        pXGI->pI2C->I2CPutBits = XGII2CPutBits;
-        pXGI->pI2C->I2CGetBits = XGII2CGetBits;
-        pXGI->pI2C->AcknTimeout = 5;
-        pXGI->pI2C->DriverPrivate.ptr = pXGI;
-
-        if (!xf86I2CBusInit(pXGI->pI2C)) {
-            xf86DestroyI2CBusRec(pXGI->pI2C, TRUE, TRUE);
-            pXGI->pI2C = NULL;
-        }
-    }
-
-    return (pXGI->pI2C != NULL);
-}
 
 static Bool XGIPreInitLcdSize(ScrnInfoPtr pScrn)
 {
@@ -1629,10 +1567,17 @@ xf86MonPtr get_configured_monitor(ScrnInfoPtr pScrn, int index)
     xf86MonPtr pMon = NULL;
 
 
-    if (!XGIPreInitI2c(pScrn)) {
+    if (xf86LoadSubModule(pScrn, "i2c")) {
+        xf86LoaderReqSymLists(i2cSymbols, NULL);
+	if (!xg47_InitI2C(pScrn)) {
+	    xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
+		       "I2C initialization failed!\n");
+	}
+    } else {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-                   "I2C initialization failed!\n");
+                   "Failed to load i2c module\n");
     }
+
 
     if (!xf86LoadSubModule(pScrn, "ddc")) {
         return NULL;

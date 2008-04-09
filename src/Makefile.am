@@ -37,6 +37,8 @@ xgixp_drv_la_SOURCES = \
 	xg47_cmdlist.h \
 	xg47_cursor.c \
 	xg47_cursor.h \
+	xg47_i2c.c \
+	xg47_i2c.h \
 	xg47_misc.c \
 	xg47_misc.h \
 	xg47_mode.c \
