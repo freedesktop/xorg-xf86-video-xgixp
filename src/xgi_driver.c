@@ -1379,19 +1379,14 @@ static Bool XGIPreInitAccel(ScrnInfoPtr pScrn)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-	PDEBUG(ErrorF("Jong-07052006-before xf86ReturnOptValBool()\n"));
-    if (!xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_NOACCEL, FALSE))
-    {
-		PDEBUG(ErrorF("Jong-07052006-before xf86LoadSubModule('xaa')\n"));
-
-		/* Jong 09/16/2006; will cause segmentation fault when loading at second time */
-		/* FirstView =0 when single view */
-		/* if(pXGI->FirstView) */
-		if(!g_DualViewMode || (pXGI->FirstView) )
-			if (!xf86LoadSubModule(pScrn, "xaa")) return FALSE;
+    if (!xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_NOACCEL, FALSE)) {
+        /* Will cause segmentation fault when loading at second time. 
+         * FirstView = 0 when in single view.
+         */
+        if (!g_DualViewMode || pXGI->FirstView) 
+            if (!xf86LoadSubModule(pScrn, "xaa")) return FALSE;
 
         xf86LoaderReqSymLists(xaaSymbols, NULL);
-		PDEBUG(ErrorF("Jong-07052006-After xf86LoaderReqSymLists(xaaSymbols)\n"));
     }
 
 #if DBG_FLOW
@@ -1615,10 +1610,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-	/* Jong 11/07/2006; test */
-    /* OUTB(XGI_REG_GRX, 0x5D);
-    OUTB(XGI_REG_GRX+1, 0x29); */
-
     /* Check the number of entities registered for the screen against the expected
      * number (most drivers expect only one).The entity information for
      * each of them should be retrieved by calling xf86GetEntityInfo()).
@@ -1649,18 +1640,12 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
 /* Jong 09/06/2006; support dual view */
 /* pXGI->pEntityPrivate hasn't been defined */
 #ifdef XGIDUALVIEW
-    if(xf86IsEntityShared(pScrn->entityList[0])) 
-	{
-		pXGI->pEntityPrivate = xf86GetEntityPrivate(pScrn->entityList[0], XGIEntityIndex)->ptr;
+    if (xf86IsEntityShared(pScrn->entityList[0])) {
+        pXGI->pEntityPrivate = xf86GetEntityPrivate(pScrn->entityList[0], XGIEntityIndex)->ptr;
 
-		if(!xf86IsPrimInitDone(pScrn->entityList[0])) 
-		{
-			pXGI->FirstView = TRUE; /* Jong 09/15/2006; assume it's DVI */
-		}
-		else
-		{
-			pXGI->FirstView = FALSE; /* Jong 09/15/2006; assume it's CRT */
-		}
+        /* If PrimInit is not done, assume DVI.  Otherwise assume CRT.
+         */
+        pXGI->FirstView = (!xf86IsPrimInitDone(pScrn->entityList[0]));
     }
 #endif
 
@@ -1953,28 +1938,9 @@ Bool XGIFBManagerInit(ScreenPtr pScreen)
 
     temp = (pXGI->fbSize - XGI_CURSOR_BUF_SIZE) / (pScrn->displayWidth * pScrn->bitsPerPixel / 8);
 
-    if (temp > 2047)
-    {
-        availFBArea.y2 = 2047;
-    }
-    else
-    {
-        availFBArea.y2 = temp;
-    }
+    availFBArea.y2 = (temp > 2047) ? 2047 : temp;
 
-    /* Let 12M FB to be managed by XServer */
-/*
-    temp = FB_MANAGED_BY_X / (pScrn->displayWidth * pScrn->bitsPerPixel / 8);
 
-    if (temp > 2047)
-    {
-        availFBArea.y2 = 2048;
-    }
-    else
-    {
-        availFBArea.y2 = 2048;
-    }
-*/
     /* XAA uses FB manager for its pixmap cahe */
     ret = xf86InitFBManager(pScreen, &availFBArea);
 
@@ -2057,13 +2023,8 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
      * The ScrnInfoRec's vtSema field should be set to TRUE
      * just prior to changing the video hardware's state.
      */
-    if (pXGI->isFBDev)
-    {
-        if (!fbdevHWModeInit(pScrn, pScrn->currentMode))    goto fail;
-    }
-    else
-    {
-        if (!XGIModeInit(pScrn, pScrn->currentMode))        goto fail;
+    if (! (*pScrn->SwitchMode)(scrnIndex, pScrn->currentMode, 0)) {
+        goto fail;
     }
 
     XGISaveScreen(pScreen, SCREEN_SAVER_ON);
@@ -2206,14 +2167,6 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
         xf86DrvMsg(scrnIndex, X_INFO, "Acceleration disabled\n");
     }
 
-    /*
-     * If banking is needed, initialise an miBankInfoRec (defined in
-     * "mibank.h"), and call miInitializeBanking().
-
-    if (!miInitializeBanking(pScreen, pScrn->virtualX, pScrn->virtualY,
-                             pScrn->displayWidth, pBankInfo))
-        return FALSE;
-     */
 
     /* Set Silken Mouse */
     xf86SetSilkenMouse(pScreen);
@@ -2226,37 +2179,31 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
     miDCInitialize(pScreen, xf86GetPointerScreenFuncs());
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After miDCInitialize()\n");
 
-    if (pXGI->isHWCursor)
-    {
-        if (XGIHWCursorInit(pScreen))
-        {
+    if (pXGI->isHWCursor) {
+        if (XGIHWCursorInit(pScreen)) {
             int width, height;
 
             xf86DrvMsg(pScrn->scrnIndex, X_INFO,
                        "Using hardware cursor (scanline %d)\n",
                        (int) pXGI->cursorStart / (int) pScrn->displayWidth);
             if (xf86QueryLargestOffscreenArea(pScreen, &width, &height,
-                                              0, 0, 0))
-            {
+                                              0, 0, 0)) {
                 xf86DrvMsg(scrnIndex, X_INFO,
                            "Largest offscreen area available: %d x %d\n",
                            width, height);
             }
-        }
-        else
-        {
+        } else {
             xf86DrvMsg(scrnIndex, X_ERROR,
                        "Hardware cursor initialization failed\n");
-            xf86DrvMsg(scrnIndex, X_INFO, "Using software cursor\n");
+            pXGI->isHWCursor = FALSE;
         }
     }
-    else
-    {
+
+    if (!pXGI->isHWCursor) {
         pXGI->cursorStart = 0;
         xf86DrvMsg(scrnIndex, X_INFO, "Using software cursor\n");
     }
 
-    XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After pXGI->isHWCursor()\n");
 
     /* Colormap setup
      */
