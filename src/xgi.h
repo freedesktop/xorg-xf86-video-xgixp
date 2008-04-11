@@ -383,13 +383,6 @@ typedef enum
     DISPHEAD_WIN2 = 2
 } XGIHeadID;
 
-typedef struct {
-    int               bitsPerPixel;
-    int               bytesPerPixel;
-    int               depth;
-    int               displayWidth;
-    DisplayModePtr    mode;
-} XGIFBLayout;
 
 /* HWMC Surfaces */
 #define XGI_MAX_SURFACES        8
