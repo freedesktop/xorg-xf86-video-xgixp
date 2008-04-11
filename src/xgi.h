@@ -526,7 +526,6 @@ typedef struct {
     int                 minClock;
     int                 maxClock;
 
-    XGIFBLayout         currentLayout;
     XGIDigitalTVInfoPtr pDtvInfo;
 
     Bool                lcdActive;

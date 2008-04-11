@@ -946,10 +946,6 @@ static Bool XGIPreInitVisual(ScrnInfoPtr pScrn)
     /* Get pixmap format */
     pXGI->pix24bpp = xf86GetBppFromDepth(pScrn, pScrn->depth);
 
-    pXGI->currentLayout.bitsPerPixel = pScrn->bitsPerPixel;
-    pXGI->currentLayout.depth        = pScrn->depth;
-    pXGI->currentLayout.bytesPerPixel= pScrn->bitsPerPixel/8;
-
     /* Set the default visual. */
     if (!xf86SetDefaultVisual(pScrn, -1))   return FALSE;
 
@@ -1330,9 +1326,6 @@ static Bool XGIPreInitModes(ScrnInfoPtr pScrn)
     mod = "fb";
     if (mod && !xf86LoadSubModule(pScrn, mod)) return FALSE;
     xf86LoaderReqSymLists(fbSymbols, NULL);
-
-    pXGI->currentLayout.displayWidth = pScrn->displayWidth;
-    pXGI->currentLayout.mode = pScrn->currentMode;
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -1935,31 +1928,6 @@ static void XGIRestore(ScrnInfoPtr pScrn)
 
 }
 
-Bool XGIPutScreenInfo(ScrnInfoPtr pScrn)
-{
-#if 0
-    XGIPtr              pXGI = XGIPTR(pScrn);
-    struct xgi_screen_info    scrnInfo;
-    int                 ret;
-
-    scrnInfo.scrn_start = 0;
-    scrnInfo.scrn_xres  = pXGI->currentLayout.mode->HDisplay;
-    scrnInfo.scrn_yres  = pXGI->currentLayout.mode->VDisplay;
-    scrnInfo.scrn_bpp   = pScrn->bitsPerPixel >> 3;
-    scrnInfo.scrn_pitch = scrnInfo.scrn_xres * scrnInfo.scrn_bpp;
-
-    ret = ioctl(pXGI->fd, XGI_IOCTL_PUT_SCREEN_INFO, &scrnInfo);
-
-    if (ret < 0)
-    {
-        xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "failed to get screen info !\n");
-        return FALSE;
-    }
-#endif
-
-    return TRUE;
-}
-
 Bool XGIFBManagerInit(ScreenPtr pScreen)
 {
     ScrnInfoPtr     pScrn = xf86Screens[pScreen->myNum];
@@ -2219,7 +2187,6 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 	}
     }
 
-    XGIPutScreenInfo(pScrn);
     /* 2D accel Initialize */
     if (!pXGI->noAccel) {
         pXGI->noAccel = !XG47AccelInit(pScreen);
@@ -2841,8 +2808,6 @@ static Bool XGIModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode)
     default:
         break;
     }
-
-    pXGI->currentLayout.mode = mode;
 
 #ifdef XGI_DUMP
     XGIDumpRegisterValue(pScrn);
