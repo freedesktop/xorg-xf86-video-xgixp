@@ -398,7 +398,22 @@ static pointer XGISetup(pointer module,
          */
         isInited = TRUE;
         xf86AddDriver(&XGI, module, 1);
-        LoaderRefSymLists(vgahwSymbols, fbSymbols, i2cSymbols, ramdacSymbols,
+
+        if (!LoadSubModule(module, "fb", NULL, NULL, NULL, NULL,
+                           NULL, NULL)) {
+            return NULL;
+        }
+
+        if (!LoadSubModule(module, "vgahw", NULL, NULL, NULL, NULL,
+                           NULL, NULL)) {
+            return NULL;
+        }
+
+        LoaderReqSymLists(vgahwSymbols, fbSymbols, driSymbols, drmSymbols,
+                          NULL);
+
+
+        LoaderRefSymLists(i2cSymbols, ramdacSymbols, 
                           xaaSymbols, shadowSymbols, fbdevHWSymbols, NULL);
 
         /*
@@ -1322,11 +1337,6 @@ static Bool XGIPreInitModes(ScrnInfoPtr pScrn)
     /* Set the DPI */
     xf86SetDpi(pScrn, 0, 0);
 
-    /* Get ScreenInit function */
-    mod = "fb";
-    if (mod && !xf86LoadSubModule(pScrn, mod)) return FALSE;
-    xf86LoaderReqSymLists(fbSymbols, NULL);
-
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
@@ -1680,9 +1690,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
         return TRUE;
     }
 
-    if (!xf86LoadSubModule(pScrn, "vgahw")) return FALSE;
-    xf86LoaderReqSymLists(vgahwSymbols, NULL);
-
     if (!vgaHWGetHWRec(pScrn))
     {
         XGIFreeRec(pScrn);
@@ -2000,8 +2007,6 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 #endif
 
     XGITRACE(("XGIScreenInit %x %d\n", pScrn->memPhysBase, pScrn->fbOffset));
-
-    xf86LoaderReqSymLists(driSymbols, drmSymbols, NULL);
 
     pXGI->directRenderingEnabled = XGIDRIScreenInit(pScreen);
     if (!pXGI->directRenderingEnabled) {
