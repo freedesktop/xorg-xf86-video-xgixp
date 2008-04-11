@@ -268,14 +268,14 @@ static const char *fbdevHWSymbols[] = {
     /* colormap */
     "fbdevHWLoadPalette",
     /* ScrnInfo hooks */
-    "fbdevHWAdjustFrame",
+    "fbdevHWAdjustFrameWeak",
     "fbdevHWEnterVT",
     "fbdevHWLeaveVT",
     "fbdevHWModeInit",
     "fbdevHWRestore",
     "fbdevHWSave",
-    "fbdevHWSwitchMode",
-    "fbdevHWValidMode",
+    "fbdevHWSwitchModeWeak",
+    "fbdevHWValidModeWeak",
     "fbdevHWMapMMIO",
     "fbdevHWMapVidmem",
     "fbdevHWUnmapMMIO",
@@ -441,7 +441,7 @@ static Bool XGIPciProbe(DriverPtr drv, int entity_num,
         pScrn->PreInit       = XGIPreInit;
         pScrn->ScreenInit    = XGIScreenInit;
         pScrn->SwitchMode    = XGISwitchMode;
-        pScrn->AdjustFrame   = XGIAdjustFrame;
+        pScrn->AdjustFrame   = XG47AdjustFrame;
         pScrn->EnterVT       = XGIEnterVT;
         pScrn->LeaveVT       = XGILeaveVT;
         pScrn->FreeScreen    = XGIFreeScreen;
@@ -568,7 +568,7 @@ static Bool XGIProbe(DriverPtr drv, int flags)
                 pScrn->PreInit       = XGIPreInit;
                 pScrn->ScreenInit    = XGIScreenInit;
                 pScrn->SwitchMode    = XGISwitchMode;
-                pScrn->AdjustFrame   = XGIAdjustFrame;
+                pScrn->AdjustFrame   = XG47AdjustFrame;
                 pScrn->EnterVT       = XGIEnterVT;
                 pScrn->LeaveVT       = XGILeaveVT;
                 pScrn->FreeScreen    = XGIFreeScreen;
@@ -1732,9 +1732,9 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
 
         /* check for linux framebuffer device */
         if (!fbdevHWInit(pScrn, pXGI->pPciInfo, NULL)) return FALSE;
-        /*pScrn->SwitchMode   = fbdevHWSwitchMode;
-        pScrn->AdjustFrame  = fbdevHWAdjustFrame;
-        pScrn->ValidMode    = fbdevHWValidMode;*/
+        pScrn->SwitchMode   = fbdevHWSwitchModeWeak();
+        pScrn->AdjustFrame  = fbdevHWAdjustFrameWeak();
+        pScrn->ValidMode    = fbdevHWValidModeWeak();
     }
 
     /* Enable MMIO */
@@ -2382,76 +2382,9 @@ fail:
  */
 Bool XGISwitchMode(int scrnIndex, DisplayModePtr mode, int flags)
 {
-    ScrnInfoPtr pScrn = xf86Screens[scrnIndex];
-    XGIPtr pXGI = XGIPTR(pScrn);
-    Bool retVal;
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-    /*
-     * Initialise the first video mode.
-     * The ScrnInfoRec's vtSema field should be set to TRUE
-     * just prior to changing the video hardware's state.
-     */
-    retVal = (pXGI->isFBDev)
-        ? fbdevHWModeInit(xf86Screens[scrnIndex], mode)
-        : XGIModeInit(xf86Screens[scrnIndex], mode);
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-    return retVal;
+    return XGIModeInit(xf86Screens[scrnIndex], mode);
 }
 
-/*
- * Adjust viewport into virtual desktop such that (0,0) in
- * viewport space is (x,y) in virtual space.
- * This function is used to initialize the Start Address - the first
- * displayed location in the video memory.
- */
-/* When a Change Viewport event is received, ChipAdjustFrame() is called (when it exists).
- * Changes the viewport for the screen identified by index.
- * It should be noted that many chipsets impose restrictions on where
- * the viewport may be placed in the virtual resolution, either for alignment reasons,
- * or to prevent the start of the viewport from being positioned within a pixel (as
- * can happen in a 24bpp mode). After calculating the value the chipset's panning
- * registers need to be set to for non-DGA modes, this function should recalculate
- * the ScrnInfoRec's frameX0, frameY0, frameX1 and frameY1 fields to correspond to
- * that value. If this is not done, switching to another mode might cause the position
- * of a hardware cursor to change.
- */
-void XGIAdjustFrame(int scrnIndex, int x, int y, int flags)
-{
-    ScrnInfoPtr pScrn = xf86Screens[scrnIndex];
-    XGIPtr      pXGI = XGIPTR(pScrn);
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-    if (pXGI->isFBDev)
-    {
-	    fbdevHWAdjustFrame(scrnIndex, x, y, flags);
-	    return;
-    }
-
-    switch(pXGI->chipset)
-    {
-    case XG47:
-        XG47AdjustFrame(scrnIndex, x, y, flags);
-        break;
-    default:
-        break;
-    }
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-}
 
 /*
  * This is called when VT switching back to the X server. Its job is
@@ -2738,7 +2671,7 @@ static void XGIFreeScreen(int scrnIndex, int flags)
  * passed all other tests. In addition, the ScrnInfoRec's virtualX, virtualY and
  * displayWidth fields will have been set as if the mode to be validated were to
  * be the last mode accepted.
-
+ *
  * In effect, calls with MODECHECK_INITIAL are intended for checks that do not
  * depend on any mode other than the one being validated, while calls with
  * MODECHECK_FINAL are intended for checks that may involve more than one mode.
@@ -2747,36 +2680,23 @@ static int XGIValidMode(int scrnIndex, DisplayModePtr mode, Bool verbose, int fl
 {
     ScrnInfoPtr     pScrn = xf86Screens[scrnIndex];
     XGIPtr          pXGI = XGIPTR(pScrn);
-    int             ret = 0;
+    int             ret;
 
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
 
 #ifndef NATIVE_MODE_SETTING
     if (!pXGI->pInt10) {
-        xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
+        xf86DrvMsg(scrnIndex, X_ERROR,
                    "have not loaded int10 module successfully!\n");
         return MODE_ERROR;
     }
 #endif
 
-    switch(pXGI->chipset)
-    {
-    case XG47:
-        ret = XG47ValidMode(pScrn, mode);
+    ret = XG47ValidMode(pScrn, mode);
 
-        /* This driver only uses the programmable clock mode.
-         */
-        mode->ClockIndex = 0x02;
-        break;
-    default:
-        break;
-    }
+    /* This driver only uses the programmable clock mode.
+     */
+    mode->ClockIndex = 0x02;
 
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
 
     return ret;
 }
