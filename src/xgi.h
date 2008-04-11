@@ -584,7 +584,6 @@ typedef struct {
     vbeInfoPtr          pVbe;
 
     XGIBiosDllPtr       pBiosDll;
-    Bool                isNeedCleanBuf;
 
     XGIHeadID           headID;
     XAAInfoRecPtr       pXaaInfo;

@@ -920,10 +920,6 @@ Bool XGIBiosModeInit(ScrnInfoPtr pScrn, XGIAskModePtr pMode, Bool dualView)
     XGIBiosCloseAllDevice(pXGI, &devices);
 
     if (!dualView) {
-        if (!pXGI->isNeedCleanBuf) {
-            pMode->modeNo |= 0x80;
-        }
-
         /* Single View mode. */
         success = (*pXGI->pBiosDll->biosModeInit)(pScrn, pMode, 0);
 

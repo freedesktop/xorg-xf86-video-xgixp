@@ -2084,8 +2084,6 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
      * The ScrnInfoRec's vtSema field should be set to TRUE
      * just prior to changing the video hardware's state.
      */
-    pXGI->isNeedCleanBuf = TRUE;
-
     if (pXGI->isFBDev)
     {
         if (!fbdevHWModeInit(pScrn, pScrn->currentMode))    goto fail;
@@ -2430,8 +2428,6 @@ Bool XGISwitchMode(int scrnIndex, DisplayModePtr mode, int flags)
      * The ScrnInfoRec's vtSema field should be set to TRUE
      * just prior to changing the video hardware's state.
      */
-    pXGI->isNeedCleanBuf = FALSE;
-
     retVal = (pXGI->isFBDev)
         ? fbdevHWModeInit(xf86Screens[scrnIndex], mode)
         : XGIModeInit(xf86Screens[scrnIndex], mode);
@@ -2518,8 +2514,6 @@ static Bool XGIEnterVT(int scrnIndex, int flags)
         XG47EnableMMIO(pScrn);
     }
 
-    pXGI->isNeedCleanBuf = TRUE;
-
     if (pXGI->isFBDev) {
         if (!fbdevHWEnterVT(scrnIndex,flags))
             return FALSE;
@@ -2576,8 +2570,6 @@ static void XGILeaveVT(int scrnIndex, int flags)
 #endif
         return;
     }
-
-    pXGI->isNeedCleanBuf = TRUE;
 
     if (pXGI->isFBDev) {
         fbdevHWLeaveVT(scrnIndex,flags);
