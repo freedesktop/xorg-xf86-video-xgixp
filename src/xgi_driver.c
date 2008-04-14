@@ -90,10 +90,6 @@
 #include "xg47_cmdlist.h"
 #include "xg47_i2c.h"
 
-extern void XG47_NativeModeSave(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg);
-extern void XG47_NativeModeRestore(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg);
-extern Bool XG47_NativeModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode);
-
 /* Jong 09/20/2006; support dual view */
 extern int		g_DualViewMode;
 
@@ -1875,13 +1871,13 @@ static void XGISave(ScrnInfoPtr pScrn)
         return;
     }
 
+#ifndef NATIVE_MODE_SETTING
     vgaHWSave(pScrn, pVgaReg, VGA_SR_MODE | VGA_SR_CMAP |
                               (IsPrimaryCard ? VGA_SR_FONTS : 0));
 
-#ifndef NATIVE_MODE_SETTING
     XGIModeSave(pScrn, pXGIReg);
 #else
-    XG47_NativeModeSave(pScrn, pXGIReg);
+    xg47_mode_save(pScrn, pVgaReg, pXGIReg);
 #endif
 
 #if DBG_FLOW
@@ -1911,7 +1907,9 @@ static void XGIRestore(ScrnInfoPtr pScrn)
 #ifndef NATIVE_MODE_SETTING
     XGIModeRestore(pScrn, pXGIReg);
 #else
-    XG47_NativeModeRestore(pScrn, pXGIReg);
+    vgaRegPtr   pVgaReg = &VGAHWPTR(pScrn)->SavedReg;
+
+    xg47_mode_restore(pScrn, pVgaReg, pXGIReg);
 #endif
 
 #if DBG_FLOW

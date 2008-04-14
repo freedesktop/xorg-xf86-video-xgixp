@@ -280,19 +280,47 @@ typedef unsigned long GRASTATUS;
 
 /* End GRASTATUS */
 
-typedef struct {
-    unsigned char regs3C2;
-    unsigned char regs3C5[0x100];
-    unsigned char regs3X5[0x100];
-    unsigned char regs3CF[0x100];
-    unsigned char regsDAC[0x01];
-    unsigned char regsClock[0x03];
-    unsigned char dacRegs[0x300];
-    unsigned char regs3C6;
-    unsigned char regs3D8;
-    unsigned char regs3D9;
-    unsigned char regs3DB;
-} XGIRegRec, *XGIRegPtr;
+typedef struct xgi_regs {
+    /**
+     * Extended registers at 0x3cf
+     */
+    uint8_t gra[0x10];
+
+
+    /**
+     * Extended CRTC control registers
+     */
+    uint8_t crtc[0x100];
+
+
+    /**
+     * Extended sequencer registers
+     */
+    uint8_t seq[0x29];
+
+
+    /**
+     * Alternate clock select
+     * 
+     * [7  ] - Enable display memory clock divide by 2
+     * [6:5] - Video clock divide
+     *     0 0 = divide by 1
+     *     0 1 = divide by 2
+     *     1 0 = divide by 3
+     *     1 1 = divide by 4
+     * [4:2] - Reserved
+     * [1:0] - Video clock select
+     *
+     * Stored at 0x3db
+     */
+    uint8_t alt_clock_select;
+
+
+    /**
+     * SYNDAC command register
+     */
+    uint8_t syndac_command;
+} *XGIRegPtr;
 
 /* modeNo:
  * |--------'--------|
@@ -548,8 +576,8 @@ typedef struct {
     ScreenBlockHandlerProcPtr   BlockHandler;
     xf86PointerMovedProc        *PointerMoved;
 
-    XGIRegRec           savedReg;
-    XGIRegRec           modeReg;
+    struct xgi_regs           savedReg;
+    struct xgi_regs           modeReg;
 
     I2CBusPtr           pI2C;
 

@@ -45,4 +45,11 @@ extern void XG47SetW2ViewBaseAddr(ScrnInfoPtr pScrn, unsigned long startAddr);
 
 extern XGIModePtr XG47GetModeFromRes(unsigned width, unsigned height);
 
+#ifdef NATIVE_MODE_SETTING
+extern void xg47_mode_save(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr pXGIReg);
+extern void XG47_mode_restore(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr pXGIReg);
+extern Bool XG47_NativeModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode);
+#endif /* NATIVE_MODE_SETTING */
+
+
 #endif

@@ -172,16 +172,11 @@ static const struct vclk_tab clk[] = {
 	{ 340477, 0x57, 0x41, 0x22 },
 };
 
-static void SetVCLK(XGIPtr pXGI, DisplayModePtr disp_mode)
+static void SetVCLK(XGIPtr pXGI, DisplayModePtr disp_mode, XGIRegPtr regs)
 {
 	unsigned base;
 	unsigned count;
 	const unsigned num_vclk = sizeof(clk) / sizeof(clk[0]);
-
-
-	/* Select primary VCLK
-	 */
-	OUT3C5B(0x29, IN3C5B(0x29) & ~0x30);
 
 
 	base = 0;
@@ -201,51 +196,222 @@ static void SetVCLK(XGIPtr pXGI, DisplayModePtr disp_mode)
 		disp_mode->Clock, clk[base].p, clk[base].sr18, clk[base].sr19,
 		clk[base].freq);
 
-	OUT3C5B(0x28, (IN3C5B(0x28) & ~0x07) | (clk[base].p & 0x07));
-	OUT3C5B(0x18, clk[base].sr18);
-	OUT3C5B(0x19, clk[base].sr19);
+    regs->seq[0x18] = clk[base].sr18;
+    regs->seq[0x19] = clk[base].sr19;
+    regs->seq[0x28] = clk[base].p & 0x07;
 }
 #endif
 
 
-static void FillExtendedRegisters(XGIPtr pXGI, DisplayModePtr disp_mode)
+static void FillExtendedRegisters(XGIPtr pXGI, DisplayModePtr disp_mode,
+				  XGIRegPtr regs)
 {
-    uint8_t    val_0f;
-    uint8_t    v3x5_2f, v3x5_5a, v3x5_38, v3x5_2a;
-    uint8_t    v3x5_25;
-
-
-    /* Disable character clock divider, compressed chain 4 mode for CPU (bit
-     * 4 and bit 1), and source segment address register (bit 0).
-     */
-    val_0f = IN3CFB(0x0F) & ~(0x48 | 0x13);
-
     /* Enable alternative bank and clock select registers.
      */
-    val_0f |= 0x04;
+    regs->gra[0x0f] = 0x04;
 
     /* For modes where each pixel is at least a byte, enable compressed chain
      * 4 mode for CPU.
      */
     if (pXGI->pScrn->bitsPerPixel >= 8) {
-        val_0f |= 0x12;
+        regs->gra[0x0f] |= 0x12;
     }
 
-    OUT3CFB(0x0F, val_0f);
 
 
-    SetVCLK(pXGI, disp_mode);
+    SetVCLK(pXGI, disp_mode, regs);
 
 
     /* Low resolution (i.e., less than 640 horizontal) modes on LCDs need to
      * use a special clock divider mode.
      */
-    if (disp_mode->HDisplay < 640) {
-        OUTB(0x3DB, (INB(0x3DB) & ~0xe0) | 0x20);
-    } else {
-        OUTB(0x3DB, (INB(0x3DB) & ~0xe0));
+    regs->alt_clock_select = (disp_mode->HDisplay < 640) ? 0x20 : 0x00;
+
+
+    /* See Pixel Bus Mode Register on page 9-11 of "Volari XP10 non-3D SPG
+     * v1.0".
+     */
+    switch (pXGI->pScrn->bitsPerPixel) {
+    case 4:
+        regs->crtc[0x38] = 0x10;
+        break;
+    default:
+    case 8:
+        regs->crtc[0x38] = 0;
+        break;
+    case 15:
+    case 16:
+        regs->crtc[0x38] = 0x05;
+        break;
+    case 24:
+    case 32:
+        regs->crtc[0x38] = 0x29;
+        break;
+    case 30:
+        regs->crtc[0x38] = 0xA8;
+        break;
     }
 
+
+    /* Interface select register.  Only enable internal 32-bit path (bit 6)
+     * if a video mode is selected that uses more than one byte per pixel.
+     */
+    regs->crtc[0x2a] = (pXGI->pScrn->bitsPerPixel >= 8) ? 0x40 : 0x00;
+
+
+    /* PCI retry defaults to disabled.  Enable and set maximum re-try count
+     * if the selected mode is a non-VGA mode with more than 256 colors.
+     */
+    regs->crtc[0x55] = (pXGI->pScrn->bitsPerPixel >= 8) ? 0xff : 0x00;
+
+
+    /* Always enable "line compare bit 10" (bit 3).  The other 10th bit
+     * values are only set if the mode requires 10 bits to represent the
+     * values.
+     */
+    regs->crtc[0x27] = (0x08
+			| (((disp_mode->CrtcVDisplay - 1)    & 0x400) >> 6)
+			| (((disp_mode->CrtcVSyncStart)      & 0x400) >> 5)
+			| (((disp_mode->CrtcVBlankStart - 1) & 0x400) >> 4)
+			| (((disp_mode->CrtcVTotal - 2)      & 0x400) >> 3));
+
+
+    /* Horizontal parameters overflow register.
+     */
+    regs->crtc[0x2b] = ((((disp_mode->CrtcHTotal >> 3) - 5) & 0x100) >> 8)
+	| ((((disp_mode->CrtcHBlankStart >> 3) - 1) & 0x100) >> 5);
+
+
+    /* CRT interlace control register.
+     */
+    regs->crtc[0x19] = 0x4a;
+
+    /* Enable interlacing and access to display memory above 256KiB.
+     */
+    regs->crtc[0x1e] = (disp_mode->Flags & V_INTERLACE) ? 0x84 : 0x80;
+    
+
+    /* Write 0 to enable I/O buffers of PCLK and P[7:0] tri-state.
+     */
+    regs->crtc[0x25] = (disp_mode->VDisplay <= 800) ? 0x00 : 0x80;
+
+
+    /* Enable CRTC horizontal blanking end 7-bits function.  Highest bit is
+     * at 3d5.03.7
+     */
+    regs->crtc[0x33] = 0x08;
+}
+
+
+/**
+ * Calculate logical line width according to color depth.
+ *
+ * \return
+ * Width per scan line in words (2-byte).
+ */
+static unsigned CalLogicalWidth(ScrnInfoPtr pScrn)
+{
+    return (pScrn->displayWidth * (pScrn->bitsPerPixel / 8)) / 8;
+}
+
+
+/**
+ * Calculate logical line width according to color depth and CRTC13
+ *
+ * Calculate logical line width according to color depth and CRTC13 (offset
+ * in words). Then write back to CRTC13 for later use.
+ */
+static void SetLogicalWidth(XGIPtr pXGI, vgaRegPtr vga_regs, XGIRegPtr regs)
+{
+    const unsigned width = CalLogicalWidth(pXGI->pScrn);
+
+    /* On XP10 the upper 6 bits of the CRTC offset address (CRTC13) are
+     * stored at 0x8B.
+     */
+    vga_regs->CRTC[0x13] = width & 0x0FF;
+    regs->crtc[0x8b] = (width >> 8) & 0x3f;
+}
+
+
+void SetModeCRTC1(XGIPtr pXGI, DisplayModePtr disp_mode, XGIRegPtr regs)
+{
+    FillExtendedRegisters(pXGI, disp_mode, regs);
+    SetLogicalWidth(pXGI, & VGAHWPTR(pXGI->pScrn)->ModeReg, regs);
+}
+
+
+static void SetColorDAC(XGIPtr pXGI, unsigned color_depth, XGIRegPtr regs)
+{
+    switch (color_depth) {
+    case 16:
+        /* Use XGA color mode, 16-bit direct.
+         */
+        regs->syndac_command = 0x30;
+        break;
+
+    case 32:
+    case 30:
+        /* Use true color mode, 24-bit direct.
+         */
+        regs->syndac_command = 0xD0;
+        break;
+
+    default:
+        /* Pseudo-color mode.
+         */
+        regs->syndac_command = 0x00;
+        break;
+    }
+}
+
+
+Bool XG47_NativeModeInit(ScrnInfoPtr pScrn, DisplayModePtr disp_mode)
+{
+    XGIPtr  pXGI = XGIPTR(pScrn);
+    vgaHWPtr pVgaHW = VGAHWPTR(pScrn);
+
+
+    vgaHWUnlock(pVgaHW);
+
+    /* Initialise the ModeReg values */
+    if (!vgaHWInit(pScrn, disp_mode))
+        return FALSE;
+
+    pScrn->vtSema = TRUE;
+
+    SetModeCRTC1(pXGI, disp_mode, &pXGI->modeReg);
+    SetColorDAC(pXGI, pScrn->bitsPerPixel, &pXGI->modeReg);
+
+    xg47_mode_restore(pScrn, &pVgaHW->ModeReg, &pXGI->modeReg);
+    return TRUE;
+}
+
+
+void xg47_mode_restore(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr regs)
+{
+    XGIPtr pXGI = XGIPTR(pScrn);
+    uint8_t v3x5_5a;
+    uint8_t v3x5_2f;
+
+    /* DAC power off
+     */
+    OUT3C5B(0x24, IN3C5B(0x24) & ~0x01);
+    OUT3CFB(0x23, IN3CFB(0x23) | 0x03);
+
+    vgaHWRestore(pScrn, pVgaReg, VGA_SR_ALL);
+
+
+    OUT3CFB(0x0f, regs->gra[0x0f]);
+
+    /* Select primary VCLK
+     */
+    OUT3C5B(0x29, IN3C5B(0x29) & ~0x30);
+
+    OUT3C5B(0x28, regs->seq[0x28]);
+    OUT3C5B(0x18, regs->seq[0x18]);
+    OUT3C5B(0x19, regs->seq[0x19]);
+    
+    OUTB(0x3db, (INB(0x3db) & ~0xe0) | regs->alt_clock_select);
 
     /* Disable linear addressing.
      */
@@ -270,59 +436,20 @@ static void FillExtendedRegisters(XGIPtr pXGI, DisplayModePtr disp_mode)
     OUT3X5B(0x5a, v3x5_5a | 0x20);
 
 
-    /* See Pixel Bus Mode Register on page 9-11 of "Volari XP10 non-3D SPG
-     * v1.0".
-     */
-    switch (pXGI->pScrn->bitsPerPixel) {
-    case 4:
-        v3x5_38 = 0x10;
-        break;
-    default:
-    case 8:
-        v3x5_38 = 0;
-        break;
-    case 15:
-    case 16:
-        v3x5_38 = 0x05;
-        break;
-    case 24:
-    case 32:
-        v3x5_38 = 0x29;
-        break;
-    case 30:
-        v3x5_38 = 0xA8;
-        break;
-    }
-    OUT3X5B(0x38, v3x5_38);
-
-
-    /* Interface select register.  Only enable internal 32-bit path (bit 6)
-     * if a video mode is selected that uses more than one byte per pixel.
-     */
-    v3x5_2a = IN3X5B(0x2a) & ~0x40;
-    if (pXGI->pScrn->bitsPerPixel >= 8) {
-        v3x5_2a |= 0x40;
-    }
-    OUT3X5B(0x2a, v3x5_2a);
-
+    OUT3X5B(0x38, regs->crtc[0x38]);
+    
+    OUT3X5B(0x2a, (IN3X5B(0x2a) & ~0x40) | regs->crtc[0x2a]);
 
     /* Turn off the hardware cursor while display modes are being changed.
      */
     OUT3X5B(0x50, IN3X5B(0x50) & ~0x80);
 
-
-    /* PCI retry defaults to disabled.  Enable and set maximum re-try count
-     * if the selected mode is a non-VGA mode with more than 256 colors.
+    /* Set count first, then enable retry.  In some cases the system
+     * may hang-up if set both same time.
      */
-    if (pXGI->pScrn->bitsPerPixel >= 8) {
-        /* Set count first, then enable retry.  In some cases the system
-         * may hang-up if set both same time.
-         */
-        OUT3X5B(0x55, 0x1f);
-        OUT3X5B(0x55, 0xff);
-    } else {
-        OUT3X5B(0x55, 0x00);
-    }
+    OUT3X5B(0x55, 0x1f & regs->crtc[0x55]);
+    OUT3X5B(0x55, 0xff & regs->crtc[0x55]);
+
 
     /* Clear alternate destination / source segment address.
      */
@@ -336,159 +463,28 @@ static void FillExtendedRegisters(XGIPtr pXGI, DisplayModePtr disp_mode)
      */
     OUT3CFB(0x5D, IN3CFB(0x5D) & ~0x80);
 
-
-    /* Always enable "line compare bit 10" (bit 3).  The other 10th bit
-     * values are only set if the mode requires 10 bits to represent the
-     * values.
-     */
-    OUT3X5B(0x27, (IN3X5B(0x27) & 0x07) | 0x08
-            | (((disp_mode->CrtcVDisplay - 1)    & 0x400) >> 6)
-            | (((disp_mode->CrtcVSyncStart)      & 0x400) >> 5)
-            | (((disp_mode->CrtcVBlankStart - 1) & 0x400) >> 4)
-            | (((disp_mode->CrtcVTotal - 2)      & 0x400) >> 3));
-
-
-    /* Horizontal parameters overflow register.
-     */
-    OUT3X5B(0x2B, ((((disp_mode->CrtcHTotal >> 3) - 5) & 0x100) >> 8)
-            | ((((disp_mode->CrtcHBlankStart >> 3) - 1) & 0x100) >> 5));
-
-
-    if (disp_mode->Flags & V_INTERLACE) {
-        /* CRT interlace control register.
-         */
-        OUT3X5B(0x19, 0x4a);
-
-
-        /* Enable interlacing and access to display memory above 256KiB.
-         */
-        OUT3X5B(0x1E, (IN3X5B(0x1E) & 0x3B) | 0x84);
-    } else {
-        OUT3X5B(0x19, 0x4a);
-        OUT3X5B(0x1E, (IN3X5B(0x1E) & 0x3B) | 0x80);
-    }
+    OUT3X5B(0x27, regs->crtc[0x27]);
+    OUT3X5B(0x2b, regs->crtc[0x2b]);
+    OUT3X5B(0x19, regs->crtc[0x19]);
+    OUT3X5B(0x1e, regs->crtc[0x1e]);
     
+    OUT3X5B(0x25, (IN3X5B(0x25) & ~0x80) | regs->crtc[0x25]);
+    OUT3X5B(0x33, (IN3X5B(0x33) | regs->crtc[0x33]));
 
-    /* Write 0 to enable I/O buffers of PCLK and P[7:0] tri-state.
-     */
-    v3x5_25 = IN3X5B(0x25) | 0x80;
-    if (disp_mode->VDisplay <= 800) {
-        v3x5_25 &= ~0x80;
-    }
-    OUT3X5B(0x25, v3x5_25);
-
-
-    /* Enable CRTC horizontal blanking end 7-bits function.  Highest bit is
-     * at 3d5.03.7
-     */
-    OUT3X5B(0x33, IN3X5B(0x33) | 0x08);
-}
-
-
-/**
- * Calculate logical line width according to color depth.
- *
- * \return
- * Width per scan line in words (2-byte).
- */
-static unsigned CalLogicalWidth(ScrnInfoPtr pScrn)
-{
-    return (pScrn->displayWidth * (pScrn->bitsPerPixel / 8)) / 8;
-}
-
-
-/**
- * Calculate logical line width according to color depth and CRTC13
- *
- * Calculate logical line width according to color depth and CRTC13 (offset
- * in words). Then write back to CRTC13 for later use.
- */
-static void SetLogicalWidth(XGIPtr pXGI)
-{
-    const unsigned width = CalLogicalWidth(pXGI->pScrn);
-
-    /* On XP10 the upper 6 bits of the CRTC offset address (CRTC13) are
-     * stored at 0x8B.
-     */
-    OUT3X5B(0x13, width & 0x0FF);
-    OUT3X5B(0x8B, ((IN3X5B(0x8B) & ~0x3f) | ((width >> 8) & 0x3f)));
-}
-
-
-void SetModeCRTC1(XGIPtr pXGI, DisplayModePtr disp_mode)
-{
-    vgaHWRestore(pXGI->pScrn, &VGAHWPTR(pXGI->pScrn)->ModeReg,
-                 VGA_SR_MODE | VGA_SR_FONTS | VGA_SR_CMAP);
-    FillExtendedRegisters(pXGI, disp_mode);
-    SetLogicalWidth(pXGI);
+    OUT3X5B(0x8b, regs->crtc[0x8b]);
 
     /* Enable PCI linear memory access
      */
     OUT3X5B(0x21, IN3X5B(0x21) | 0x20);
-}
 
 
-static void SetColorDAC(XGIPtr pXGI, unsigned color_depth)
-{
-    unsigned mode;
-
-    switch (color_depth) {
-    case 16:
-        /* Use XGA color mode, 16-bit direct.
-         */
-        mode = 0x30;
-        break;
-
-    case 32:
-    case 30:
-        /* Use true color mode, 24-bit direct.
-         */
-        mode = 0xD0;
-        break;
-
-    default:
-        /* Pseudo-color mode.
-         */
-        mode = 0x00;
-        break;
-    }
-
+    OUTB(0x3c8, 0x00);
     INB(0x3c6);
     INB(0x3c6);
     INB(0x3c6);
     INB(0x3c6);
-    OUTB(0x3c6, mode);
-}
+    OUTB(0x3c6, regs->syndac_command);
 
-
-Bool XG47_NativeModeInit(ScrnInfoPtr pScrn, DisplayModePtr disp_mode)
-{
-    XGIPtr  pXGI = XGIPTR(pScrn);
-    vgaHWPtr pVgaHW = VGAHWPTR(pScrn);
-
-
-    vgaHWUnlock(pVgaHW);
-
-    /* Initialise the ModeReg values */
-    if (!vgaHWInit(pScrn, disp_mode))
-        return FALSE;
-
-    pScrn->vtSema = TRUE;
-
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "monitor sense (3c5.25): 0x%02x\n",
-               IN3C5B(0x25));
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "monitor sense (3cf.37): 0x%02x\n",
-               IN3CFB(0x37));
-
-    /* DAC power off
-     */
-    OUT3C5B(0x24, IN3C5B(0x24) & ~0x01);
-    OUT3CFB(0x23, IN3CFB(0x23) | 0x03);
-
-    OUT3X5B(0x39, 0x85);
-
-    SetModeCRTC1(pXGI, disp_mode);
-    SetColorDAC(pXGI, pScrn->bitsPerPixel);
 
     /* 3CF.33.5- 1: enable CRT display
      */
@@ -497,148 +493,53 @@ Bool XG47_NativeModeInit(ScrnInfoPtr pScrn, DisplayModePtr disp_mode)
     /* 3C5.1.5 - ScreenOff, 0: selects normal screen operation
      */
     OUT3C5B(0x01, IN3C5B(0x01) & ~0x20);
-
-    /* DAC power on
-     */
-    OUT3C5B(0x24, IN3C5B(0x24) | 0x01);
-    OUT3CFB(0x23, IN3CFB(0x23) & ~0x03);
 
     /* setup 1st timing
      */
     OUT3CFB(0x2c, IN3CFB(0x2c) & ~0x40);
 
-    XG47SetCRTCViewStride(pScrn);
-    return TRUE;
-}
-
-
-void XG47_NativeModeSave(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg)
-{
-    XGIPtr pXGI = XGIPTR(pScrn);
-
-
-    pXGIReg->regs3CF[0x0f] = IN3CFB(0x0f);
-    pXGIReg->regs3CF[0x5d] = IN3CFB(0x5d);
-
-    pXGIReg->regs3C5[0x18] = IN3C5B(0x18);
-    pXGIReg->regs3C5[0x19] = IN3C5B(0x19);
-    pXGIReg->regs3C5[0x28] = IN3C5B(0x28);
-
-    INB(0x3c6);
-    INB(0x3c6);
-    INB(0x3c6);
-    INB(0x3c6);
-    pXGIReg->regs3C6 = INB(0x3c6);
-
-    pXGIReg->regs3D8 = INB(0x3d8);
-    pXGIReg->regs3D9 = INB(0x3d9);
-    pXGIReg->regs3DB = INB(0x3db);
-
-    pXGIReg->regs3X5[0x13] = IN3X5B(0x13);
-    pXGIReg->regs3X5[0x19] = IN3X5B(0x19);
-    pXGIReg->regs3X5[0x1e] = IN3X5B(0x1e);
-    pXGIReg->regs3X5[0x21] = IN3X5B(0x21);
-    pXGIReg->regs3X5[0x25] = IN3X5B(0x25);
-    pXGIReg->regs3X5[0x27] = IN3X5B(0x27);
-    pXGIReg->regs3X5[0x2a] = IN3X5B(0x2a);
-    pXGIReg->regs3X5[0x2b] = IN3X5B(0x2b);
-    pXGIReg->regs3X5[0x2c] = IN3X5B(0x2c);
-    pXGIReg->regs3X5[0x2f] = IN3X5B(0x2f);
-    pXGIReg->regs3X5[0x33] = IN3X5B(0x33);
-    pXGIReg->regs3X5[0x38] = IN3X5B(0x38);
-    pXGIReg->regs3X5[0x50] = IN3X5B(0x50);
-    pXGIReg->regs3X5[0x55] = IN3X5B(0x55);
-    pXGIReg->regs3X5[0x5a] = IN3X5B(0x5a);
-    pXGIReg->regs3X5[0x5d] = IN3X5B(0x5d);
-    pXGIReg->regs3X5[0x8b] = IN3X5B(0x8b);
-}
-
-
-void XG47_NativeModeRestore(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg)
-{
-    vgaHWPtr    pVgaHW = VGAHWPTR(pScrn);
-    XGIPtr      pXGI = XGIPTR(pScrn);
-    vgaRegPtr   pVgaReg = &pVgaHW->SavedReg;
-
-
-    vgaHWUnlock(pVgaHW);
-    vgaHWRestore(pScrn, pVgaReg, VGA_SR_MODE | VGA_SR_CMAP |
-                                 (IsPrimaryCard ? VGA_SR_FONTS : 0));
-//    vgaHWLock(pVgaHW);
-
-    OUT3CFB(0x0F, pXGIReg->regs3CF[0x0f]);
-
-    OUT3C5B(0x29, pXGIReg->regs3C5[0x29]);
-    OUT3C5B(0x28, pXGIReg->regs3C5[0x28]);
-    OUT3C5B(0x18, pXGIReg->regs3C5[0x18]);
-    OUT3C5B(0x19, pXGIReg->regs3C5[0x19]);
-
-    OUTB(0x3DB, pXGIReg->regs3DB);
-
-    OUT3X5B(0x21, pXGIReg->regs3X5[0x21]);
-
-    OUT3X5B(0x5d, pXGIReg->regs3X5[0x5d]);
-
-    OUT3X5B(0x2f, pXGIReg->regs3X5[0x2f]);
-    OUT3X5B(0x5a, pXGIReg->regs3X5[0x5a]);
-
-    OUT3X5B(0x38, pXGIReg->regs3X5[0x38]);
-
-    OUT3X5B(0x2a, pXGIReg->regs3X5[0x2a]);
-
-
-    /* Turn off the hardware cursor while display modes are being changed.
-     */
-    OUT3X5B(0x50, IN3X5B(0x50) & ~0x80);
-
-    /* Set count first, then enable retry.  In some cases the system
-     * may hang-up if set both same time.
-     */
-    OUT3X5B(0x55, pXGIReg->regs3X5[0x55] & 0x1f);
-    OUT3X5B(0x55, pXGIReg->regs3X5[0x55]);
-
-    OUTB(0x3d8, pXGIReg->regs3D8);
-    OUTB(0x3d9, pXGIReg->regs3D9);
-
-    OUT3CFB(0x5D, pXGIReg->regs3CF[0x5D]);
-
-    OUT3X5B(0x27, pXGIReg->regs3X5[0x27]);
-
-    OUT3X5B(0x2B, pXGIReg->regs3X5[0x2B]);
-
-    OUT3X5B(0x19, pXGIReg->regs3X5[0x19]);
-    OUT3X5B(0x1E, pXGIReg->regs3X5[0x1E]);
-
-    OUT3X5B(0x25, pXGIReg->regs3X5[0x25]);
-
-    OUT3X5B(0x33, pXGIReg->regs3X5[0x33]);
-    OUT3X5B(0x50, pXGIReg->regs3X5[0x50]);
-
-    INB(0x3c6);
-    INB(0x3c6);
-    INB(0x3c6);
-    INB(0x3c6);
-    OUTB(0x3c6, pXGIReg->regs3C6);
-
-    /* 3CF.33.5- 1: enable CRT display
-     */
-    OUT3CFB(0x33, IN3CFB(0x33) | 0x20);
-
-    /* 3C5.1.5 - ScreenOff, 0: selects normal screen operation
-     */
-    OUT3C5B(0x01, IN3C5B(0x01) & ~0x20);
-
     /* DAC power on
      */
     OUT3C5B(0x24, IN3C5B(0x24) | 0x01);
     OUT3CFB(0x23, IN3CFB(0x23) & ~0x03);
-
-    /* setup 1st timing
-     */
-    OUT3CFB(0x2c, pXGIReg->regs3CF[0x2c]);
-
-    OUT3X5B(0x13, pXGIReg->regs3X5[0x13]);
-    OUT3X5B(0x8B, pXGIReg->regs3X5[0x8B]);
 }
 
+
+void xg47_mode_save(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr regs)
+{
+    XGIPtr pXGI = XGIPTR(pScrn);
+
+
+    vgaHWSave(pScrn, pVgaReg, VGA_SR_ALL);
+
+
+    regs->gra[0x0f] = IN3CFB(0x0f);
+
+    regs->seq[0x28] = IN3C5B(0x28);
+    regs->seq[0x18] = IN3C5B(0x18);
+    regs->seq[0x19] = IN3C5B(0x19);
+    
+    regs->alt_clock_select = INB(0x3db);
+
+    regs->crtc[0x38] = IN3X5B(0x38);
+    regs->crtc[0x2a] = IN3X5B(0x2a);
+    regs->crtc[0x55] = IN3X5B(0x55);
+    regs->crtc[0x27] = IN3X5B(0x27);
+    regs->crtc[0x2b] = IN3X5B(0x2b);
+    regs->crtc[0x19] = IN3X5B(0x19);
+    regs->crtc[0x1e] = IN3X5B(0x1e);
+    
+    regs->crtc[0x25] = IN3X5B(0x25);
+    regs->crtc[0x33] = IN3X5B(0x33);
+
+    regs->crtc[0x8b] = IN3X5B(0x8b);
+
+
+    OUTB(0x3c8, 0x00);
+    INB(0x3c6);
+    INB(0x3c6);
+    INB(0x3c6);
+    INB(0x3c6);
+    regs->syndac_command = INB(0x3c6);
+}
 #endif /* NATIVE_MODE_SETTING */
