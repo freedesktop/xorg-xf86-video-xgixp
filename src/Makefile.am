@@ -31,8 +31,6 @@ xgixp_drv_ladir = @moduledir@/drivers
 xgixp_drv_la_SOURCES = \
 	xg47_accel.c \
 	xg47_accel.h \
-	xg47_bios.c \
-	xg47_bios.h \
 	xg47_cmdlist.c \
 	xg47_cmdlist.h \
 	xg47_cursor.c \
@@ -52,7 +50,6 @@ xgixp_drv_la_SOURCES = \
 	xg47_videohw.c \
 	xg47_videohw.h \
 	xgi.h \
-	xgi_bios.c \
 	xgi_bios.h \
 	xgi_cursor.c \
 	xgi_cursor.h \

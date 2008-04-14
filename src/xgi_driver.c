@@ -636,9 +636,6 @@ static XGIPtr XGIGetRec(ScrnInfoPtr pScrn)
     if (pScrn->driverPrivate == NULL) {
 	XGIPtr pXGI = xnfcalloc(sizeof(XGIRec), 1);
 
-	/* Initialise it */
-	pXGI->pBiosDll = xnfcalloc(sizeof(XGIBiosDllRec), 1);
-
 	pScrn->driverPrivate = pXGI;
 	pXGI->pScrn = pScrn;
     }
@@ -1027,13 +1024,6 @@ static Bool XGIPreInitInt10(ScrnInfoPtr pScrn)
 
     xf86LoaderReqSymLists(vbeSymbols, int10Symbols, NULL);
 
-#ifndef NATIVE_MODE_SETTING
-    /* int10 is broken on some Alphas */
-    pXGI->pVbe = VBEInit(NULL, pXGI->pEnt->index);
-    pXGI->pInt10 = pXGI->pVbe->pInt10;
-#endif /* NATIVE_MODE_SETTING */
-
-
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
@@ -1159,30 +1149,6 @@ static Bool XGIPreInitGamma(ScrnInfoPtr pScrn)
     return TRUE;
 }
 
-
-static Bool XGIPreInitLcdSize(ScrnInfoPtr pScrn)
-{
-    XGIPtr  pXGI = XGIPTR(pScrn);
-
-    CARD16  lcdWidth = 0;
-    CARD16  lcdHeight = 0;
-
-    pXGI->lcdActive = FALSE;
-    pXGI->lcdWidth = lcdWidth;
-    pXGI->lcdHeight = lcdHeight;
-
-    /* get LCD size if display on LCD */
-    if ((pXGI->displayDevice & ST_DISP_LCD)
-        || (IN3CFB(0x5B) & ST_DISP_LCD))
-    {
-        XGIGetLcdSize(pScrn, &lcdWidth, &lcdHeight);
-        pXGI->lcdActive = TRUE;
-        pXGI->lcdWidth = lcdWidth;
-        pXGI->lcdHeight = lcdHeight;
-    }
-
-    return TRUE;
-}
 
 /* This is called by XGIPreInit to validate modes
  * and compute parameters for all of the valid modes.
@@ -1399,6 +1365,8 @@ static Bool XGIPreInitMemory(ScrnInfoPtr pScrn)
     MessageType     from;
 
 
+    XG47GetFramebufferSize(pXGI);
+
     /* Save offset of frame buffer for setting destination and source base in
      * acceleration functions.
      * 
@@ -1450,10 +1418,6 @@ static Bool XGIPreInitMemory(ScrnInfoPtr pScrn)
     xf86DrvMsg(pScrn->scrnIndex, from, "VideoRAM: %u KByte\n",
                pScrn->videoRam);
 
-    /* memory clock */
-    pXGI->memClock = XGICalculateMemoryClock(pScrn);
-    xf86DrvMsg(pScrn->scrnIndex, X_PROBED, "Memory Clock is %3.2f MHz\n",
-               pXGI->memClock);
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -1733,15 +1697,12 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     }
 
     if (!XGIPreInitInt10(pScrn))            goto fail;
-    if (!XGIBiosDllInit(pScrn))             goto fail;
     if (!XGIPreInitMemory(pScrn))           goto fail;
 
     /* pScrn->videoRam is determined by XGIPreInitMemory() */
     pXGI->fbSize = pScrn->videoRam * 1024;
 
     if (!XGIMapFB(pScrn))                   goto fail;
-
-    if (!XGIPreInitLcdSize(pScrn))          goto fail;
 
     XGIPreInitDDC(pScrn);
 
@@ -1871,14 +1832,7 @@ static void XGISave(ScrnInfoPtr pScrn)
         return;
     }
 
-#ifndef NATIVE_MODE_SETTING
-    vgaHWSave(pScrn, pVgaReg, VGA_SR_MODE | VGA_SR_CMAP |
-                              (IsPrimaryCard ? VGA_SR_FONTS : 0));
-
-    XGIModeSave(pScrn, pXGIReg);
-#else
     xg47_mode_save(pScrn, pVgaReg, pXGIReg);
-#endif
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -1899,23 +1853,9 @@ static void XGIRestore(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
     XGIRegPtr   pXGIReg = &pXGI->savedReg;
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-#ifndef NATIVE_MODE_SETTING
-    XGIModeRestore(pScrn, pXGIReg);
-#else
     vgaRegPtr   pVgaReg = &VGAHWPTR(pScrn)->SavedReg;
 
     xg47_mode_restore(pScrn, pVgaReg, pXGIReg);
-#endif
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
 }
 
 Bool XGIFBManagerInit(ScreenPtr pScreen)
@@ -2633,14 +2573,6 @@ static int XGIValidMode(int scrnIndex, DisplayModePtr mode, Bool verbose, int fl
     int             ret;
 
 
-#ifndef NATIVE_MODE_SETTING
-    if (!pXGI->pInt10) {
-        xf86DrvMsg(scrnIndex, X_ERROR,
-                   "have not loaded int10 module successfully!\n");
-        return MODE_ERROR;
-    }
-#endif
-
     ret = XG47ValidMode(pScrn, mode);
 
     /* This driver only uses the programmable clock mode.
@@ -2666,18 +2598,7 @@ static Bool XGIModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode)
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
 
-    switch(pXGI->chipset)
-    {
-    case XG47:
-#ifndef NATIVE_MODE_SETTING
-        ret = XG47ModeInit(pScrn, mode);
-#else
-	ret = XG47_NativeModeInit(pScrn, mode);
-#endif
-        break;
-    default:
-        break;
-    }
+    ret = XG47_NativeModeInit(pScrn, mode);
 
 #ifdef XGI_DUMP
     XGIDumpRegisterValue(pScrn);

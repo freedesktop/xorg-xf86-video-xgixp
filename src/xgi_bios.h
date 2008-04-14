@@ -372,56 +372,5 @@ typedef struct {
 #define NEED_3CF33_ON_DELAY     0x00000001
 #define DEVICE_CLOSED           0x00000002
 
-/* xgi_bios.c */
-extern CARD16 XGIGetVClock_BandWidth(XGIPtr pXGI,
-                                     CARD16 xres,
-                                     CARD16 yres,
-                                     CARD16 depth,
-                                     CARD16 refRate,
-                                     CARD8 flag);
-
-extern Bool XGICheckModeSupported(XGIPtr pXGI, const XGIAskModeRec *pMode0,
-    const XGIAskModeRec *pMode1, unsigned refRate);
-
-extern void   XGIGetFlatPanelSize(XGIPtr pXGI);
-extern void   XGIGetFlatPanelType(XGIPtr pXGI);
-extern CARD8  XGIConvertResToModeNo(CARD16 width,
-                                    CARD16 height);
-
-extern void   XGIWaitVerticalOnCRTC1(XGIPtr pXGI, CARD16 count);
-extern void   XGIWaitVerticalOnCRTC2(XGIPtr pXGI, CARD16 count);
-
-extern CARD16 XGIGetRefreshRateCapability(XGIPtr pXGI,
-                                          CARD16 modeNo,
-                                          CARD16 spec);
-
-extern Bool   XGICheckRefreshRateSupport(CARD16 refCaps,
-                                         CARD8 refIndex);
-
-extern CARD32 XGIGetDisplayAttributes(XGIPtr pXGI,
-                                      CARD32 displayDevice);
-
-extern CARD32 XGIGetDisplayStatus(XGIPtr pXGI, CARD8 wno);
-extern void XGIGetSetChipSupportDevice(XGIPtr pXGI, Bool reset_to_original);
-extern CARD16 XGIGetColorIndex(CARD16 depth);
-
-extern Bool   XGIReadBiosData(XGIPtr pXGI, CARD8 *array);
-
-extern unsigned XGIBiosCalculateClock(XGIPtr pXGI,unsigned low,
-    unsigned high);
-
-extern Bool XGIBiosDllInit(ScrnInfoPtr pScrn);
-
-extern Bool XGIBiosModeInit(ScrnInfoPtr pScrn, XGIAskModePtr pMode,
-    Bool dualView);
-
-
-extern unsigned long XGIBiosValueInit(XGIPtr pXGI);
-extern Bool   XGIBiosCloseSecondView(XGIPtr pXGI);
-extern Bool   XGIBiosCloseAllDevice(XGIPtr pXGI,
-                                    unsigned long* pDevices);
-extern Bool   XGIBiosOpenAllDevice(XGIPtr pXGI,
-                                   unsigned long* pDevices);
-
 #endif
 

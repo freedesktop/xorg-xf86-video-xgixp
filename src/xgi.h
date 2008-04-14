@@ -362,20 +362,6 @@ typedef struct {
     CARD32  condition;
 } XGIAskModeRec, *XGIAskModePtr;
 
-typedef ModeStatus (*FUN_XGIBiosValidMode)(ScrnInfoPtr, XGIAskModePtr, CARD32);
-typedef Bool (*FUN_XGIBiosModeInit)(ScrnInfoPtr, XGIAskModePtr, CARD32);
-typedef Bool (*FUN_XGIBiosSpecialFeature)(ScrnInfoPtr, unsigned long,
-    const unsigned long*);
-typedef void (*FUN_XGIBiosValueInit)(ScrnInfoPtr);
-
-typedef struct {
-    unsigned long                   size;
-    FUN_XGIBiosValidMode            biosValidMode;
-    FUN_XGIBiosModeInit             biosModeInit;
-    FUN_XGIBiosSpecialFeature       biosSpecialFeature;
-    FUN_XGIBiosValueInit            biosValueInit;
-    unsigned long                   dtvType;
-} XGIBiosDllRec, *XGIBiosDllPtr;
 
 /*
  * DTV_INFO : Data type for control the TVX
@@ -396,14 +382,6 @@ typedef struct {
     CARD8       curoffset;          /* Current Offset */
     CARD8       delta;              /* Delta unit */
 } XGIDigitalTVInfoRec, *XGIDigitalTVInfoPtr;
-
-typedef struct {
-    CARD16  lcdType;
-    CARD16  lcdWidth;
-    CARD16  lcdHeight;
-    CARD16  lcdRefRate;
-    CARD8   lcdModeNo;
-} XGILCDRec, *XGILCDPtr;
 
 typedef enum
 {
@@ -508,15 +486,6 @@ typedef struct {
     Bool                dri_screen_open;
 
 
-    Bool                isVGAMode;
-    CARD16              textModeNo;
-
-    CARD32              biosCapability;
-    CARD32              biosDevSupport;
-    CARD32              biosOrgDevSupport;
-    CARD32              dtvInfo;
-
-    CARD32              biosDllOperationFlag;
     CARD32              biosFbSize;     /* bios report frame buffer size */
     CARD32              freeFbSize;
     CARD16              maxBandwidth;
@@ -543,22 +512,10 @@ typedef struct {
     Bool                isNeedShadow;
     Bool                isNeedStretch;
 
-    float               memClock;
     int                 minClock;
     int                 maxClock;
 
     XGIDigitalTVInfoPtr pDtvInfo;
-
-    Bool                lcdActive;
-    CARD16              lcdType;
-    CARD16              lcdWidth;
-    CARD16              lcdHeight;
-    CARD16              lcdRefRate;
-    CARD8               lcdModeNo;
-
-    CARD16              digitalWidth;
-    CARD16              digitalHeight;
-    CARD8               digitalModeNo;
 
     int                 currentClock;
     int                 rotate;
@@ -602,8 +559,6 @@ typedef struct {
 
     xf86Int10InfoPtr    pInt10;
     vbeInfoPtr          pVbe;
-
-    XGIBiosDllPtr       pBiosDll;
 
     XGIHeadID           headID;
     XAAInfoRecPtr       pXaaInfo;

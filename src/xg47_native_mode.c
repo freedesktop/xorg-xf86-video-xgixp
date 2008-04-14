@@ -29,7 +29,6 @@
 
 #include "xgi.h"
 
-#ifdef NATIVE_MODE_SETTING
 #include "xgi_driver.h"
 #include "xgi_regs.h"
 #include "xgi_bios.h"
@@ -542,4 +541,3 @@ void xg47_mode_save(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr regs)
     INB(0x3c6);
     regs->syndac_command = INB(0x3c6);
 }
-#endif /* NATIVE_MODE_SETTING */
