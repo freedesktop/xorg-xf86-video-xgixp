@@ -74,7 +74,6 @@
 #include "xgi_option.h"
 #include "xgi_misc.h"
 #include "xgi_bios.h"
-#include "xgi_mode.h"
 #include "xgi_dga.h"
 #include "xgi_cursor.h"
 #include "xgi_shadow.h"
@@ -262,7 +261,7 @@ static const char *fbdevHWSymbols[] = {
     "fbdevHWGetVidmem",
     "fbdevHWDPMSSet",
     /* colormap */
-    "fbdevHWLoadPalette",
+    "fbdevHWLoadPaletteWeak",
     /* ScrnInfo hooks */
     "fbdevHWAdjustFrameWeak",
     "fbdevHWEnterVT",
@@ -2147,9 +2146,11 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
      */
     if (!miCreateDefColormap(pScreen)) return FALSE;
     if (!xf86HandleColormaps(pScreen, 256, pXGI->isDac8bits ? 8 : 6,
-                             XGILoadPalette, XGISetOverscan,
+                             ((pXGI->isFBDev)
+                              ? fbdevHWLoadPaletteWeak() : XG47LoadPalette),
+                             XG47SetOverscan,
                              (CMAP_RELOAD_ON_MODE_SWITCH 
-			      | CMAP_PALETTED_TRUECOLOR))) {
+                              | CMAP_PALETTED_TRUECOLOR))) {
         return FALSE;
     }
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After xf86HandleColormaps()\n");

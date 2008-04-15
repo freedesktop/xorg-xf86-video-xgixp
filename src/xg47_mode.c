@@ -32,7 +32,7 @@
 #include "xgi.h"
 #include "xgi_regs.h"
 #include "xgi_bios.h"
-#include "xgi_mode.h"
+#include "xg47_mode.h"
 
 /* Jong 09/15/2006; support dual view; default is single mode */
 int		g_DualViewMode=0;

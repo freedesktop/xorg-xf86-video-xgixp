@@ -63,8 +63,6 @@ xgixp_drv_la_SOURCES = \
 	xgi_hwmc.h \
 	xgi_misc.c \
 	xgi_misc.h \
-	xgi_mode.c \
-	xgi_mode.h \
 	xgi_option.c \
 	xgi_option.h \
 	xgi_shadow.c \
