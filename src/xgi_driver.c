@@ -56,11 +56,6 @@
 /* colormap initialization */
 #include "micmap.h"
 
-/* VGA or Hercules monochrome screens */
-#include "xf1bpp.h"
-/* VGA or EGC 16-colour screens */
-#include "xf4bpp.h"
-
 #include "xf86Version.h"
 
 #include "xgi_debug.h"
