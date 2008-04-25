@@ -34,6 +34,7 @@
 #include <xf86Crtc.h>
 
 #include "xgi.h"
+#include "xgi_regs.h"
 
 
 static void xg47_crtc_destroy(xf86CrtcPtr output);
