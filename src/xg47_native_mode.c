@@ -225,6 +225,10 @@ static void FillExtendedRegisters(XGIPtr pXGI, DisplayModePtr disp_mode,
      */
     regs->alt_clock_select = (disp_mode->HDisplay < 640) ? 0x20 : 0x00;
 
+    /* Always use the programmable clock.
+     */
+    regs->alt_clock_select |= 0x02;
+
 
     /* See Pixel Bus Mode Register on page 9-11 of "Volari XP10 non-3D SPG
      * v1.0".
@@ -411,7 +415,7 @@ void xg47_mode_restore(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr regs)
     OUT3C5B(0x18, regs->seq[0x18]);
     OUT3C5B(0x19, regs->seq[0x19]);
     
-    OUTB(0x3db, (INB(0x3db) & ~0xe0) | regs->alt_clock_select);
+    OUTB(0x3db, regs->alt_clock_select);
 
     /* Disable linear addressing.
      */
