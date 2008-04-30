@@ -36,6 +36,8 @@
 #include "xf86Resources.h"
 #include "xf86cmap.h"
 #include "xf86xv.h"
+#include <xf86i2c.h>
+#include <xf86Crtc.h>
 #include "vbe.h"
 
 /* PCI vendor/device definitions */
@@ -69,7 +71,6 @@
 #include "xgi_option.h"
 #include "xgi_misc.h"
 #include "xgi_bios.h"
-#include "xgi_mode.h"
 #include "xgi_dga.h"
 #include "xgi_cursor.h"
 #include "xgi_shadow.h"
@@ -103,6 +104,7 @@ static int	XGIEntityIndex = -1;
 
 #define XGI_XVMC
 
+static Bool xg47_crtc_config_resize(ScrnInfoPtr scrn, int width, int height);
 static xf86MonPtr get_configured_monitor(ScrnInfoPtr pScrn, int index);
 static XGIPtr XGIGetRec(ScrnInfoPtr pScrn);
 static void     XGIIdentify(int flags);
@@ -257,7 +259,7 @@ static const char *fbdevHWSymbols[] = {
     "fbdevHWGetVidmem",
     "fbdevHWDPMSSet",
     /* colormap */
-    "fbdevHWLoadPalette",
+    "fbdevHWLoadPaletteWeak",
     /* ScrnInfo hooks */
     "fbdevHWAdjustFrameWeak",
     "fbdevHWEnterVT",
@@ -296,6 +298,10 @@ static PciChipsets XGIPciChipsets[] = {
     { -1,               -1,               RES_UNDEFINED  }
 };
 #endif
+
+static const xf86CrtcConfigFuncsRec xg47_crtc_config_funcs = {
+    .resize = xg47_crtc_config_resize
+};
 
 /* Clock Limits */
 static int PixelClockLimit8bpp[] = {
@@ -630,9 +636,6 @@ static XGIPtr XGIGetRec(ScrnInfoPtr pScrn)
      */
     if (pScrn->driverPrivate == NULL) {
 	XGIPtr pXGI = xnfcalloc(sizeof(XGIRec), 1);
-
-	/* Initialise it */
-	pXGI->pBiosDll = xnfcalloc(sizeof(XGIBiosDllRec), 1);
 
 	pScrn->driverPrivate = pXGI;
 	pXGI->pScrn = pScrn;
@@ -1022,13 +1025,6 @@ static Bool XGIPreInitInt10(ScrnInfoPtr pScrn)
 
     xf86LoaderReqSymLists(vbeSymbols, int10Symbols, NULL);
 
-#ifndef NATIVE_MODE_SETTING
-    /* int10 is broken on some Alphas */
-    pXGI->pVbe = VBEInit(NULL, pXGI->pEnt->index);
-    pXGI->pInt10 = pXGI->pVbe->pInt10;
-#endif /* NATIVE_MODE_SETTING */
-
-
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
@@ -1155,30 +1151,6 @@ static Bool XGIPreInitGamma(ScrnInfoPtr pScrn)
 }
 
 
-static Bool XGIPreInitLcdSize(ScrnInfoPtr pScrn)
-{
-    XGIPtr  pXGI = XGIPTR(pScrn);
-
-    CARD16  lcdWidth = 0;
-    CARD16  lcdHeight = 0;
-
-    pXGI->lcdActive = FALSE;
-    pXGI->lcdWidth = lcdWidth;
-    pXGI->lcdHeight = lcdHeight;
-
-    /* get LCD size if display on LCD */
-    if ((pXGI->displayDevice & ST_DISP_LCD)
-        || (IN3CFB(0x5B) & ST_DISP_LCD))
-    {
-        XGIGetLcdSize(pScrn, &lcdWidth, &lcdHeight);
-        pXGI->lcdActive = TRUE;
-        pXGI->lcdWidth = lcdWidth;
-        pXGI->lcdHeight = lcdHeight;
-    }
-
-    return TRUE;
-}
-
 /* This is called by XGIPreInit to validate modes
  * and compute parameters for all of the valid modes.
  */
@@ -1278,38 +1250,10 @@ static Bool XGIPreInitModes(ScrnInfoPtr pScrn)
         pXGI->noAccel = TRUE;
     }
 
-    /* Select valid modes from those available */
-    modesFound = xf86ValidateModes(pScrn,
-                                   pScrn->monitor->Modes,
-                                   pScrn->display->modes,
-                                   pClockRange,
-                                   NULL,                /* linePitches */
-                                   8 * 64,              /* minPitch */
-                                   8 * 1024,            /* maxPitch */
-                                   pScrn->bitsPerPixel, /* pitchInc */
-                                   128,                 /* minHeight */
-                                   4096,                /* maxHeight */
-                                   pScrn->display->virtualX,
-                                   pScrn->display->virtualY,
-                                   pXGI->fbSize,
-                                   LOOKUP_BEST_REFRESH);
 
-    if (modesFound < 1 && pXGI->isFBDev)
-    {
-        fbdevHWUseBuildinMode(pScrn);
-        pScrn->displayWidth = fbdevHWGetLineLength(pScrn)/(pScrn->bitsPerPixel/8);
-        modesFound = 1;
-    }
-
-    if (modesFound == -1) return FALSE;
-
-    /* Prune the modes marked as invalid */
-    xf86PruneDriverModes(pScrn);
-
-    /* If no valid modes, return */
-    if (!modesFound || !pScrn->modes)
-    {
-        xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "No valid modes found\n");
+    if (!xf86RandR12PreInit(pScrn)) {
+        xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
+                   "RandR initialization failure.\n");
         return FALSE;
     }
 
@@ -1394,6 +1338,8 @@ static Bool XGIPreInitMemory(ScrnInfoPtr pScrn)
     MessageType     from;
 
 
+    XG47GetFramebufferSize(pXGI);
+
     /* Save offset of frame buffer for setting destination and source base in
      * acceleration functions.
      * 
@@ -1445,10 +1391,6 @@ static Bool XGIPreInitMemory(ScrnInfoPtr pScrn)
     xf86DrvMsg(pScrn->scrnIndex, from, "VideoRAM: %u KByte\n",
                pScrn->videoRam);
 
-    /* memory clock */
-    pXGI->memClock = XGICalculateMemoryClock(pScrn);
-    xf86DrvMsg(pScrn->scrnIndex, X_PROBED, "Memory Clock is %3.2f MHz\n",
-               pXGI->memClock);
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -1728,21 +1670,34 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     }
 
     if (!XGIPreInitInt10(pScrn))            goto fail;
-    if (!XGIBiosDllInit(pScrn))             goto fail;
     if (!XGIPreInitMemory(pScrn))           goto fail;
 
     /* pScrn->videoRam is determined by XGIPreInitMemory() */
     pXGI->fbSize = pScrn->videoRam * 1024;
 
+
+    pScrn->progClock = TRUE;
+
+    /* Allocate an xf86CrtcConfig
+     */
+    xf86CrtcConfigInit(pScrn, & xg47_crtc_config_funcs);
+    xf86CrtcSetSizeRange(pScrn, 320, 200, 1920, 1200);
+
+
     if (!XGIMapFB(pScrn))                   goto fail;
 
-    if (!XGIPreInitLcdSize(pScrn))          goto fail;
-
     XGIPreInitDDC(pScrn);
+
+    xg47_CrtcInit(pScrn, ST_DISP_CRT);
+    xg47_PreInitOutputs(pScrn);
 
     if (!XGIPreInitModes(pScrn))            goto fail;
 
     if (!XGIPreInitCursor(pScrn))           goto fail;
+    if (!xf86InitialConfiguration(pScrn, FALSE)) {
+        xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "No valid modes found.\n");
+        return FALSE;
+    }
 
     if (!XGIPreInitAccel(pScrn))            goto fail;
 
@@ -1866,14 +1821,7 @@ static void XGISave(ScrnInfoPtr pScrn)
         return;
     }
 
-#ifndef NATIVE_MODE_SETTING
-    vgaHWSave(pScrn, pVgaReg, VGA_SR_MODE | VGA_SR_CMAP |
-                              (IsPrimaryCard ? VGA_SR_FONTS : 0));
-
-    XGIModeSave(pScrn, pXGIReg);
-#else
     xg47_mode_save(pScrn, pVgaReg, pXGIReg);
-#endif
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -1894,23 +1842,10 @@ static void XGIRestore(ScrnInfoPtr pScrn)
 {
     XGIPtr      pXGI = XGIPTR(pScrn);
     XGIRegPtr   pXGIReg = &pXGI->savedReg;
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-#ifndef NATIVE_MODE_SETTING
-    XGIModeRestore(pScrn, pXGIReg);
-#else
     vgaRegPtr   pVgaReg = &VGAHWPTR(pScrn)->SavedReg;
 
     xg47_mode_restore(pScrn, pVgaReg, pXGIReg);
-#endif
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
+    vgaHWRestore(pScrn, pVgaReg, VGA_SR_FONTS);
 }
 
 Bool XGIFBManagerInit(ScreenPtr pScreen)
@@ -2011,17 +1946,12 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 #ifdef XGI_DUMP
     XGIDumpRegisterValue(pScrn);
 #endif
-    /*
-     * Initialise the first video mode.
-     * The ScrnInfoRec's vtSema field should be set to TRUE
-     * just prior to changing the video hardware's state.
-     */
-    if (! (*pScrn->SwitchMode)(scrnIndex, pScrn->currentMode, 0)) {
-        goto fail;
-    }
 
+    /* Darken the screen for aesthetic reasons and set the viewport.
+     */
     XGISaveScreen(pScreen, SCREEN_SAVER_ON);
     pScrn->AdjustFrame(scrnIndex, pScrn->frameX0, pScrn->frameY0, 0);
+
 
     /*
      * The next step is to setup the screen's visuals, and initialise the
@@ -2044,6 +1974,9 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
      * acceptable.  To deal with this, call miSetVisualTypes with
      * the appropriate visual mask.
      */
+    if (!xf86SetDefaultVisual(pScrn, -1))
+	goto fail;
+
     if (pScrn->bitsPerPixel > 8)
         visualMask = miGetDefaultVisualMask(pScrn->depth);
     else
@@ -2058,7 +1991,9 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
     if (!miSetPixmapDepths())   goto fail;
 
     /* FIXME - we don't do shadowfb for < 4 */
-    displayWidth = pScrn->displayWidth;
+    pScrn->displayWidth = pScrn->virtualX;
+    displayWidth = pScrn->virtualX;
+
     if (pXGI->rotate)
     {
         height = pScrn->virtualX;
@@ -2089,9 +2024,11 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
      * and fill in other pScreen fields.
      */
 
-    retValue = fbScreenInit(pScreen, pFBStart,
-                            pScrn->virtualX, pScrn->virtualY,
-                            pScrn->xDpi, pScrn->yDpi, pScrn->displayWidth,
+pScrn->xDpi = 72;
+pScrn->yDpi = 72;
+pScrn->pScreen = pScreen;
+    retValue = fbScreenInit(pScreen, pFBStart, width, height,
+                            pScrn->xDpi, pScrn->yDpi, displayWidth,
                             pScrn->bitsPerPixel);
 
     if (!retValue)  goto fail;
@@ -2136,6 +2073,13 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
         XGIDGAInit(pScreen);
     }
 
+    /* This is an ugly hack.  For reasons that I do not understand, if the
+     * mode is not set before calling XGIDRIFinishScreenInit, acceleration
+     * will not work.  I assume that there is some register setting that
+     * should be done in the kernel but is only done in the mode setting code.
+     */
+    XG47_NativeModeInit(pScrn, pScrn->currentMode);
+
     if (pXGI->directRenderingEnabled) {
         pXGI->directRenderingEnabled = XGIDRIFinishScreenInit(pScreen);
 	if (!pXGI->directRenderingEnabled) {
@@ -2160,6 +2104,9 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
         xf86DrvMsg(scrnIndex, X_INFO, "Acceleration disabled\n");
     }
 
+
+    if (!XGIEnterVT(scrnIndex, 0))
+	goto fail;
 
     /* Set Silken Mouse */
     xf86SetSilkenMouse(pScreen);
@@ -2202,9 +2149,11 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
      */
     if (!miCreateDefColormap(pScreen)) return FALSE;
     if (!xf86HandleColormaps(pScreen, 256, pXGI->isDac8bits ? 8 : 6,
-                             XGILoadPalette, XGISetOverscan,
+                             ((pXGI->isFBDev)
+                              ? fbdevHWLoadPaletteWeak() : XG47LoadPalette),
+                             XG47SetOverscan,
                              (CMAP_RELOAD_ON_MODE_SWITCH 
-			      | CMAP_PALETTED_TRUECOLOR))) {
+                              | CMAP_PALETTED_TRUECOLOR))) {
         return FALSE;
     }
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After xf86HandleColormaps()\n");
@@ -2236,10 +2185,7 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After pXGI->isShadowFB\n");
 
     /* DPMS setup */
-#ifdef DPMSExtension
-    xf86DPMSInit(pScreen, (DPMSSetProcPtr)XGIDPMSSet, 0);
-    XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After DPMSExtension\n");
-#endif
+    xf86DPMSInit(pScreen, xf86DPMSSet, 0);
 
     /* XV extension */
 #ifdef XvExtension
@@ -2261,6 +2207,8 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
     /* Wrap CloseScreen */
     pXGI->CloseScreen    = pScreen->CloseScreen;
     pScreen->CloseScreen = XGICloseScreen;
+
+    xf86CrtcScreenInit(pScreen);
 
     PDEBUG(ErrorF("*-*Jong-After-XGIInitMC-1\n"));
     /* Report any unused options (only for the first generation) */
@@ -2628,14 +2576,6 @@ static int XGIValidMode(int scrnIndex, DisplayModePtr mode, Bool verbose, int fl
     int             ret;
 
 
-#ifndef NATIVE_MODE_SETTING
-    if (!pXGI->pInt10) {
-        xf86DrvMsg(scrnIndex, X_ERROR,
-                   "have not loaded int10 module successfully!\n");
-        return MODE_ERROR;
-    }
-#endif
-
     ret = XG47ValidMode(pScrn, mode);
 
     /* This driver only uses the programmable clock mode.
@@ -2646,41 +2586,20 @@ static int XGIValidMode(int scrnIndex, DisplayModePtr mode, Bool verbose, int fl
     return ret;
 }
 
-/*
- * Initialise a new mode.  This is currently still using the old "initialise
- * struct, restore/write struct to HW" model.  That could be changed.
- * This could be called from the ChipScreenInit(), ChipSwitchMode() and
- * ChipEnterVT() functions.Programs the hardware for the given video mode.
- */
+
 static Bool XGIModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode)
 {
-    XGIPtr      pXGI = XGIPTR(pScrn);
-    Bool        ret = FALSE;
+    xf86SetSingleMode(pScrn, mode, RR_Rotate_0);
+    vgaHWProtect(pScrn, FALSE);
+    return TRUE;
+}
 
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
 
-    switch(pXGI->chipset)
-    {
-    case XG47:
-#ifndef NATIVE_MODE_SETTING
-        ret = XG47ModeInit(pScrn, mode);
-#else
-	ret = XG47_NativeModeInit(pScrn, mode);
-#endif
-        break;
-    default:
-        break;
-    }
-
-#ifdef XGI_DUMP
-    XGIDumpRegisterValue(pScrn);
-#endif
-
-#if DBG_FLOW
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-#endif
-
-    return ret;
+Bool
+xg47_crtc_config_resize(ScrnInfoPtr scrn, int width, int height)
+{
+    scrn->virtualX = width;
+    scrn->virtualY = height;
+ 
+    return TRUE;
 }

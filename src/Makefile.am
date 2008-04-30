@@ -31,12 +31,11 @@ xgixp_drv_ladir = @moduledir@/drivers
 xgixp_drv_la_SOURCES = \
 	xg47_accel.c \
 	xg47_accel.h \
-	xg47_bios.c \
-	xg47_bios.h \
 	xg47_cmdlist.c \
 	xg47_cmdlist.h \
 	xg47_cursor.c \
 	xg47_cursor.h \
+	xg47_display.c \
 	xg47_i2c.c \
 	xg47_i2c.h \
 	xg47_misc.c \
@@ -44,6 +43,7 @@ xgixp_drv_la_SOURCES = \
 	xg47_mode.c \
 	xg47_mode.h \
 	xg47_native_mode.c \
+	xg47_outputs.c \
 	xg47_regs.h \
 	xg47_tv.c \
 	xg47_tv.h \
@@ -52,7 +52,6 @@ xgixp_drv_la_SOURCES = \
 	xg47_videohw.c \
 	xg47_videohw.h \
 	xgi.h \
-	xgi_bios.c \
 	xgi_bios.h \
 	xgi_cursor.c \
 	xgi_cursor.h \
@@ -66,8 +65,6 @@ xgixp_drv_la_SOURCES = \
 	xgi_hwmc.h \
 	xgi_misc.c \
 	xgi_misc.h \
-	xgi_mode.c \
-	xgi_mode.h \
 	xgi_option.c \
 	xgi_option.h \
 	xgi_shadow.c \

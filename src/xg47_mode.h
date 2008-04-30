@@ -28,28 +28,14 @@
 #ifndef _XG47_MODE_H_
 #define _XG47_MODE_H_
 
-/* xg47_mode.c */
-extern void XG47ModeSave(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg);
-extern void XG47ModeRestore(ScrnInfoPtr pScrn, XGIRegPtr pXGIReg);
 extern void XG47LoadPalette(ScrnInfoPtr pScrn, int numColors, int *indicies,
                             LOCO *colors, VisualPtr pVisual);
 extern void XG47SetOverscan(ScrnInfoPtr pScrn, int overscan);
 extern unsigned int XG47DDCRead(ScrnInfoPtr pScrn);
-extern Bool XG47ModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode);
 extern int XG47ValidMode(ScrnInfoPtr pScrn, DisplayModePtr dispMode);
 
-extern void XG47SetCRTCViewStride(ScrnInfoPtr pScrn);
-extern void XG47SetCRTCViewBaseAddr(ScrnInfoPtr pScrn, unsigned long startAddr);
-extern void XG47SetW2ViewStride(ScrnInfoPtr pScrn);
-extern void XG47SetW2ViewBaseAddr(ScrnInfoPtr pScrn, unsigned long startAddr);
-
-extern XGIModePtr XG47GetModeFromRes(unsigned width, unsigned height);
-
-#ifdef NATIVE_MODE_SETTING
 extern void xg47_mode_save(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr pXGIReg);
-extern void XG47_mode_restore(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr pXGIReg);
+extern void xg47_mode_restore(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr pXGIReg);
 extern Bool XG47_NativeModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode);
-#endif /* NATIVE_MODE_SETTING */
-
 
 #endif

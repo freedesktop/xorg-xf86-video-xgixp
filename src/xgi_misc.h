@@ -29,8 +29,6 @@
 #define _XGI_MISC_H_
 
 /* xgi_misc.c */
-extern void XGIGetLcdSize(ScrnInfoPtr pScrn, CARD16 *lcdWidth, CARD16 *lcdHeight);
-extern float XGICalculateMemoryClock(ScrnInfoPtr pScrn);
 extern void XGIDumpRegisterValue(ScrnInfoPtr pScrn);
 
 /* Jong 07/12/2006 */

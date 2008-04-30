@@ -1809,9 +1809,13 @@ void XG47PanningExpansionAdjust(ScrnInfoPtr pScrn, BoxPtr pDstBox)
 
     /* Expand dest rect too if expansion mode ON */
     isPanelExpension = XG47IsExpansionMode(pScrn);
+#if 0
     panelSizeX = pXGI->lcdWidth;
     panelSizeY = pXGI->lcdHeight;
-
+#else
+    panelSizeX = 0;
+    panelSizeY = 0;
+#endif
     panningX = modeSizeX = (CARD16) pScrn->currentMode->HDisplay;
     panningY = modeSizeY = (CARD16) pScrn->currentMode->VDisplay;
 

@@ -29,11 +29,9 @@
 
 #include "xgi.h"
 
-#ifdef NATIVE_MODE_SETTING
 #include "xgi_driver.h"
 #include "xgi_regs.h"
 #include "xgi_bios.h"
-#include "xgi_mode.h"
 #include "xg47_mode.h"
 
 #if 0
@@ -227,6 +225,10 @@ static void FillExtendedRegisters(XGIPtr pXGI, DisplayModePtr disp_mode,
      */
     regs->alt_clock_select = (disp_mode->HDisplay < 640) ? 0x20 : 0x00;
 
+    /* Always use the programmable clock.
+     */
+    regs->alt_clock_select |= 0x02;
+
 
     /* See Pixel Bus Mode Register on page 9-11 of "Volari XP10 non-3D SPG
      * v1.0".
@@ -340,7 +342,7 @@ void SetModeCRTC1(XGIPtr pXGI, DisplayModePtr disp_mode, XGIRegPtr regs)
 }
 
 
-static void SetColorDAC(XGIPtr pXGI, unsigned color_depth, XGIRegPtr regs)
+void SetColorDAC(XGIPtr pXGI, unsigned color_depth, XGIRegPtr regs)
 {
     switch (color_depth) {
     case 16:
@@ -393,12 +395,8 @@ void xg47_mode_restore(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr regs)
     uint8_t v3x5_5a;
     uint8_t v3x5_2f;
 
-    /* DAC power off
-     */
-    OUT3C5B(0x24, IN3C5B(0x24) & ~0x01);
-    OUT3CFB(0x23, IN3CFB(0x23) | 0x03);
 
-    vgaHWRestore(pScrn, pVgaReg, VGA_SR_ALL);
+    vgaHWRestore(pScrn, pVgaReg, VGA_SR_MODE);
 
 
     OUT3CFB(0x0f, regs->gra[0x0f]);
@@ -411,7 +409,7 @@ void xg47_mode_restore(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr regs)
     OUT3C5B(0x18, regs->seq[0x18]);
     OUT3C5B(0x19, regs->seq[0x19]);
     
-    OUTB(0x3db, (INB(0x3db) & ~0xe0) | regs->alt_clock_select);
+    OUTB(0x3db, regs->alt_clock_select);
 
     /* Disable linear addressing.
      */
@@ -497,11 +495,6 @@ void xg47_mode_restore(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr regs)
     /* setup 1st timing
      */
     OUT3CFB(0x2c, IN3CFB(0x2c) & ~0x40);
-
-    /* DAC power on
-     */
-    OUT3C5B(0x24, IN3C5B(0x24) | 0x01);
-    OUT3CFB(0x23, IN3CFB(0x23) & ~0x03);
 }
 
 
@@ -542,4 +535,3 @@ void xg47_mode_save(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr regs)
     INB(0x3c6);
     regs->syndac_command = INB(0x3c6);
 }
-#endif /* NATIVE_MODE_SETTING */

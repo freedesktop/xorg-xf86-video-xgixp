@@ -36,35 +36,6 @@
 
 #include "xgi_debug.h"
 
-void XGIGetLcdSize(ScrnInfoPtr pScrn, CARD16 *lcdWidth, CARD16 *lcdHeight)
-{
-    XGIPtr pXGI = XGIPTR(pScrn);
-
-    switch(pXGI->chipset)
-    {
-    case XG47:
-    default:
-        break;
-    }
-}
-
-float XGICalculateMemoryClock(ScrnInfoPtr pScrn)
-{
-    XGIPtr  pXGI = XGIPTR(pScrn);
-    float   freq = 0.0;
-
-    switch (pXGI->chipset)
-    {
-    case XG47:
-        freq = XGIBiosCalculateClock(pXGI, 0x1E, 0x1F);
-        break;
-    default:
-        break;
-    }
-
-    return (freq);
-}
-
 #if 0
 void XGIDumpRegisterValue(ScrnInfoPtr pScrn)
 {
