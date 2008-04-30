@@ -1850,6 +1850,7 @@ static void XGIRestore(ScrnInfoPtr pScrn)
     vgaRegPtr   pVgaReg = &VGAHWPTR(pScrn)->SavedReg;
 
     xg47_mode_restore(pScrn, pVgaReg, pXGIReg);
+    vgaHWRestore(pScrn, pVgaReg, VGA_SR_FONTS);
 }
 
 Bool XGIFBManagerInit(ScreenPtr pScreen)

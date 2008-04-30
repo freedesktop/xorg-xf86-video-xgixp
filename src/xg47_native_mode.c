@@ -396,7 +396,7 @@ void xg47_mode_restore(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr regs)
     uint8_t v3x5_2f;
 
 
-    vgaHWRestore(pScrn, pVgaReg, VGA_SR_ALL);
+    vgaHWRestore(pScrn, pVgaReg, VGA_SR_MODE);
 
 
     OUT3CFB(0x0f, regs->gra[0x0f]);
