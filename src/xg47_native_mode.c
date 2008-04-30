@@ -395,12 +395,6 @@ void xg47_mode_restore(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr regs)
     uint8_t v3x5_5a;
     uint8_t v3x5_2f;
 
-#if 0
-    /* DAC power off
-     */
-    OUT3C5B(0x24, IN3C5B(0x24) & ~0x01);
-    OUT3CFB(0x23, IN3CFB(0x23) | 0x03);
-#endif
 
     vgaHWRestore(pScrn, pVgaReg, VGA_SR_ALL);
 
@@ -501,13 +495,6 @@ void xg47_mode_restore(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr regs)
     /* setup 1st timing
      */
     OUT3CFB(0x2c, IN3CFB(0x2c) & ~0x40);
-
-#if 0
-    /* DAC power on
-     */
-    OUT3C5B(0x24, IN3C5B(0x24) | 0x01);
-    OUT3CFB(0x23, IN3CFB(0x23) & ~0x03);
-#endif
 }
 
 

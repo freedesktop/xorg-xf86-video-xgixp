@@ -2593,13 +2593,9 @@ static int XGIValidMode(int scrnIndex, DisplayModePtr mode, Bool verbose, int fl
 
 static Bool XGIModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode)
 {
-#if 0
-    return XG47_NativeModeInit(pScrn, mode);
-#else
     xf86SetSingleMode(pScrn, mode, RR_Rotate_0);
     vgaHWProtect(pScrn, FALSE);
     return TRUE;
-#endif
 }
 
 
