@@ -1950,19 +1950,12 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 #ifdef XGI_DUMP
     XGIDumpRegisterValue(pScrn);
 #endif
-    /*
-     * Initialise the first video mode.
-     * The ScrnInfoRec's vtSema field should be set to TRUE
-     * just prior to changing the video hardware's state.
-     */
-#if 0
-    if (! (*pScrn->SwitchMode)(scrnIndex, pScrn->currentMode, 0)) {
-        goto fail;
-    }
 
+    /* Darken the screen for aesthetic reasons and set the viewport.
+     */
     XGISaveScreen(pScreen, SCREEN_SAVER_ON);
     pScrn->AdjustFrame(scrnIndex, pScrn->frameX0, pScrn->frameY0, 0);
-#endif
+
 
     /*
      * The next step is to setup the screen's visuals, and initialise the
@@ -2083,6 +2076,13 @@ pScrn->pScreen = pScreen;
     {
         XGIDGAInit(pScreen);
     }
+
+    /* This is an ugly hack.  For reasons that I do not understand, if the
+     * mode is not set before calling XGIDRIFinishScreenInit, acceleration
+     * will not work.  I assume that there is some register setting that
+     * should be done in the kernel but is only done in the mode setting code.
+     */
+    XG47_NativeModeInit(pScrn, pScrn->currentMode);
 
     if (pXGI->directRenderingEnabled) {
         pXGI->directRenderingEnabled = XGIDRIFinishScreenInit(pScreen);
