@@ -38,6 +38,7 @@
 #include "xf86xv.h"
 #include <xf86i2c.h>
 #include <xf86Crtc.h>
+#include <xf86RandR12.h>
 #include "vbe.h"
 
 /* PCI vendor/device definitions */
@@ -62,6 +63,10 @@
 
 #include "xgi_debug.h"
 
+//#define FB_ACCESS_WRAPPER
+#if X_BYTE_ORDER == X_BIG_ENDIAN
+#include "wfbrename.h"
+#endif
 #include "fb.h"
 
 /* Driver data structures */
@@ -85,6 +90,8 @@
 #include "xg47_regs.h"
 #include "xg47_cmdlist.h"
 #include "xg47_i2c.h"
+
+#include <byteswap.h>
 
 /* Jong 09/20/2006; support dual view */
 extern int		g_DualViewMode;
@@ -138,6 +145,12 @@ static Bool     XGIModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode);
 
 static void     XGIBlockHandler(int, pointer, pointer, pointer);
 
+static void xg47_write_memory_func(void *dst, uint32_t value, int size);
+static uint32_t xg47_read_memory_func(const void *src, int size);
+static void xg47_setup_fb_wrap(ReadMemoryProcPtr *read_ptr, 
+    WriteMemoryProcPtr *write_ptr, DrawablePtr pDraw);
+static void xg47_finish_fb_wrap(DrawablePtr pDraw);
+
 
 static const char *vgahwSymbols[] = {
     "vgaHWBlankScreen",
@@ -173,8 +186,13 @@ static const char *i2cSymbols[] = {
 };
 
 static const char *fbSymbols[] = {
+#if X_BYTE_ORDER == X_BIG_ENDIAN
+    "wfbPictureInit",
+    "wfbScreenInit",
+#else
     "fbPictureInit",
     "fbScreenInit",
+#endif
     NULL
 };
 
@@ -396,7 +414,13 @@ static pointer XGISetup(pointer module,
         isInited = TRUE;
         xf86AddDriver(&XGI, module, 1);
 
-        if (!LoadSubModule(module, "fb", NULL, NULL, NULL, NULL,
+        if (!LoadSubModule(module, 
+#if X_BYTE_ORDER == X_BIG_ENDIAN
+			   "wfb",
+#else
+			   "fb",
+#endif
+			   NULL, NULL, NULL, NULL,
                            NULL, NULL)) {
             return NULL;
         }
@@ -1845,7 +1869,9 @@ static void XGIRestore(ScrnInfoPtr pScrn)
     vgaRegPtr   pVgaReg = &VGAHWPTR(pScrn)->SavedReg;
 
     xg47_mode_restore(pScrn, pVgaReg, pXGIReg);
+#if !defined(__powerpc__)
     vgaHWRestore(pScrn, pVgaReg, VGA_SR_FONTS);
+#endif
 }
 
 Bool XGIFBManagerInit(ScreenPtr pScreen)
@@ -2027,11 +2053,19 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 pScrn->xDpi = 72;
 pScrn->yDpi = 72;
 pScrn->pScreen = pScreen;
+#if X_BYTE_ORDER == X_BIG_ENDIAN
+    retValue = wfbScreenInit(pScreen, pFBStart, width, height,
+			     pScrn->xDpi, pScrn->yDpi, displayWidth,
+			     pScrn->bitsPerPixel,
+			     xg47_setup_fb_wrap, xg47_finish_fb_wrap);
+#else
     retValue = fbScreenInit(pScreen, pFBStart, width, height,
-                            pScrn->xDpi, pScrn->yDpi, displayWidth,
-                            pScrn->bitsPerPixel);
+			    pScrn->xDpi, pScrn->yDpi, displayWidth,
+			    pScrn->bitsPerPixel);
+#endif
 
     if (!retValue)  goto fail;
+
     /*
      * Set initial black & white colourmap indices.
      */
@@ -2054,7 +2088,11 @@ pScrn->pScreen = pScreen;
     }
 
     /* must be after RGB order fixed */
+#if X_BYTE_ORDER == X_BIG_ENDIAN
+    wfbPictureInit(pScreen, 0, 0);
+#else
     fbPictureInit(pScreen, 0, 0);
+#endif
 
     if (!XGIFBManagerInit(pScreen))
     {
@@ -2603,3 +2641,137 @@ xg47_crtc_config_resize(ScrnInfoPtr scrn, int width, int height)
  
     return TRUE;
 }
+
+
+#if X_BYTE_ORDER == X_BIG_ENDIAN
+uint32_t
+xg47_read_memory_swap_func(const void *src, int size)
+{
+    switch (size) {
+    case 1: {
+	const uint8_t *const ptr = src;
+	return *ptr;
+    }
+
+    case 2: {
+	const uint16_t *const ptr = src;
+	return bswap_16(*ptr);
+    }
+
+    case 4: {
+	const uint32_t *const ptr = src;
+	return bswap_32(*ptr);
+    }
+    }
+
+    return 0;
+}
+
+
+void
+xg47_write_memory_swap_func(void *dst, uint32_t value, int size)
+{
+    switch (size) {
+    case 1: {
+	uintptr_t addr = (uintptr_t) dst;
+	uint8_t *const ptr = (uint8_t *)(addr ^ 3);
+
+	*ptr = value;
+	break;
+    }
+
+    case 2: {
+	uint16_t *const ptr = dst;
+	*ptr = bswap_16(value);
+	break;
+    }
+
+    case 4: {
+	uint32_t *const ptr = dst;
+	*ptr = bswap_32(value);
+	break;
+    }
+    }
+}
+
+
+uint32_t
+xg47_read_memory_func(const void *src, int size)
+{
+    switch (size) {
+    case 1: {
+#if 0
+	uintptr_t addr = (uintptr_t) src;
+	const uint8_t *const ptr = (uint8_t *)(addr ^ 3);
+#else
+	const uint8_t *const ptr = (const uint8_t *) src;
+#endif
+	return *ptr;
+    }
+
+    case 2: {
+	const uint16_t *const ptr = src;
+	return *ptr;
+    }
+
+    case 4: {
+	const uint32_t *const ptr = src;
+	return *ptr;
+    }
+    }
+
+    return 0;
+}
+
+
+void
+xg47_write_memory_func(void *dst, uint32_t value, int size)
+{
+    switch (size) {
+    case 1: {
+	uint8_t *const ptr = dst;
+	*ptr = value;
+	break;
+    }
+
+    case 2: {
+	uint16_t *const ptr = dst;
+	*ptr = value;
+	break;
+    }
+
+    case 4: {
+	uint32_t *const ptr = dst;
+	*ptr = value;
+	break;
+    }
+    }
+}
+
+
+void
+xg47_setup_fb_wrap(ReadMemoryProcPtr *read_ptr, 
+		   WriteMemoryProcPtr *write_ptr,
+		   DrawablePtr pDraw)
+{
+    switch (pDraw->type) {
+    case DRAWABLE_WINDOW:
+    case DRAWABLE_BUFFER:
+	*read_ptr = xg47_read_memory_swap_func;
+	*write_ptr = xg47_write_memory_swap_func;
+	break;
+	
+    default:
+	*read_ptr = xg47_read_memory_func;
+	*write_ptr = xg47_write_memory_func;
+	break;
+    }
+}
+
+
+void
+xg47_finish_fb_wrap(DrawablePtr pDraw)
+{
+    (void) pDraw;
+}
+#endif /* X_BYTE_ORDER == X_BIG_ENDIAN */
