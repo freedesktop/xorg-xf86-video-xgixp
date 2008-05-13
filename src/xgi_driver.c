@@ -688,36 +688,6 @@ static void XGIFreeRec(ScrnInfoPtr pScrn)
 
 }
 
-/* XGI Display Power Management Set */
-static void XGIDPMSSet(ScrnInfoPtr pScrn, int PowerManagementMode, int flags)
-{
-    XGIPtr  pXGI = XGIPTR(pScrn);
-
-
-    if (!pScrn->vtSema) {
-        return;
-    }
-
-    if (pXGI->isFBDev) {
-        fbdevHWDPMSSet(pScrn, PowerManagementMode, flags);
-    } else if (pXGI->pVbe) {
-	/* I don't know if the bug is in XGI's BIOS or in VBEDPMSSet, but
-	 * cx must be set to 0 here, or the mode will not be set.
-	 */
-        pXGI->pInt10->cx = 0x0000;
-        VBEDPMSSet(pXGI->pVbe, PowerManagementMode);
-    } else {
-        const uint8_t power_status = (IN3CFB(0x23) & ~0x03) 
-	    | (PowerManagementMode);
-        const uint8_t pm_ctrl = (IN3C5B(0x24) & ~0x01)
-            | ((PowerManagementMode == DPMSModeOn) ? 0x01 : 0x00);
-
-
-        OUT3CFB(0x23, power_status);
-        OUT3C5B(0x24, pm_ctrl);
-    }
-}
-
 /**
  * Memory map the MMIO region.  Used during pre-init.
  */
