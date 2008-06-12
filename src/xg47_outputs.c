@@ -53,6 +53,7 @@ static void xg47_output_mode_set(xf86OutputPtr output, DisplayModePtr mode,
     DisplayModePtr adjusted_mode);
 
 static void xg47_vga_dpms(xf86OutputPtr output, int mode);
+static void xg47_dvi_dpms(xf86OutputPtr output, int mode);
 
 static xf86OutputStatus xg47_output_detect(xf86OutputPtr output);
 
@@ -64,8 +65,27 @@ static void xg47_output_destroy(xf86OutputPtr output);
 
 static DisplayModePtr xg47_output_get_modes(xf86OutputPtr output);
 
+static xf86OutputPtr xg47_OutputDac1Init(ScrnInfoPtr scrn, Bool primary);
+
+static xf86OutputPtr xg47_OutputDac2Init(ScrnInfoPtr scrn);
+
 static const xf86OutputFuncsRec xg47_vga_funcs = {
     .dpms = xg47_vga_dpms,
+    .save = xg47_output_save,
+    .restore = xg47_output_restore,
+    .mode_valid = xg47_output_mode_valid,
+    .mode_fixup = xg47_output_mode_fixup,
+    .prepare = xg47_output_prepare,
+    .mode_set = xg47_output_mode_set,
+    .commit = xg47_output_commit,
+    .detect = xg47_output_detect,
+    .get_modes = xg47_output_get_modes,
+    .destroy = xg47_output_destroy
+};
+
+
+static const xf86OutputFuncsRec xg47_dvi_funcs = {
+    .dpms = xg47_dvi_dpms,
     .save = xg47_output_save,
     .restore = xg47_output_restore,
     .mode_valid = xg47_output_mode_valid,
@@ -104,6 +124,24 @@ xg47_vga_dpms(xf86OutputPtr output, int mode)
         OUT3CFB(0x23, power_status);
         OUT3C5B(0x24, pm_ctrl);
     }
+}
+
+
+void
+xg47_dvi_dpms(xf86OutputPtr output, int mode)
+{
+    ScrnInfoPtr pScrn = output->scrn;
+    XGIPtr  pXGI = XGIPTR(pScrn);
+
+
+    const uint8_t power_status = (IN3CFB(0x26) & ~0x30) 
+	| (mode << 4);
+        const uint8_t pm_ctrl = (IN3CFB(0x3d) & ~0x01)
+            | ((mode == DPMSModeOn) ? 0x01 : 0x00);
+
+
+    OUT3CFB(0x26, power_status);
+    OUT3CFB(0x3d, pm_ctrl);
 }
 
 
@@ -213,6 +251,29 @@ xg47_OutputDac1Init(ScrnInfoPtr scrn, Bool primary)
 }
 
 
+/**
+ */
+xf86OutputPtr
+xg47_OutputDac2Init(ScrnInfoPtr scrn)
+{
+    XGIPtr pXGI = XGIPTR(scrn);
+    xf86OutputPtr output;
+    struct xg47_crtc_private *xg47_output;
+
+
+    output = xf86OutputCreate(scrn, &xg47_dvi_funcs, "DVI");
+    if (!output) {
+        return NULL;
+    }
+
+    xg47_output = xnfcalloc(sizeof(*xg47_output), 1);
+    xg47_output->pI2C = pXGI->pI2C_dvi;
+
+    output->driver_private = xg47_output;
+    return output;
+}
+
+
 void
 xg47_PreInitOutputs(ScrnInfoPtr scrn)
 {
@@ -220,6 +281,11 @@ xg47_PreInitOutputs(ScrnInfoPtr scrn)
 
     output = xg47_OutputDac1Init(scrn, TRUE);
     if (output != NULL) {
-        output->possible_crtcs = 1;
+        output->possible_crtcs = 0x01;
+    }
+
+    output = xg47_OutputDac2Init(scrn);
+    if (output != NULL) {
+        output->possible_crtcs = 0x01;
     }
 }
