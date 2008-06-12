@@ -35,6 +35,11 @@
 #include "xgi.h"
 #include "xgi_regs.h"
 
+struct xg47_crtc_private {
+    I2CBusPtr    pI2C;
+};
+
+
 static int xg47_output_mode_valid(xf86OutputPtr output, DisplayModePtr mode);
 
 static Bool xg47_output_mode_fixup(xf86OutputPtr output, DisplayModePtr mode,
@@ -47,7 +52,7 @@ static void xg47_output_commit(xf86OutputPtr output);
 static void xg47_output_mode_set(xf86OutputPtr output, DisplayModePtr mode,
     DisplayModePtr adjusted_mode);
 
-static void xg47_output_dpms(xf86OutputPtr output, int mode);
+static void xg47_vga_dpms(xf86OutputPtr output, int mode);
 
 static xf86OutputStatus xg47_output_detect(xf86OutputPtr output);
 
@@ -59,8 +64,8 @@ static void xg47_output_destroy(xf86OutputPtr output);
 
 static DisplayModePtr xg47_output_get_modes(xf86OutputPtr output);
 
-static const xf86OutputFuncsRec xg47_output_funcs = {
-    .dpms = xg47_output_dpms,
+static const xf86OutputFuncsRec xg47_vga_funcs = {
+    .dpms = xg47_vga_dpms,
     .save = xg47_output_save,
     .restore = xg47_output_restore,
     .mode_valid = xg47_output_mode_valid,
@@ -75,7 +80,7 @@ static const xf86OutputFuncsRec xg47_output_funcs = {
 
 
 void
-xg47_output_dpms(xf86OutputPtr output, int mode)
+xg47_vga_dpms(xf86OutputPtr output, int mode)
 {
     ScrnInfoPtr pScrn = output->scrn;
     XGIPtr  pXGI = XGIPTR(pScrn);
@@ -105,9 +110,10 @@ xg47_output_dpms(xf86OutputPtr output, int mode)
 xf86OutputStatus
 xg47_output_detect(xf86OutputPtr output)
 {
-    XGIPtr  pXGI = XGIPTR(output->scrn);
+    struct xg47_crtc_private *xg47_output = 
+	(struct xg47_crtc_private *) output->driver_private;
 
-    return (xf86I2CProbeAddress(pXGI->pI2C, 0xA0)) 
+    return (xf86I2CProbeAddress(xg47_output->pI2C, 0xA0)) 
         ? XF86OutputStatusConnected : XF86OutputStatusUnknown;
 }
 
@@ -172,9 +178,11 @@ static DisplayModePtr
 xg47_output_get_modes(xf86OutputPtr output)
 {
     XGIPtr  pXGI = XGIPTR(output->scrn);
+    struct xg47_crtc_private *xg47_output = 
+	(struct xg47_crtc_private *) output->driver_private;
     xf86MonPtr mon;
 
-    mon = xf86OutputGetEDID(output, pXGI->pI2C);
+    mon = xf86OutputGetEDID(output, xg47_output->pI2C);
     xf86OutputSetEDID(output, mon);
 
     return xf86OutputGetEDIDModes(output);
@@ -188,14 +196,19 @@ xg47_OutputDac1Init(ScrnInfoPtr scrn, Bool primary)
 {
     XGIPtr pXGI = XGIPTR(scrn);
     xf86OutputPtr output;
+    struct xg47_crtc_private *xg47_output;
     const char *const name = (primary) ? "VGA" : "VGA1";
 
 
-    output = xf86OutputCreate(scrn, &xg47_output_funcs, name);
+    output = xf86OutputCreate(scrn, &xg47_vga_funcs, name);
     if (!output) {
         return NULL;
     }
 
+    xg47_output = xnfcalloc(sizeof(*xg47_output), 1);
+    xg47_output->pI2C = pXGI->pI2C;
+
+    output->driver_private = xg47_output;
     return output;
 }
 
