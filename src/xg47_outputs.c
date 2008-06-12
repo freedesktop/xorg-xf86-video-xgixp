@@ -55,7 +55,8 @@ static void xg47_output_mode_set(xf86OutputPtr output, DisplayModePtr mode,
 static void xg47_vga_dpms(xf86OutputPtr output, int mode);
 static void xg47_dvi_dpms(xf86OutputPtr output, int mode);
 
-static xf86OutputStatus xg47_output_detect(xf86OutputPtr output);
+static xf86OutputStatus xg47_vga_detect(xf86OutputPtr output);
+static xf86OutputStatus xg47_dvi_detect(xf86OutputPtr output);
 
 static void xg47_output_save(xf86OutputPtr output);
 
@@ -78,7 +79,7 @@ static const xf86OutputFuncsRec xg47_vga_funcs = {
     .prepare = xg47_output_prepare,
     .mode_set = xg47_output_mode_set,
     .commit = xg47_output_commit,
-    .detect = xg47_output_detect,
+    .detect = xg47_vga_detect,
     .get_modes = xg47_output_get_modes,
     .destroy = xg47_output_destroy
 };
@@ -93,7 +94,7 @@ static const xf86OutputFuncsRec xg47_dvi_funcs = {
     .prepare = xg47_output_prepare,
     .mode_set = xg47_output_mode_set,
     .commit = xg47_output_commit,
-    .detect = xg47_output_detect,
+    .detect = xg47_dvi_detect,
     .get_modes = xg47_output_get_modes,
     .destroy = xg47_output_destroy
 };
@@ -145,8 +146,117 @@ xg47_dvi_dpms(xf86OutputPtr output, int mode)
 }
 
 
+void delay4I2C(XGIPtr pXGI, unsigned times)
+{
+    unsigned i;
+
+    for (i = 0; i < (0x40 * times); i++) {
+	(void) INB(0x3c4);
+	(void) INB(0x3c4);
+    }
+}
+
+
+/**
+ * Wait for vertical retrace on specified CRT
+ *
+ * \param pXGI  Device information handle
+ * \param crt   0 for first CRT, 1 for second CRT
+ */
+void waitVerticalRetrace(XGIPtr pXGI, int crt)
+{
+    const unsigned pattern = (crt == 0) ? 0x08 : 0x80;
+    unsigned i;
+
+    (void) INB(0x3DA);
+
+    for(i = 0; i < 0xFFFFU; i++) {
+        const uint8_t sync = INB(0x3DA);
+        if (sync & pattern)
+            return;
+    }
+}
+
+
 xf86OutputStatus
-xg47_output_detect(xf86OutputPtr output)
+xg47_vga_detect(xf86OutputPtr output)
+{
+    XGIPtr pXGI = XGIPTR(output->scrn);
+    struct xg47_crtc_private *xg47_output = 
+	(struct xg47_crtc_private *) output->driver_private;
+    I2CDevPtr i2c_dev;
+    Bool attached;
+
+
+    /* See if there is a display attached that returns an EDID block.
+     */
+    i2c_dev = xf86I2CFindDev(xg47_output->pI2C, 0xA0);
+    if (i2c_dev != NULL) {
+	I2CByte data;
+
+	/* If bit 7 of byte 14 is set, then the attached device is digital.
+	 * This means that it's not an analog CRT.
+	 */
+	xf86I2CReadByte(i2c_dev, 14, &data);
+	attached = ((data & 0x80) == 0);
+    } else {
+	uint8_t seq_24;
+	uint8_t seq_25;
+	uint8_t seq_69;
+
+
+	/* Enable the DAC.
+	 */
+	seq_24 = IN3C5B(0x24);
+	OUT3C5B(0x24, seq_24 | 0x01);
+
+
+	/* Wait for the vertical refresh period.
+	 */
+	waitVerticalRetrace(pXGI, 0);
+
+
+	/* 3c5.68-69 - Monitor sensing control register for CRT1
+	 *    15: Monitor sensing enable
+	 * 14:13: reserved
+	 *    12: scheme 
+	 *        1: apply monitor sensing data during blanking
+	 *        0: apply monitor sensing data all the time
+	 * 11:10: reserved
+	 *   9:0: monitor sensing data
+	 *
+	 * Registers 6B-6A have the same meaning for CRT2
+	 */
+	seq_69 = IN3C5B(0x69);
+	OUT3C5B(0x69, seq_69 | 0x80);
+	
+
+	delay4I2C(pXGI, 300);
+	waitVerticalRetrace(pXGI, 0);
+
+
+	/* 3c5.25 - Monitor sensing register
+	 *    7: DAC2 sensing status after anti-jitter filtering.
+	 *  6:4: DAC2 red/green/blue sensing status
+	 *    3: DAC1 sensing status after anti-jitter filtering.
+	 *  2:0: DAC1 red/green/blue sensing status
+	 */
+	seq_25 = IN3C5B(0x25);
+	attached = ((seq_25 & 0x08) != 0);
+
+
+	/* Restore modified values.
+	 */
+	OUT3C5B(0x24, seq_24);
+	OUT3C5B(0x69, seq_69 & ~0x80);
+    }
+
+    return (attached) ? XF86OutputStatusConnected : XF86OutputStatusUnknown;
+}
+
+
+xf86OutputStatus
+xg47_dvi_detect(xf86OutputPtr output)
 {
     struct xg47_crtc_private *xg47_output = 
 	(struct xg47_crtc_private *) output->driver_private;
