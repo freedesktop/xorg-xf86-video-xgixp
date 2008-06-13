@@ -258,11 +258,27 @@ xg47_vga_detect(xf86OutputPtr output)
 xf86OutputStatus
 xg47_dvi_detect(xf86OutputPtr output)
 {
+    XGIPtr pXGI = XGIPTR(output->scrn);
     struct xg47_crtc_private *xg47_output = 
 	(struct xg47_crtc_private *) output->driver_private;
+    I2CDevPtr i2c_dev;
+    Bool attached = FALSE;
 
-    return (xf86I2CProbeAddress(xg47_output->pI2C, 0xA0)) 
-        ? XF86OutputStatusConnected : XF86OutputStatusUnknown;
+
+    /* See if there is a display attached that returns an EDID block.
+     */
+    i2c_dev = xf86I2CFindDev(xg47_output->pI2C, 0xA0);
+    if (i2c_dev != NULL) {
+	I2CByte data;
+
+	/* If bit 7 of byte 14 is set, then the attached device is digital.
+	 * This means that it's not an analog CRT.
+	 */
+	xf86I2CReadByte(i2c_dev, 14, &data);
+	attached = ((data & 0x80) != 0);
+    }
+
+    return (attached) ? XF86OutputStatusConnected : XF86OutputStatusUnknown;
 }
 
 
