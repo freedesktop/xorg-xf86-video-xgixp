@@ -1702,14 +1702,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     }
 
 
-    /* Free the video bios (if applicable) */
-    if (pXGI->biosBase)
-    {
-        xfree(pXGI->biosBase);
-        pXGI->biosBase = NULL;
-    }
-
-
     /* Decide which operations need to be placed under resource access control.
      * The classes of operations are the frame buffer operations (RAC_FB),
      * the pointer operations (RAC_CURSOR), the viewport change operations (RAC_VIEWPORT)
@@ -1738,12 +1730,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     return TRUE;
 fail:
     XGIUnmapMem(pScrn);
-    /* Free the video bios (if applicable) */
-    if (pXGI->biosBase)
-    {
-      xfree(pXGI->biosBase);
-      pXGI->biosBase = NULL;
-    }
 
     if (pXGI->pVbe) {
         vbeFree(pXGI->pVbe);
@@ -2246,14 +2232,7 @@ fail:
     PDEBUG(ErrorF("Jong-After-XGIInitMC-7\n"));
     XGIUnmapMem(pScrn);
     PDEBUG(ErrorF("Jong-After-XGIInitMC-8\n"));
-    /* Free the video bios (if applicable) */
-    if (pXGI->biosBase)
-    {
-        xfree(pXGI->biosBase);
-        pXGI->biosBase = NULL;
-    }
 
-    PDEBUG(ErrorF("Jong-After-XGIInitMC-9\n"));
     if (pXGI->pVbe) {
         vbeFree(pXGI->pVbe);
         pXGI->pVbe = NULL;

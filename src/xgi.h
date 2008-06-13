@@ -467,7 +467,6 @@ typedef struct {
 #endif
     unsigned char *     IOBase;
     unsigned char *     fbBase;
-    unsigned char *     biosBase;
     unsigned long       fbSize;
     unsigned long       PIOBase;
 
