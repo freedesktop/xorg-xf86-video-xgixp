@@ -59,7 +59,7 @@
 /* colormap initialization */
 #include "micmap.h"
 
-#include "xf86Version.h"
+#include "xorgVersion.h"
 
 #include "xgi_debug.h"
 
@@ -375,7 +375,7 @@ static XF86ModuleVersionInfo XGIVersionRec =
     MODULEVENDORSTRING,
     MODINFOSTRING1,
     MODINFOSTRING2,
-    XF86_VERSION_CURRENT,
+    XORG_VERSION_CURRENT,
     XGI_VERSION_MAJOR, XGI_VERSION_MINOR, XGI_VERSION_PATCH,
     ABI_CLASS_VIDEODRV,
     ABI_VIDEODRV_VERSION,
