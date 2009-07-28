@@ -32,8 +32,10 @@
 /* X and server generic header files */
 #include "xf86.h"
 #include "xf86_OSproc.h"
+#ifndef XSERVER_LIBPCIACCESS
 #include "xf86RAC.h"
 #include "xf86Resources.h"
+#endif
 #include "xf86cmap.h"
 #include "xf86xv.h"
 #include <xf86i2c.h>
@@ -1561,7 +1563,9 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     /* Get the entity, and make sure it is PCI. */
     pXGI->pEnt = xf86GetEntityInfo(pScrn->entityList[0]);
 
+#ifndef XSERVER_LIBPCIACCESS
     if (pXGI->pEnt->resources) return FALSE;
+#endif
     if (pXGI->pEnt->location.type != BUS_PCI)   goto fail;
 
 /* Jong 09/06/2006; support dual view */
@@ -1615,13 +1619,14 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
      * xf86SetOperatingState().
      */
 
+#ifndef XSERVER_LIBPCIACCESS
     /* Register the PCI-assigned resources. */
     if (xf86RegisterResources(pXGI->pEnt->index, NULL, ResExclusive))
     {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "xf86RegisterResources() found resource conflicts\n");
         return FALSE;
     }
-
+#endif
     /*
      * Set the depth/bpp.  Use the globally preferred depth/bpp.  If the driver
      * has special default depth/bpp requirements, the defaults should be specified
@@ -1710,7 +1715,7 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
      * This can be specified separately for memory and IO resources (the racMemFlags
      * and racIoFlags fields of the ScrnInfoRec respectively).
      */
-
+#ifndef XSERVER_LIBPCIACCESS
     pScrn->racMemFlags = RAC_FB | RAC_COLORMAP | RAC_CURSOR | RAC_VIEWPORT;
 
     if (pXGI->isMmioOnly)
@@ -1721,7 +1726,7 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
     {
         pScrn->racIoFlags = RAC_FB | RAC_COLORMAP | RAC_CURSOR | RAC_VIEWPORT;
     }
-
+#endif
 /* Jong 09/11/2006; support dual view */
 #ifdef XGIDUALVIEW
     xf86SetPrimInitDone(pScrn->entityList[0]);
