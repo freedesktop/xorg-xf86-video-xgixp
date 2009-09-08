@@ -34,7 +34,7 @@
 #include "xgi.h"
 #include "xgi_version.h"
 
-#include <drm/xgi_drm.h>
+#include "xgi_drm.h"
 #include "sarea.h"
 #include "xgi_dri.h"
 
