@@ -62,7 +62,7 @@ XORG_DRIVER_CHECK_EXT(DPMSExtension, xextproto)
 # Checks for pkg-config packages
 PKG_CHECK_MODULES(XORG, [xorg-server >= 1.0.99.901 xproto fontsproto $REQUIRED_MODULES])
 PKG_CHECK_MODULES(DRI, [libdrm >= 2.2 xf86driproto])
-sdkdir=$(pkg-config --variable=sdkdir xorg-server)
+sdkdir=`$PKG_CONFIG --variable=sdkdir xorg-server`
 
 # Checks for libraries.
 
