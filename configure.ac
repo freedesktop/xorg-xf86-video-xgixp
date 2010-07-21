@@ -65,8 +65,6 @@ sdkdir=`$PKG_CONFIG --variable=sdkdir xorg-server`
 
 # Checks for libraries.
 
-# Checks for header files.
-AC_HEADER_STDC
 
 AC_CHECK_FILE([${sdkdir}/dri.h],
               [have_dri_h="yes"], [have_dri_h="no"])
