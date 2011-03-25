@@ -2708,7 +2708,9 @@ xg47_setup_fb_wrap(ReadMemoryProcPtr *read_ptr,
 {
     switch (pDraw->type) {
     case DRAWABLE_WINDOW:
+#ifdef DRAWABLE_BUFFER
     case DRAWABLE_BUFFER:
+#endif
 	*read_ptr = xg47_read_memory_swap_func;
 	*write_ptr = xg47_write_memory_swap_func;
 	break;
