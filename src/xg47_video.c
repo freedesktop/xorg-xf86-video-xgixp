@@ -203,7 +203,7 @@ void XG47InitVideo(ScreenPtr pScreen)
         else
         {
             /* need to free this someplace */
-            newAdaptors = xalloc((numAdaptors + 1) * sizeof(XF86VideoAdaptorPtr*));
+            newAdaptors = malloc((numAdaptors + 1) * sizeof(XF86VideoAdaptorPtr*));
             if(newAdaptors)
             {
                 memcpy(newAdaptors, adaptors, numAdaptors * sizeof(XF86VideoAdaptorPtr));
@@ -218,7 +218,7 @@ void XG47InitVideo(ScreenPtr pScreen)
         xf86XVScreenInit(pScreen, adaptors, numAdaptors);
 
     if(newAdaptors)
-        xfree(newAdaptors);
+        free(newAdaptors);
 
     xf86DrvMsgVerb(pScrn->scrnIndex, X_INFO, 3, "XGI Video Init Successfully \n");
 }
@@ -230,7 +230,7 @@ static XF86VideoAdaptorPtr XG47SetupImageVideo(ScreenPtr pScreen)
     XGIPtr              pXGI = XGIPTR(pScrn);
     XGIPortPtr          pXGIPort = NULL;
 
-    pAdaptor = xcalloc(1, sizeof(XF86VideoAdaptorRec)
+    pAdaptor = calloc(1, sizeof(XF86VideoAdaptorRec)
                           + sizeof(XGIPortRec)
                           + sizeof(DevUnion));
     if(!pAdaptor)
@@ -363,7 +363,7 @@ static void XG47InitOffscreenImages(ScreenPtr pScreen)
     XF86OffscreenImagePtr pOffscreenImages;
 
     /* need to free this someplace */
-    if(!(pOffscreenImages = xalloc(sizeof(XF86OffscreenImageRec))))
+    if(!(pOffscreenImages = malloc(sizeof(XF86OffscreenImageRec))))
         return;
 
     pOffscreenImages[0].image = &XG47Images[0];
@@ -1366,21 +1366,21 @@ static int XG47AllocateSurface(ScrnInfoPtr pScrn,
     pSurface->width = w;
     pSurface->height = h;
 
-    if(!(pSurface->pitches = xalloc(sizeof(int))))
+    if(!(pSurface->pitches = malloc(sizeof(int))))
     {
         xf86FreeOffscreenLinear((FBLinearPtr)pSurface);
         return BadAlloc;
     }
-    if(!(pSurface->offsets = xalloc(sizeof(int))))
+    if(!(pSurface->offsets = malloc(sizeof(int))))
     {
-        xfree(pSurface->pitches);
+        free(pSurface->pitches);
         xf86FreeOffscreenLinear(pFBLinear);
       return BadAlloc;
     }
-    if(!(pOffscreenPriv = xalloc(sizeof(OffscreenPrivRec))))
+    if(!(pOffscreenPriv = malloc(sizeof(OffscreenPrivRec))))
     {
-        xfree(pSurface->pitches);
-        xfree(pSurface->offsets);
+        free(pSurface->pitches);
+        free(pSurface->offsets);
         xf86FreeOffscreenLinear(pFBLinear);
         return BadAlloc;
     }
@@ -1424,9 +1424,9 @@ static int XG47FreeSurface(XF86SurfacePtr pSurface)
         XG47StopSurface(pSurface);
     }
     xf86FreeOffscreenLinear(pOffscreenPriv->pFBLinear);
-    xfree(pSurface->pitches);
-    xfree(pSurface->offsets);
-    xfree(pSurface->devPrivate.ptr);
+    free(pSurface->pitches);
+    free(pSurface->offsets);
+    free(pSurface->devPrivate.ptr);
 
     return Success;
 }

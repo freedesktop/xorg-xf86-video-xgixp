@@ -643,10 +643,10 @@ static Bool XGIProbe(DriverPtr drv, int flags)
 #endif /* XGIDUALVIEW */
 			}
         }
-        xfree(usedChips);
+        free(usedChips);
     }
 
-    xfree(devSections);
+    free(devSections);
     return foundScreen;
 }
 #endif
@@ -679,7 +679,7 @@ static void XGIFreeRec(ScrnInfoPtr pScrn)
     {
         return;
     }
-    xfree(pScrn->driverPrivate);
+    free(pScrn->driverPrivate);
     pScrn->driverPrivate = NULL;
 
 #if DBG_FLOW
@@ -1993,7 +1993,7 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
     if (pXGI->isShadowFB)
     {
         pXGI->shadowPitch = BitmapBytePad(pScrn->bitsPerPixel * width);
-        pXGI->pShadow = xalloc(pXGI->shadowPitch * height);
+        pXGI->pShadow = malloc(pXGI->shadowPitch * height);
         displayWidth = pXGI->shadowPitch / (pScrn->bitsPerPixel >> 3);
         pFBStart = pXGI->pShadow;
     }
@@ -2434,19 +2434,19 @@ static Bool XGICloseScreen(int scrnIndex, ScreenPtr pScreen)
 
     if (pXGI->pShadow)
     {
-        xfree(pXGI->pShadow);
+        free(pXGI->pShadow);
         pXGI->pShadow = NULL;
     }
 
     if (pXGI->pDgaModes)
     {
-        xfree(pXGI->pDgaModes);
+        free(pXGI->pDgaModes);
         pXGI->pDgaModes = NULL;
     }
 
     if (pXGI->pAdaptor)
     {
-        /* xfree(pXGI->pAdaptor->pPortPrivates[0].ptr); */
+        /* free(pXGI->pAdaptor->pPortPrivates[0].ptr); */
         xf86XVFreeVideoAdaptorRec(pXGI->pAdaptor);
         pXGI->pAdaptor = NULL;
     }

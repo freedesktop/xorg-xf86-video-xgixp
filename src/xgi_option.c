@@ -90,7 +90,7 @@ Bool XGIProcessOptions(ScrnInfoPtr pScrn)
 
     xf86CollectOptions(pScrn, NULL);
 
-    if (!(pXGI->pOptionInfo = xalloc(XGIOptionSize)))
+    if (!(pXGI->pOptionInfo = malloc(XGIOptionSize)))
         return FALSE;
     memcpy(pXGI->pOptionInfo, XGIOptions, XGIOptionSize);
 

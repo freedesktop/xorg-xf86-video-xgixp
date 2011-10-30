@@ -130,7 +130,7 @@ Bool XGIDRIScreenInit(ScreenPtr pScreen)
     }
     dri_info->SAREASize = SAREA_MAX;
 
-    dri_priv = xcalloc(sizeof(struct xgi_dri_private), 1);
+    dri_priv = calloc(sizeof(struct xgi_dri_private), 1);
     dri_info->devPrivate = dri_priv;
 
     if (dri_priv == NULL) {
@@ -264,7 +264,7 @@ void XGIDRICloseScreen(ScreenPtr pScreen)
     /* De-allocate all DRI data structures */
     if (pXGI->dri_info) {
         if (pXGI->dri_info->devPrivate) {
-            xfree(pXGI->dri_info->devPrivate);
+            free(pXGI->dri_info->devPrivate);
             pXGI->dri_info->devPrivate = NULL;
         }
 

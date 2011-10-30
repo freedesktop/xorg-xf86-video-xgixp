@@ -204,7 +204,7 @@ Bool XGIInitMC(ScreenPtr pScreen)
  *  Set *numPriv to the number of 32bit words that make up the size of
  *  of the data that priv will point to.
  *
- *  *priv = (long *) xcalloc (elements, sizeof(element))
+ *  *priv = (long *) calloc (elements, sizeof(element))
  *  *numPriv = (elements * sizeof(element)) >> 2;
  *
  **************************************************************************/
@@ -226,7 +226,7 @@ int XGIXvMCCreateContext(ScrnInfoPtr pScrn, XvMCContextPtr pContext,
         return BadAlloc;
     }
 
-    *priv = xcalloc(1, sizeof(XGIXvMCCreateContextRec));
+    *priv = calloc(1, sizeof(XGIXvMCCreateContextRec));
     if (!*priv)
     {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
@@ -269,7 +269,7 @@ int XGIXvMCCreateSurface(ScrnInfoPtr pScrn,
     xf86DrvMsg(pScrn->scrnIndex, X_CONFIG,"surface_type_id = %x width = %d, height = %d\n",
                pContext->surface_type_id, pContext->width, pContext->height);
 
-    *priv = (long *)xcalloc(1, sizeof(XGIXvMCCreateSurfaceRec));
+    *priv = (long *)calloc(1, sizeof(XGIXvMCCreateSurfaceRec));
     if (!*priv)
     {
         xf86DrvMsg(X_ERROR, pScrn->scrnIndex,
@@ -343,7 +343,7 @@ int XGIXvMCCreateSubpicture(ScrnInfoPtr pScrn,
     xf86DrvMsg(pScrn->scrnIndex, X_CONFIG, "subpicture_id = %x xvimage_id = %x width = %d, height = %d\n",
                pSubpicture->subpicture_id, pSubpicture->xvimage_id, pSubpicture->width, pSubpicture->height);
 
-    *priv = (long *)xcalloc(1, sizeof(XGIXvMCSubpictureRec));
+    *priv = (long *)calloc(1, sizeof(XGIXvMCSubpictureRec));
     if (!*priv)
     {
         xf86DrvMsg(X_ERROR, pScrn->scrnIndex,

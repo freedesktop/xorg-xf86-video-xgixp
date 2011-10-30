@@ -138,7 +138,7 @@ void xg47_Cleanup(ScrnInfoPtr pScrn, struct xg47_CmdList *s_pCmdList)
                            s_pCmdList->command.ptr);
         }
 
-        xfree(s_pCmdList);
+        free(s_pCmdList);
     }
 }
 

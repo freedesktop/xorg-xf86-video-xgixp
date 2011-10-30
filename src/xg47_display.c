@@ -181,7 +181,7 @@ void
 xg47_crtc_destroy(xf86CrtcPtr crtc)
 {
     if (crtc->driver_private) {
-        xfree (crtc->driver_private);
+        free (crtc->driver_private);
     }
 }
 
@@ -193,14 +193,14 @@ xg47_CrtcInit(ScrnInfoPtr pScrn, unsigned dev_type)
     struct xg47_crtc_data *data;
 
 
-    data = xcalloc(sizeof(*data), 1);
+    data = calloc(sizeof(*data), 1);
     if (data == NULL) {
         return FALSE;
     }
 
     crtc = xf86CrtcCreate(pScrn, & xg47_crtc_funcs);
     if (crtc == NULL) {
-        xfree(data);
+        free(data);
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, 
                    "Unable to create CRTC structure.\n");
         return;

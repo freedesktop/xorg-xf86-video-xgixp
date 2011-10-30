@@ -76,18 +76,18 @@ Bool XGIDGAInit(ScreenPtr pScreen)
     {
         if(0 /*pScrn->displayWidth != pMode->HDisplay*/)
         {
-            pNewDgaModes = xrealloc(pDgaModes, (num + 2) * sizeof(DGAModeRec));
+            pNewDgaModes = realloc(pDgaModes, (num + 2) * sizeof(DGAModeRec));
             oneMore = TRUE;
         }
         else
         {
-            pNewDgaModes = xrealloc(pDgaModes, (num + 1) * sizeof(DGAModeRec));
+            pNewDgaModes = realloc(pDgaModes, (num + 1) * sizeof(DGAModeRec));
             oneMore = FALSE;
         }
 
         if(!pNewDgaModes)
         {
-            xfree(pDgaModes);
+            free(pDgaModes);
             return FALSE;
         }
         pDgaModes = pNewDgaModes;
