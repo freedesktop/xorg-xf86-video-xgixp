@@ -195,7 +195,7 @@ xg47_CrtcInit(ScrnInfoPtr pScrn, unsigned dev_type)
 
     data = calloc(sizeof(*data), 1);
     if (data == NULL) {
-        return FALSE;
+        return;
     }
 
     crtc = xf86CrtcCreate(pScrn, & xg47_crtc_funcs);
