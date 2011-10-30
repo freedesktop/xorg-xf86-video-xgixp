@@ -31,6 +31,7 @@
 #include "xf86PciInfo.h"
 #include <xf86i2c.h>
 #include <xf86Crtc.h>
+#include "fbdevhw.h"
 
 #include "xgi.h"
 #include "xgi_regs.h"
