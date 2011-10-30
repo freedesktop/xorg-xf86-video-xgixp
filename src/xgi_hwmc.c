@@ -317,7 +317,7 @@ int XGIXvMCCreateSurface(ScrnInfoPtr pScrn,
                 pXGI->xvmcSurface[i] = *pXGISurface;
 
                 xf86DrvMsg(pScrn->scrnIndex, X_CONFIG," index: %d surfPitch: %d surfHwAddr %lx\n",
-                           i, surfPitch, alloc.hw_addr);
+                           i, surfPitch, (unsigned long)alloc.hw_addr);
                 return Success;
             }
         }
@@ -341,7 +341,7 @@ int XGIXvMCCreateSubpicture(ScrnInfoPtr pScrn,
     XGITRACE(("XGIXvMCCreateSubpicture \n"));
 
     xf86DrvMsg(pScrn->scrnIndex, X_CONFIG, "subpicture_id = %x xvimage_id = %x width = %d, height = %d\n",
-               pSubpicture->subpicture_id, pSubpicture->xvimage_id, pSubpicture->width, pSubpicture->height);
+               (unsigned int)pSubpicture->subpicture_id, pSubpicture->xvimage_id, pSubpicture->width, pSubpicture->height);
 
     *priv = (long *)calloc(1, sizeof(XGIXvMCSubpictureRec));
     if (!*priv)
@@ -380,7 +380,7 @@ int XGIXvMCCreateSubpicture(ScrnInfoPtr pScrn,
             pXGI->xvmcSubpic = *pXGISubpicture;
             memset(pXGISubpicture->hwAddr + pXGI->fbBase, i, surfSize);
             xf86DrvMsg(pScrn->scrnIndex, X_CONFIG,"pitch: %d size: %x hwAddr %lx\n",
-                       surfPitch, pXGISubpicture->size, pXGISubpicture->hwAddr);
+                       surfPitch, pXGISubpicture->size, (unsigned long)pXGISubpicture->hwAddr);
         }
     }
 

@@ -113,7 +113,7 @@ void XGIDumpMemory(CARD8 *addr, unsigned long size)
 	return;
 #endif
 
-	ErrorF("\n==================memory dump at 0x%x, size = %d ===============\n", addr, size);
+	ErrorF("\n==================memory dump at %p, size = %lu ===============\n", addr, size);
 
     for(i=0; i<0x10; i++)
     {
@@ -327,7 +327,7 @@ Bool XGIPcieMemAllocate(ScrnInfoPtr pScrn, size_t size,
     }
 
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "alloc.size: 0x%x "
-               "alloc.offset: 0x%lx alloc.hwAddr: 0x%x\n",
+               "alloc.offset: 0x%x alloc.hwAddr: 0x%x\n",
                alloc.size, alloc.offset, alloc.hw_addr);
 
     *offset = alloc.index;
