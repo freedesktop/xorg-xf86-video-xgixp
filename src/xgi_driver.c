@@ -430,13 +430,6 @@ static pointer XGISetup(pointer module,
             return NULL;
         }
 
-        LoaderReqSymLists(vgahwSymbols, fbSymbols, driSymbols, drmSymbols,
-                          NULL);
-
-
-        LoaderRefSymLists(i2cSymbols, ramdacSymbols, 
-                          xaaSymbols, shadowSymbols, fbdevHWSymbols, NULL);
-
         /*
          * The return value must be non-NULL on success even though
          * there is no TearDownProc.
@@ -1017,8 +1010,6 @@ static Bool XGIPreInitInt10(ScrnInfoPtr pScrn)
         return FALSE;
     }
 
-    xf86LoaderReqSymLists(vbeSymbols, int10Symbols, NULL);
-
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
 #endif
@@ -1287,7 +1278,6 @@ static Bool XGIPreInitCursor(ScrnInfoPtr pScrn)
     if (!xf86ReturnOptValBool(pXGI->pOptionInfo, OPTION_SW_CURSOR, FALSE))
     {
         if (!xf86LoadSubModule(pScrn, "ramdac")) return FALSE;
-        xf86LoaderReqSymLists(ramdacSymbols, NULL);
     }
 
 #if DBG_FLOW
@@ -1314,8 +1304,6 @@ static Bool XGIPreInitAccel(ScrnInfoPtr pScrn)
          */
         if (!g_DualViewMode || pXGI->FirstView) 
             if (!xf86LoadSubModule(pScrn, "xaa")) return FALSE;
-
-        xf86LoaderReqSymLists(xaaSymbols, NULL);
     }
 
 #if DBG_FLOW
@@ -1476,7 +1464,6 @@ static Bool XGIPreInitShadow(ScrnInfoPtr pScrn)
             XGIFreeRec(pScrn);
             return FALSE;
         }
-        xf86LoaderReqSymLists(shadowSymbols, NULL);
     }
 
 #if DBG_FLOW
@@ -1493,7 +1480,6 @@ xf86MonPtr get_configured_monitor(ScrnInfoPtr pScrn, int index)
 
 
     if (xf86LoadSubModule(pScrn, "i2c")) {
-        xf86LoaderReqSymLists(i2cSymbols, NULL);
 	if (!xg47_InitI2C(pScrn)) {
 	    xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
 		       "I2C initialization failed!\n");
@@ -1507,9 +1493,6 @@ xf86MonPtr get_configured_monitor(ScrnInfoPtr pScrn, int index)
     if (!xf86LoadSubModule(pScrn, "ddc")) {
         return NULL;
     }
-
-    xf86LoaderReqSymLists(ddcSymbols, NULL);
-
 
     if (pXGI->pI2C != NULL) {
         pMon = xf86DoEDID_DDC2(pScrn->scrnIndex, pXGI->pI2C);
@@ -1650,7 +1633,6 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
 
 	/* Jong 07/07/2006; has error - _dl_catch_error() from /lib/ld-linux.so.2 ???? */
         if (!xf86LoadSubModule(pScrn, "fbdevhw")) return FALSE;
-        xf86LoaderReqSymLists(fbdevHWSymbols, NULL);
 
         /* check for linux framebuffer device */
         if (!fbdevHWInit(pScrn, pXGI->pPciInfo, NULL)) return FALSE;
