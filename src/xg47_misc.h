@@ -34,4 +34,7 @@ extern void XG47AdjustFrame(int scrnIndex, int x, int y, int flags);
 
 extern void XG47GetFramebufferSize(XGIPtr pXGI);
 
+extern void xg47_CrtcInit(ScrnInfoPtr pScrn, unsigned dev_type);
+extern void xg47_PreInitOutputs(ScrnInfoPtr scrn);
+
 #endif

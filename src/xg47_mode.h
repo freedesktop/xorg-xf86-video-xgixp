@@ -38,4 +38,7 @@ extern void xg47_mode_save(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr pXGIR
 extern void xg47_mode_restore(ScrnInfoPtr pScrn, vgaRegPtr pVgaReg, XGIRegPtr pXGIReg);
 extern Bool XG47_NativeModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode);
 
+extern void SetColorDAC(XGIPtr pXGI, unsigned color_depth, XGIRegPtr regs);
+extern void SetModeCRTC1(XGIPtr pXGI, DisplayModePtr disp_mode, XGIRegPtr regs);
+
 #endif
