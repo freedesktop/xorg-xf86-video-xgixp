@@ -1592,6 +1592,7 @@ Bool XGIPreInit(ScrnInfoPtr pScrn, int flags)
         XGIFreeRec(pScrn);
         return FALSE;
     }
+    vgaHWSetStdFuncs(VGAHWPTR(pScrn));
 
     /* All additional resources that the screen needs must be registered here.
      * This should be done with xf86RegisterResources(). If some of the fixed resources
