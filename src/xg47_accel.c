@@ -220,7 +220,7 @@ static void XGIRestoreAccelState(ScrnInfoPtr pScrn);
 Bool XG47AccelInit(ScreenPtr pScreen)
 {
     XAAInfoRecPtr   pXaaInfo;
-    ScrnInfoPtr     pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr     pScrn = xf86ScreenToScrn(pScreen);
 
     XGIPtr pXGI = XGIPTR(pScrn);
 
@@ -937,7 +937,7 @@ static Bool XG47InitCmdList(ScrnInfoPtr pScrn)
 
 void XG47AccelExit(ScreenPtr pScreen)
 {
-    ScrnInfoPtr pScrn   = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn   = xf86ScreenToScrn(pScreen);
     XGIPtr      pXGI = XGIPTR(pScrn);
 
     XGIDebug(DBG_FUNCTION, "Enter XG47AccelExit\n");

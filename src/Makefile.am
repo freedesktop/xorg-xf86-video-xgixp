@@ -29,6 +29,7 @@ xgixp_drv_la_LDFLAGS = -module -avoid-version
 xgixp_drv_ladir = @moduledir@/drivers
 
 xgixp_drv_la_SOURCES = \
+        compat-api.h \
 	xg47_accel.c \
 	xg47_accel.h \
 	xg47_cmdlist.c \

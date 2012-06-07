@@ -82,7 +82,7 @@ static void XGIDRISwapContext(ScreenPtr pScreen, DRISyncType sync_type,
 
 Bool XGIDRIScreenInit(ScreenPtr pScreen)
 {
-    ScrnInfoPtr pScrn  = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn  = xf86ScreenToScrn(pScreen);
     XGIPtr         pXGI = XGIPTR(pScrn);
     struct xgi_dri_private *dri_priv;
     DRIInfoPtr     dri_info;
@@ -193,7 +193,7 @@ Bool XGIDRIScreenInit(ScreenPtr pScreen)
 
 Bool XGIDRIFinishScreenInit(ScreenPtr pScreen)
 {
-    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     XGIPtr pXGI = XGIPTR(pScrn);
     struct xgi_dri_private *dri_priv = pXGI->dri_info->devPrivate;
     int err;
@@ -246,7 +246,7 @@ Bool XGIDRIFinishScreenInit(ScreenPtr pScreen)
 
 void XGIDRICloseScreen(ScreenPtr pScreen)
 {
-    ScrnInfoPtr    pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr    pScrn = xf86ScreenToScrn(pScreen);
     XGIPtr pXGI = XGIPTR(pScrn);
 
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "[dri] %s\n", __func__);

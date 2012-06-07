@@ -122,14 +122,14 @@ static Bool XGIPciProbe(DriverPtr drv, int entity_num, struct pci_device *dev,
 static Bool     XGIProbe(DriverPtr drv, int flags);
 #endif
 static Bool     XGIPreInit(ScrnInfoPtr pScrn, int flags);
-static Bool     XGIScreenInit(int Index, ScreenPtr pScreen, int argc, char **argv);
-static Bool     XGIEnterVT(int scrnIndex, int flags);
-static void     XGILeaveVT(int scrnIndex, int flags);
-static Bool     XGICloseScreen(int scrnIndex, ScreenPtr pScreen);
+static Bool     XGIScreenInit(SCREEN_INIT_ARGS_DECL);
+static Bool     XGIEnterVT(VT_FUNC_ARGS_DECL);
+static void     XGILeaveVT(VT_FUNC_ARGS_DECL);
+static Bool     XGICloseScreen(CLOSE_SCREEN_ARGS_DECL);
 static Bool     XGISaveScreen(ScreenPtr pScreen, int mode);
 /* Optional functions */
-static void     XGIFreeScreen(int scrnIndex, int flags);
-static int      XGIValidMode(int scrnIndex, DisplayModePtr mode, Bool verbose,
+static void     XGIFreeScreen(FREE_SCREEN_ARGS_DECL);
+static int      XGIValidMode(SCRN_ARG_TYPE arg, DisplayModePtr mode, Bool verbose,
                              int flags);
 
 /* Internally used functions */
@@ -143,7 +143,7 @@ static void     XGISave(ScrnInfoPtr pScrn);
 static void     XGIRestore(ScrnInfoPtr pScrn);
 static Bool     XGIModeInit(ScrnInfoPtr pScrn, DisplayModePtr mode);
 
-static void     XGIBlockHandler(int, pointer, pointer, pointer);
+static void     XGIBlockHandler(BLOCKHANDLER_ARGS_DECL);
 
 static void xg47_write_memory_func(void *dst, uint32_t value, int size);
 static uint32_t xg47_read_memory_func(const void *src, int size);
@@ -1495,11 +1495,11 @@ xf86MonPtr get_configured_monitor(ScrnInfoPtr pScrn, int index)
     }
 
     if (pXGI->pI2C != NULL) {
-        pMon = xf86DoEDID_DDC2(pScrn->scrnIndex, pXGI->pI2C);
+	pMon = xf86DoEDID_DDC2(XF86_SCRN_ARG(pScrn), pXGI->pI2C);
     }
 
     if (pMon == NULL) {
-        pMon = xf86DoEDID_DDC1(pScrn->scrnIndex, vgaHWddc1SetSpeedWeak(),
+        pMon = xf86DoEDID_DDC1(XF86_SCRN_ARG(pScrn), vgaHWddc1SetSpeedWeak(),
                                XG47DDCRead);
     }
 
@@ -1739,10 +1739,10 @@ fail:
     return FALSE;
 }
 
-static void XGIBlockHandler(int i, pointer pBlockData, pointer pTimeout, pointer pReadmask)
+static void XGIBlockHandler(BLOCKHANDLER_ARGS_DECL)
 {
-    ScreenPtr      pScreen = screenInfo.screens[i];
-    ScrnInfoPtr    pScrn = xf86Screens[i];
+    SCREEN_PTR(arg);
+    ScrnInfoPtr    pScrn = xf86ScreenToScrn(pScreen);
     XGIPtr         pXGI = XGIPTR(pScrn);
 
 #if DBG_FLOW
@@ -1750,7 +1750,7 @@ static void XGIBlockHandler(int i, pointer pBlockData, pointer pTimeout, pointer
 #endif
 
     pScreen->BlockHandler = pXGI->BlockHandler;
-    (*pScreen->BlockHandler)(i, pBlockData, pTimeout, pReadmask);
+    (*pScreen->BlockHandler)(BLOCKHANDLER_ARGS);
     pScreen->BlockHandler = XGIBlockHandler;
 
 #ifdef XvExtension
@@ -1818,7 +1818,7 @@ static void XGIRestore(ScrnInfoPtr pScrn)
 
 Bool XGIFBManagerInit(ScreenPtr pScreen)
 {
-    ScrnInfoPtr     pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr     pScrn = xf86ScreenToScrn(pScreen);
     XGIPtr          pXGI = XGIPTR(pScrn);
     BoxRec          availFBArea;
     CARD16          temp;
@@ -1848,10 +1848,10 @@ Bool XGIFBManagerInit(ScreenPtr pScreen)
 }
 
 /* Called at the start of each server generation. */
-Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
+Bool XGIScreenInit(SCREEN_INIT_ARGS_DECL)
 {
     /* First Get the ScrnInfoRec */
-    ScrnInfoPtr pScrn  = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn  = xf86ScreenToScrn(pScreen);
     XGIPtr      pXGI = XGIPTR(pScrn);
     vgaHWPtr    pVgaHW = VGAHWPTR(pScrn);
     VisualPtr   pVisual;
@@ -1918,7 +1918,7 @@ Bool XGIScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
     /* Darken the screen for aesthetic reasons and set the viewport.
      */
     XGISaveScreen(pScreen, SCREEN_SAVER_ON);
-    pScrn->AdjustFrame(scrnIndex, pScrn->frameX0, pScrn->frameY0, 0);
+    pScrn->AdjustFrame(ADJUST_FRAME_ARGS(pScrn, pScrn->frameX0, pScrn->frameY0));
 
 
     /*
@@ -2038,7 +2038,7 @@ pScrn->pScreen = pScreen;
 
     if (!XGIFBManagerInit(pScreen))
     {
-        xf86DrvMsg(scrnIndex, X_ERROR, "FB Manager init failed \n");
+        xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "FB Manager init failed \n");
     }
 
     /* If backing store is to be supported (as is usually the case), initialise it. */
@@ -2074,18 +2074,18 @@ pScrn->pScreen = pScreen;
     if (!pXGI->noAccel) {
         pXGI->noAccel = !XG47AccelInit(pScreen);
         if (pXGI->noAccel) {
-            xf86DrvMsg(scrnIndex, X_ERROR, "Acceleration initialization failed\n");
+            xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Acceleration initialization failed\n");
         }
     }
 
     if (!pXGI->noAccel) {
-        xf86DrvMsg(scrnIndex, X_INFO, "Acceleration enabled\n");
+        xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Acceleration enabled\n");
     } else {
-        xf86DrvMsg(scrnIndex, X_INFO, "Acceleration disabled\n");
+        xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Acceleration disabled\n");
     }
 
 
-    if (!XGIEnterVT(scrnIndex, 0))
+    if (!XGIEnterVT(VT_FUNC_ARGS))
 	goto fail;
 
     /* Set Silken Mouse */
@@ -2108,12 +2108,12 @@ pScrn->pScreen = pScreen;
                        (int) pXGI->cursorStart / (int) pScrn->displayWidth);
             if (xf86QueryLargestOffscreenArea(pScreen, &width, &height,
                                               0, 0, 0)) {
-                xf86DrvMsg(scrnIndex, X_INFO,
+                xf86DrvMsg(pScrn->scrnIndex, X_INFO,
                            "Largest offscreen area available: %d x %d\n",
                            width, height);
             }
         } else {
-            xf86DrvMsg(scrnIndex, X_ERROR,
+            xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
                        "Hardware cursor initialization failed\n");
             pXGI->isHWCursor = FALSE;
         }
@@ -2121,7 +2121,7 @@ pScrn->pScreen = pScreen;
 
     if (!pXGI->isHWCursor) {
         pXGI->cursorStart = 0;
-        xf86DrvMsg(scrnIndex, X_INFO, "Using software cursor\n");
+        xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Using software cursor\n");
     }
 
 
@@ -2246,9 +2246,10 @@ fail:
  * Initialises the new mode for the screen identified by index.
  * The viewport may need to be adjusted also.
  */
-Bool XGISwitchMode(int scrnIndex, DisplayModePtr mode, int flags)
+Bool XGISwitchMode(SWITCH_MODE_ARGS_DECL)
 {
-    return XGIModeInit(xf86Screens[scrnIndex], mode);
+    SCRN_INFO_PTR(arg);
+    return XGIModeInit(pScrn, mode);
 }
 
 
@@ -2256,9 +2257,9 @@ Bool XGISwitchMode(int scrnIndex, DisplayModePtr mode, int flags)
  * This is called when VT switching back to the X server. Its job is
  * to reinitialise the video mode.
  */
-static Bool XGIEnterVT(int scrnIndex, int flags)
+static Bool XGIEnterVT(VT_FUNC_ARGS_DECL)
 {
-    ScrnInfoPtr pScrn = xf86Screens[scrnIndex];
+    SCRN_INFO_PTR(arg);
     XGIPtr      pXGI = XGIPTR(pScrn);
 
 #if DBG_FLOW
@@ -2281,7 +2282,7 @@ static Bool XGIEnterVT(int scrnIndex, int flags)
     }
 
     if (pXGI->isFBDev) {
-        if (!fbdevHWEnterVT(scrnIndex,flags))
+        if (!fbdevHWEnterVT(VT_FUNC_ARGS))
             return FALSE;
     } else {
         /* Should we re-save the text mode on each VT enter? */
@@ -2294,7 +2295,7 @@ static Bool XGIEnterVT(int scrnIndex, int flags)
         xg47_Reset(pXGI->cmdList);
     }
 
-    pScrn->AdjustFrame(scrnIndex, pScrn->frameX0, pScrn->frameY0, 0);
+    pScrn->AdjustFrame(ADJUST_FRAME_ARGS(pScrn, pScrn->frameX0, pScrn->frameY0));
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -2311,9 +2312,9 @@ static Bool XGIEnterVT(int scrnIndex, int flags)
  */
 
 /* Mandatory */
-static void XGILeaveVT(int scrnIndex, int flags)
+static void XGILeaveVT(VT_FUNC_ARGS_DECL)
 {
-    ScrnInfoPtr pScrn = xf86Screens[scrnIndex];
+    SCRN_INFO_PTR(arg);
     XGIPtr      pXGI = XGIPTR(pScrn);
 
 #if DBG_FLOW
@@ -2338,7 +2339,7 @@ static void XGILeaveVT(int scrnIndex, int flags)
     }
 
     if (pXGI->isFBDev) {
-        fbdevHWLeaveVT(scrnIndex,flags);
+        fbdevHWLeaveVT(VT_FUNC_ARGS);
     } else {
         XGIRestore(pScrn);
     }
@@ -2371,9 +2372,9 @@ static void XGILeaveVT(int scrnIndex, int flags)
  */
 
 /* Mandatory */
-static Bool XGICloseScreen(int scrnIndex, ScreenPtr pScreen)
+static Bool XGICloseScreen(CLOSE_SCREEN_ARGS_DECL)
 {
-    ScrnInfoPtr pScrn = xf86Screens[scrnIndex];
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     vgaHWPtr    pVgaHW = VGAHWPTR(pScrn);
     XGIPtr      pXGI = XGIPTR(pScrn);
     Bool        result;
@@ -2459,7 +2460,7 @@ static Bool XGICloseScreen(int scrnIndex, ScreenPtr pScreen)
      */
     pScreen->CloseScreen = pXGI->CloseScreen;
 
-    result = (*pScreen->CloseScreen)(scrnIndex, pScreen);
+    result = (*pScreen->CloseScreen)(CLOSE_SCREEN_ARGS);
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "-- Leave %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -2470,7 +2471,7 @@ static Bool XGICloseScreen(int scrnIndex, ScreenPtr pScreen)
 
 static Bool XGISaveScreen(ScreenPtr pScreen, int mode)
 {
-    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     Bool        unblank;
 
 #if DBG_FLOW
@@ -2501,9 +2502,9 @@ static Bool XGISaveScreen(ScreenPtr pScreen, int mode)
  * It would include the driverPrivate, and any ``privates'' entries that modules
  * may have allocated.
  */
-static void XGIFreeScreen(int scrnIndex, int flags)
+static void XGIFreeScreen(FREE_SCREEN_ARGS_DECL)
 {
-    ScrnInfoPtr pScrn = xf86Screens[scrnIndex];
+    SCRN_INFO_PTR(arg);
 
 #if DBG_FLOW
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "++ Enter %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
@@ -2542,9 +2543,9 @@ static void XGIFreeScreen(int scrnIndex, int flags)
  * depend on any mode other than the one being validated, while calls with
  * MODECHECK_FINAL are intended for checks that may involve more than one mode.
  */
-static int XGIValidMode(int scrnIndex, DisplayModePtr mode, Bool verbose, int flags)
+static int XGIValidMode(SCRN_ARG_TYPE arg, DisplayModePtr mode, Bool verbose, int flags)
 {
-    ScrnInfoPtr     pScrn = xf86Screens[scrnIndex];
+    SCRN_INFO_PTR(arg);
     XGIPtr          pXGI = XGIPTR(pScrn);
     int             ret;
 

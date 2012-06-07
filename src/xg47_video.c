@@ -179,7 +179,7 @@ static Atom xvmcSubSrcX, xvmcSubSrcY, xvmcSubDstX, xvmcSubDstY, xvmcSubW, xvmcSu
 
 void XG47InitVideo(ScreenPtr pScreen)
 {
-    ScrnInfoPtr         pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr         pScrn = xf86ScreenToScrn(pScreen);
     XF86VideoAdaptorPtr *adaptors, *newAdaptors = NULL;
     XF86VideoAdaptorPtr newAdaptor = NULL;
     XGIPtr              pXGI = XGIPTR(pScrn);
@@ -226,7 +226,7 @@ void XG47InitVideo(ScreenPtr pScreen)
 static XF86VideoAdaptorPtr XG47SetupImageVideo(ScreenPtr pScreen)
 {
     XF86VideoAdaptorPtr pAdaptor = NULL;
-    ScrnInfoPtr         pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr         pScrn = xf86ScreenToScrn(pScreen);
     XGIPtr              pXGI = XGIPTR(pScrn);
     XGIPortPtr          pXGIPort = NULL;
 
@@ -732,7 +732,7 @@ static FBLinearPtr XG47AllocateMemory(ScrnInfoPtr pScrn,
         xf86FreeOffscreenLinear(pFBLinear);
     }
 
-    pScreen = screenInfo.screens[pScrn->scrnIndex];
+    pScreen = xf86ScrnToScreen(pScrn);
 
     pNewFBLinear = xf86AllocateOffscreenLinear(pScreen, size, 16, NULL, NULL, NULL);
 

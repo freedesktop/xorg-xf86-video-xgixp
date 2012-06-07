@@ -58,6 +58,7 @@
 #include <GL/glxint.h>
 #include "dri.h"
 
+#include "compat-api.h"
 /* Jong 09/06/2006; support dual view */
 #define	XGIDUALVIEW
 

@@ -69,7 +69,7 @@ static void setMonoCursorPositionOfSecondView(XGIPtr pXGI, int x, int y);
 
 Bool XG47HWCursorInit(ScreenPtr pScreen)
 {
-    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     XGIPtr pXGI = XGIPTR(pScrn);
     xf86CursorInfoPtr pCursorInfo;
     const unsigned size_bytes = CURSOR_WIDTH * 4 * CURSOR_HEIGHT;
@@ -122,7 +122,7 @@ Bool XG47HWCursorInit(ScreenPtr pScreen)
 
 void XG47HWCursorCleanup(ScreenPtr pScreen)
 {
-    ScrnInfoPtr pScrn   = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn   = xf86ScreenToScrn(pScreen);
     XGIPtr      pXGI    = XGIPTR(pScrn);
     uint32_t *d = (uint32_t *)(pXGI->fbBase + pXGI->cursorStart);
     int test = 0; /* 1; */ /* Jong 09/27/2006; test */
@@ -259,7 +259,7 @@ static void XG47ShowCursor(ScrnInfoPtr pScrn)
 
 static Bool XG47UseHWCursor(ScreenPtr pScreen, CursorPtr pCurs)
 {
-    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     XGIPtr pXGI = XGIPTR(pScrn);
 
 
@@ -269,7 +269,7 @@ static Bool XG47UseHWCursor(ScreenPtr pScreen, CursorPtr pCurs)
 
 static Bool XG47UseHWCursorARGB(ScreenPtr pScreen, CursorPtr pCurs)
 {
-    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     XGIPtr pXGI = XGIPTR(pScrn);
     Bool ret;
 

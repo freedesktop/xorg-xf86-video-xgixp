@@ -31,7 +31,7 @@
 /* xgi_shadow.c */
 extern void XGIRefreshArea(ScrnInfoPtr pScrn, int num, BoxPtr pbox);
 extern void XGIShadowUpdate (ScreenPtr pScreen, shadowBufPtr pBuf);
-extern void XGIPointerMoved(int index, int x, int y);
+extern void XGIPointerMoved(SCRN_ARG_TYPE arg, int x, int y);
 extern void XGIRefreshArea8(ScrnInfoPtr pScrn, int num, BoxPtr pbox);
 extern void XGIRefreshArea16(ScrnInfoPtr pScrn, int num, BoxPtr pbox);
 extern void XGIRefreshArea24(ScrnInfoPtr pScrn, int num, BoxPtr pbox);

@@ -34,7 +34,7 @@
 
 #define IsPrimaryCard   (xf86IsPrimaryPci(pXGI->pPciInfo))
 
-extern Bool XGISwitchMode(int scrnIndex, DisplayModePtr mode, int flags);
-extern void XGIAdjustFrame(int scrnIndex, int x, int y, int flags);
+extern Bool XGISwitchMode(SWITCH_MODE_ARGS_DECL);
+extern void XGIAdjustFrame(ADJUST_FRAME_ARGS_DECL);
 
 #endif

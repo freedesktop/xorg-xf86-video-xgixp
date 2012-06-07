@@ -108,9 +108,9 @@ void XG47DisableMMIO(ScrnInfoPtr pScrn)
 }
 
 
-void XG47AdjustFrame(int scrnIndex, int x, int y, int flags)
+void XG47AdjustFrame(ADJUST_FRAME_ARGS_DECL)
 {
-    ScrnInfoPtr     pScrn = xf86Screens[scrnIndex];
+    SCRN_INFO_PTR(arg);
     XGIPtr          pXGI = XGIPTR(pScrn);
     unsigned long   base = y * pScrn->displayWidth + x;
 

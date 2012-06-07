@@ -62,7 +62,7 @@ static DGAFunctionRec XGIDGAFuncs = {
 
 Bool XGIDGAInit(ScreenPtr pScreen)
 {
-    ScrnInfoPtr     pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr     pScrn = xf86ScreenToScrn(pScreen);
     XGIPtr          pXGI = XGIPTR(pScrn);
     DGAModePtr      pDgaModes = NULL, pNewDgaModes = NULL, pCurrentMode;
     DisplayModePtr  pMode, pFirstMode;
@@ -168,7 +168,7 @@ static Bool XGIDGASetMode(ScrnInfoPtr pScrn, DGAModePtr pMode)
         /* put the ScreenParameters back */
         pScrn->displayWidth = oldDisplayWidth[index];
 
-        XGISwitchMode(index, pScrn->currentMode, 0);
+        XGISwitchMode(SWITCH_MODE_ARGS(pScrn, pScrn->currentMode));
         pXGI->isDgaActive = FALSE;
    }
    else
@@ -184,7 +184,7 @@ static Bool XGIDGASetMode(ScrnInfoPtr pScrn, DGAModePtr pMode)
         pScrn->displayWidth = pMode->bytesPerScanline /
                               (pMode->bitsPerPixel >> 3);
 
-        XGISwitchMode(index, pMode->mode, 0);
+        XGISwitchMode(SWITCH_MODE_ARGS(pScrn, pMode->mode));
    }
 
    return TRUE;
@@ -203,7 +203,7 @@ static void XGIDGASetViewport(ScrnInfoPtr pScrn,
 {
     XGIPtr pXGI = XGIPTR(pScrn);
 
-    XGIAdjustFrame(pScrn->pScreen->myNum, x, y, flags);
+    XGIAdjustFrame(ADJUST_FRAME_ARGS(pScrn, x, y));
     pXGI->dgaViewportStatus = 0;  /* TRIDENTAdjustFrame loops until finished */
 }
 

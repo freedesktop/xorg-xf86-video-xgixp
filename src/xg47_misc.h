@@ -30,7 +30,7 @@
 
 extern void XG47EnableMMIO(ScrnInfoPtr pScrn);
 extern void XG47DisableMMIO(ScrnInfoPtr pScrn);
-extern void XG47AdjustFrame(int scrnIndex, int x, int y, int flags);
+extern void XG47AdjustFrame(ADJUST_FRAME_ARGS_DECL);
 
 extern void XG47GetFramebufferSize(XGIPtr pXGI);
 

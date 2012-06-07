@@ -38,9 +38,9 @@
 #include "xgi.h"
 
 
-void XGIPointerMoved(int index, int x, int y)
+void XGIPointerMoved(SCRN_ARG_TYPE arg, int x, int y)
 {
-    ScrnInfoPtr     pScrn = xf86Screens[index];
+    SCRN_INFO_PTR(arg);
     XGIPtr          pXGI = XGIPTR(pScrn);
     int             newX, newY;
 
@@ -55,7 +55,7 @@ void XGIPointerMoved(int index, int x, int y)
         newY = pScrn->pScreen->width - x - 1;
     }
 
-    (*pXGI->PointerMoved)(index, newX, newY);
+    (*pXGI->PointerMoved)(arg, newX, newY);
 }
 void XGIRefreshArea(ScrnInfoPtr pScrn, int num, BoxPtr pbox)
 {
@@ -88,7 +88,7 @@ void XGIShadowUpdate (ScreenPtr pScreen, shadowBufPtr pBuf)
 {
     RegionPtr       pRegion = &pBuf->damage;
     ScrnInfoPtr     pScrn;
-    pScrn = xf86Screens[pScreen->myNum];
+    pScrn = xf86ScreenToScrn(pScreen);
 
     (XGIPTR(pScrn))->RefreshArea (pScrn, REGION_NUM_RECTS(pRegion),
                                   REGION_RECTS(pRegion));

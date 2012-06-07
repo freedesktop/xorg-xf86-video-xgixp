@@ -35,7 +35,7 @@
 
 Bool XGIHWCursorInit(ScreenPtr pScreen)
 {
-    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     XGIPtr      pXGI = XGIPTR(pScrn);
     Bool        ret = FALSE;
 

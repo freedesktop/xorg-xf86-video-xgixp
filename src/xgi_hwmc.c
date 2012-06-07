@@ -180,7 +180,7 @@ static XF86MCAdaptorPtr ppAdaptor[1] =
 
 Bool XGIInitMC(ScreenPtr pScreen)
 {
-    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     XGIPtr      pXGI = XGIPTR(pScrn);
     int         i;
 
