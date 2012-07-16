@@ -38,8 +38,9 @@
 #include "miline.h"
 
 #include "xaarop.h"
+#ifdef HAVE_XAA_H
 #include "xaalocal.h"
-
+#endif
 #include "xgi.h"
 #include "xgi_regs.h"
 #include "xg47_regs.h"
@@ -219,6 +220,7 @@ static void XGIRestoreAccelState(ScrnInfoPtr pScrn);
 
 Bool XG47AccelInit(ScreenPtr pScreen)
 {
+#ifdef HAVE_XAA_H
     XAAInfoRecPtr   pXaaInfo;
     ScrnInfoPtr     pScrn = xf86ScreenToScrn(pScreen);
 
@@ -336,9 +338,12 @@ Bool XG47AccelInit(ScreenPtr pScreen)
 
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-Before XAAInit()\n");
     return(XAAInit(pScreen, pXaaInfo));
+#else
+    return FALSE;
+#endif
 }
 
-
+#ifdef HAVE_XAA_H
 /*
 Function:
     1. Wait for GE
@@ -934,6 +939,8 @@ static Bool XG47InitCmdList(ScrnInfoPtr pScrn)
 
     return (pXGI->cmdList != NULL);
 }
+
+#endif
 
 void XG47AccelExit(ScreenPtr pScreen)
 {

@@ -499,7 +499,9 @@ static int XG47SetPortAttribute(ScrnInfoPtr pScrn,
     XGIPortPtr  pXGIPort = (XGIPortPtr)pData;
     XGIPtr      pXGI = XGIPTR(pScrn);
 
+#ifdef HAVE_XAA_H
     if (!pXGI->noAccel) pXGI->pXaaInfo->Sync(pScrn);
+#endif
 
     if(attribute == xvColorKey)
     {
@@ -563,7 +565,9 @@ static int XG47GetPortAttribute(ScrnInfoPtr pScrn,
     XGIPortPtr pXGIPort = (XGIPortPtr)pData;
     XGIPtr     pXGI = XGIPTR(pScrn);
 
+#ifdef HAVE_XAA_H
     if (!pXGI->noAccel) pXGI->pXaaInfo->Sync(pScrn);
+#endif
 
     if(attribute == xvColorKey)
     {

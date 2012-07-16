@@ -29,24 +29,29 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_XAA_H
 #include "xaalocal.h"
-#include "dgaproc.h"
+#endif
 
 #include "xgi.h"
 #include "xgi_regs.h"
 #include "xgi_driver.h"
+
+#include "dgaproc.h"
 
 static Bool XGIDGAOpenFramebuffer(ScrnInfoPtr, char **, unsigned char **,
                                 int *, int *, int *);
 static Bool XGIDGASetMode(ScrnInfoPtr, DGAModePtr);
 static void XGIDGASetViewport(ScrnInfoPtr, int, int, int);
 static int  XGIDGAGetViewport(ScrnInfoPtr);
+#ifdef HAVE_XAA_H
 static void XGIDGASync(ScrnInfoPtr);
 static void XGIDGAFillRect(ScrnInfoPtr, int, int, int, int, unsigned long);
 static void XGIDGABlitRect(ScrnInfoPtr, int, int, int, int, int, int);
 #if 0
 static void XGIDGABlitTransRect(ScrnInfoPtr, int, int, int, int, int, int,
                               unsigned long);
+#endif
 #endif
 
 static DGAFunctionRec XGIDGAFuncs = {
@@ -55,9 +60,11 @@ static DGAFunctionRec XGIDGAFuncs = {
     XGIDGASetMode,
     XGIDGASetViewport,
     XGIDGAGetViewport,
+#ifdef HAVE_XAA_H
     XGIDGASync,
     XGIDGAFillRect,
     XGIDGABlitRect,
+#endif
 };
 
 Bool XGIDGAInit(ScreenPtr pScreen)
@@ -207,6 +214,7 @@ static void XGIDGASetViewport(ScrnInfoPtr pScrn,
     pXGI->dgaViewportStatus = 0;  /* TRIDENTAdjustFrame loops until finished */
 }
 
+#ifdef HAVE_XAA_H
 static void XGIDGAFillRect(ScrnInfoPtr pScrn,
                          int x, int y,
                          int w, int h,
@@ -262,7 +270,7 @@ XGIDGABlitTransRect(ScrnInfoPtr pScrn,
 {
 }
 #endif
-
+#endif
 static Bool
 XGIDGAOpenFramebuffer(ScrnInfoPtr pScrn,
                     char **name,

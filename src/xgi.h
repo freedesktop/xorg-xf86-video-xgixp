@@ -42,7 +42,10 @@
 #else
 #include "xf86Pci.h"        /* PCI config space */
 #endif
+#ifdef HAVE_XAA_H
 #include "xaa.h"            /* XAA and Cursor Support */
+#endif
+#include "xf86fbman.h"
 #include "xf86Cursor.h"
 #include "xf86DDC.h"        /* DDC support */
 #include "xf86xv.h"         /* Xv support */
@@ -562,8 +565,9 @@ typedef struct {
     vbeInfoPtr          pVbe;
 
     XGIHeadID           headID;
+#ifdef HAVE_XAA_H
     XAAInfoRecPtr       pXaaInfo;
-
+#endif
     struct xg47_CmdList *cmdList;
 
 #ifdef XvExtension 

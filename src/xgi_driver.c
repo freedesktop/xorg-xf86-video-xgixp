@@ -198,7 +198,7 @@ static const char *fbSymbols[] = {
 
 static const char *xaaSymbols[] = {
     "XAACreateInfoRec",
-    "XAADestroyInfoRec",
+    "XAAestroyInfoRec",
     "XAAFillSolidRects",
     "XAAGetCopyROP",
     "XAAGetPatternROP", 
@@ -2392,12 +2392,15 @@ static Bool XGICloseScreen(CLOSE_SCREEN_ARGS_DECL)
     /* Do only one time; otherwise will cause system hang 
      */
     if ((g_DualViewMode == 0 ) || (pScreen->myNum == 1)) {
+#ifdef HAVE_XAA_H
 	if (pXGI->pXaaInfo) {
 	    XG47AccelExit(pScreen);
 	    XAADestroyInfoRec(pXGI->pXaaInfo);
 
 	    pXGI->pXaaInfo = NULL;
 	}
+#endif
+
     }
 
     /* Restore the saved video state and unmap the memory regions. */
