@@ -53,8 +53,6 @@
 
 /* initialise a SW cursor */
 #include "mipointer.h"
-/* implementing backing store */
-#include "mibstore.h"
 
 /* colormap initialization */
 #include "micmap.h"
@@ -2040,10 +2038,6 @@ pScrn->pScreen = pScreen;
     {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "FB Manager init failed \n");
     }
-
-    /* If backing store is to be supported (as is usually the case), initialise it. */
-    miInitializeBackingStore(pScreen);
-    XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After miInitializeBackingStore()\n");
 
     xf86SetBackingStore(pScreen);
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After xf86SetBackingStore()\n");
