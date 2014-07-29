@@ -1702,6 +1702,25 @@ Bool XGIFBManagerInit(ScreenPtr pScreen)
     return ret;
 }
 
+static Bool
+XGICreateScreenResources(ScreenPtr pScreen)
+{
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
+    XGIPtr pXGI = XGIPTR(pScrn);
+    Bool ret;
+
+    pScreen->CreateScreenResources = pXGI->CreateScreenResources;
+    ret = pScreen->CreateScreenResources(pScreen);
+    pXGI->CreateScreenResources = pScreen->CreateScreenResources;
+    pScreen->CreateScreenResources = XGICreateScreenResources;
+
+    if (ret)
+	ret = shadowAdd(pScreen, pScreen->GetScreenPixmap(pScreen),
+			XGIShadowUpdate, NULL, 0, 0);
+
+    return ret;
+}
+
 /* Called at the start of each server generation. */
 Bool XGIScreenInit(SCREEN_INIT_ARGS_DECL)
 {
@@ -2011,7 +2030,10 @@ pScrn->pScreen = pScreen;
         {
             pXGI->RefreshArea = XGIRefreshArea;
         }
-        shadowInit(pScreen, XGIShadowUpdate, 0);
+        if (!shadowSetup(pScreen))
+	    return FALSE;
+	pXGI->CreateScreenResources = pScreen->CreateScreenResources;
+	pScreen->CreateScreenResources = XGICreateScreenResources;
     }
     XGIDebug(DBG_FUNCTION, "[DBG] Jong 06142006-After pXGI->isShadowFB\n");
 
@@ -2272,8 +2294,10 @@ static Bool XGICloseScreen(CLOSE_SCREEN_ARGS_DECL)
 
     if (pXGI->pShadow)
     {
+	shadowRemove(pScreen, pScreen->GetScreenPixmap(pScreen));
         free(pXGI->pShadow);
         pXGI->pShadow = NULL;
+	pScreen->CreateScreenResources = pXGI->CreateScreenResources;
     }
 
     if (pXGI->pDgaModes)

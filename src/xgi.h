@@ -534,6 +534,7 @@ typedef struct {
     RefreshAreaFuncPtr  RefreshArea;
     CloseScreenProcPtr  CloseScreen;
     ScreenBlockHandlerProcPtr   BlockHandler;
+    CreateScreenResourcesProcPtr CreateScreenResources;
     xf86PointerMovedProc        *PointerMoved;
 
     struct xgi_regs           savedReg;
