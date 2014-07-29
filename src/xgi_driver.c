@@ -43,9 +43,6 @@
 #include <xf86RandR12.h>
 #include "vbe.h"
 
-/* PCI vendor/device definitions */
-#include "xf86PciInfo.h"
-
 /* fbdevhw & vgahw */
 #include "fbdevhw.h"
 #include "vgaHW.h"
