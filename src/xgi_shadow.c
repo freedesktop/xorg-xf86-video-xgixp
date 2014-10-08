@@ -86,7 +86,7 @@ void XGIRefreshArea(ScrnInfoPtr pScrn, int num, BoxPtr pbox)
 
 void XGIShadowUpdate (ScreenPtr pScreen, shadowBufPtr pBuf)
 {
-    RegionPtr       pRegion = &pBuf->damage;
+    RegionPtr       pRegion = DamageRegion(pBuf->pDamage);
     ScrnInfoPtr     pScrn;
     pScrn = xf86ScreenToScrn(pScreen);
 
