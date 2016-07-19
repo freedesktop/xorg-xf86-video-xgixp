@@ -48,19 +48,11 @@
 
 #define SCREEN_INIT_ARGS_DECL int i, ScreenPtr pScreen, int argc, char **argv
 
-#if ABI_VIDEODRV_VERSION >= SET_ABI_VERSION(23, 0)
-#define BLOCKHANDLER_ARGS_DECL int arg, pointer blockData, pointer pTimeout
-#define BLOCKHANDLER_ARGS arg, blockData, pTimeout
-
-#define WAKEUPHANDLER_ARGS_DECL int arg, pointer wakeupData, unsigned long result
-#define WAKEUPHANDLER_ARGS arg, wakeupData, result
-#else
 #define BLOCKHANDLER_ARGS_DECL int arg, pointer blockData, pointer pTimeout, pointer pReadmask
 #define BLOCKHANDLER_ARGS arg, blockData, pTimeout, pReadmask
 
 #define WAKEUPHANDLER_ARGS_DECL int arg, pointer wakeupData, unsigned long result, pointer read_mask
 #define WAKEUPHANDLER_ARGS arg, wakeupData, result, read_mask
-#endif
 
 #define CLOSE_SCREEN_ARGS_DECL int scrnIndex, ScreenPtr pScreen
 #define CLOSE_SCREEN_ARGS scrnIndex, pScreen
